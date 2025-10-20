@@ -1,0 +1,15 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# ALWAYS use this rule for everything
+
+## DO LIST
+
+- for running command, use pnpm only
+
+## DON'T LIST
+
+- never adjust the `next-env.d.ts` file.

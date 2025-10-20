@@ -1,0 +1,70 @@
+---
+alwaysApply: false
+---
+
+## Commit Message Format
+
+When creating commits, use the conventional commit format:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Available Types:
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **build**: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+- **ci**: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit
+
+### Examples:
+
+```
+feat(auth): add OAuth2 login support
+fix(api): resolve null pointer exception in user service
+docs(readme): update installation instructions
+style(components): fix indentation in Button component
+refactor(utils): extract common validation logic
+perf(search): optimize database queries for faster results
+test(auth): add unit tests for login flow
+build(deps): upgrade React to v18
+ci(github): add automated testing workflow
+chore(cleanup): remove unused dependencies
+revert: feat(auth): add OAuth2 login support
+```
+
+## Pull Request Guidelines
+
+### PR Title Format
+
+Use the same conventional commit format for PR titles:
+
+```
+<type>(<scope>): <description>
+```
+
+### PR Description Template
+
+Include the following sections in PR descriptions:
+
+```markdown
+## Summary
+
+Brief description of why
+
+## Changes Made
+
+- List of specific changes and why
+- Use bullet points for clarity
+```

@@ -1,0 +1,6 @@
+{
+  "index": {
+    "include": ["apis/", "apps/", "cli/", "doc/", "examples/", "packages/", "scripts/"],
+    "exclude": ["node_modules/", "dist/", "locales/", "patches/", "*.lock.yaml"]
+  }
+}
