@@ -16,6 +16,7 @@ const chainIds: ChainId[] = [
   ChainId.LINEA,
   ChainId.BASE,
   ChainId.OPBNB,
+  ChainId.NBC_CHAIN,
 ]
 
 export const fetchAllUniversalFarms = async (): Promise<UniversalFarmConfig[]> => {

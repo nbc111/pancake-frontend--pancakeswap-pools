@@ -11,6 +11,7 @@ export const supportedChainIdV4 = [
   ChainId.POLYGON_ZKEVM,
   ChainId.LINEA,
   ChainId.ARBITRUM_ONE,
+  ChainId.NBC_CHAIN,
   NonEVMChainId.SOLANA,
 ] as const
 
@@ -37,6 +38,7 @@ export const supportedChainIdV3 = [
   ChainId.OPBNB,
   ChainId.OPBNB_TESTNET,
   ChainId.MONAD_TESTNET,
+  ChainId.NBC_CHAIN,
 ] as const
 export const supportedChainId = Array.from(new Set<ChainId>([...supportedChainIdV2, ...supportedChainIdV3]))
 export const bCakeSupportedChainId = [
@@ -77,6 +79,7 @@ export const masterChefV3Addresses = {
   [ChainId.OPBNB]: '0x05ddEDd07C51739d2aE21F6A9d97a8d69C2C3aaA',
   [ChainId.OPBNB_TESTNET]: '0x236e713bFF45adb30e25D1c29A887aBCb0Ea7E21',
   [ChainId.MONAD_TESTNET]: '0x',
+  [ChainId.NBC_CHAIN]: '0x0000000000000000000000000000000000000000', // TODO: 需要NBC Chain的实际农场合约地址
 } as const satisfies Record<FarmV3SupportedChainId, string>
 
 export const crossFarmingVaultAddresses = {
