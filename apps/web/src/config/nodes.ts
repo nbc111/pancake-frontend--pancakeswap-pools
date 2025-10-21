@@ -93,6 +93,7 @@ export const SERVER_NODES = {
     'https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6',
     ...monadTestnet.rpcUrls.default.http,
   ],
+  [ChainId.NBC_CHAIN]: ['https://rpc.nbcex.com'],
 } satisfies Record<ChainId, readonly string[]>
 
 export const PUBLIC_NODES: Record<ChainId, string[] | readonly string[]> = {
@@ -178,4 +179,5 @@ export const PUBLIC_NODES: Record<ChainId, string[] | readonly string[]> = {
     'https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6',
     ...monadTestnet.rpcUrls.default.http,
   ],
+  [ChainId.NBC_CHAIN]: ['https://rpc.nbcex.com'],
 } satisfies Record<ChainId, readonly string[]>

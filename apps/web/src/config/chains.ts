@@ -24,6 +24,31 @@ import {
   zkSync,
 } from 'wagmi/chains'
 
+// NBC Chain configuration
+const nbcChain = {
+  id: ChainId.NBC_CHAIN,
+  name: 'NBC Chain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'NBC',
+    symbol: 'NBC',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.nbcex.com'],
+      webSocket: ['wss://rpc.nbcex.com'],
+    },
+    public: {
+      http: ['https://rpc.nbcex.com'],
+      webSocket: ['wss://rpc.nbcex.com'],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'NBC Explorer', url: 'https://explorer.nbcex.com' },
+  },
+  testnet: false,
+} satisfies Chain
+
 export const CHAIN_QUERY_NAME = chainNames
 
 const CHAIN_QUERY_NAME_TO_ID = Object.entries(CHAIN_QUERY_NAME).reduce((acc, [chainId, chainName]) => {
@@ -95,4 +120,5 @@ export const CHAINS: [Chain, ...Chain[]] = [
   opBNBTestnet,
   scrollSepolia,
   monadTestnet,
+  nbcChain,
 ]

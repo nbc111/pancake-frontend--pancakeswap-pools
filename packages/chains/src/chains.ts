@@ -108,4 +108,10 @@ export const Chains: Chain[] = [
     isEVM: true,
     testnet: true,
   },
+  {
+    id: ChainId.NBC_CHAIN,
+    name: chainNames[ChainId.NBC_CHAIN],
+    fullName: chainFullNames[ChainId.NBC_CHAIN],
+    isEVM: true,
+  },
 ]

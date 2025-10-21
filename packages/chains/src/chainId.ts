@@ -20,6 +20,7 @@ export enum ChainId {
   BASE_SEPOLIA = 84532,
   SEPOLIA = 11155111,
   MONAD_TESTNET = 10143,
+  NBC_CHAIN = 1281,
 }
 
 export enum NonEVMChainId {
