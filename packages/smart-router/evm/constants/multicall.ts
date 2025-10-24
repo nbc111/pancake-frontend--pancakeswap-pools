@@ -72,4 +72,5 @@ export const BATCH_MULTICALL_CONFIGS: ChainMap<BatchMulticallConfigs> = {
   [ChainId.ARBITRUM_SEPOLIA]: DEFAULT,
   [ChainId.BASE_SEPOLIA]: DEFAULT,
   [ChainId.MONAD_TESTNET]: DEFAULT,
+  [ChainId.NBC_CHAIN]: DEFAULT, // NBC Chain使用默认配置
 }

@@ -175,6 +175,14 @@ export const WETH9 = {
     'Wrapped Monad',
     'https://www.monad.xyz/',
   ),
+  [ChainId.NBC_CHAIN]: new ERC20Token(
+    ChainId.NBC_CHAIN,
+    '0x0000000000000000000000000000000000000000', // 需要替换为实际的NBC Chain WNBC地址
+    18,
+    'WNBC',
+    'Wrapped NBC',
+    'https://nbcex.com',
+  ),
 }
 
 export const WBNB = {
@@ -242,6 +250,7 @@ export const WNATIVE = {
   [ChainId.ARBITRUM_SEPOLIA]: WETH9[ChainId.ARBITRUM_SEPOLIA],
   [ChainId.BASE_SEPOLIA]: WETH9[ChainId.BASE_SEPOLIA],
   [ChainId.MONAD_TESTNET]: WETH9[ChainId.MONAD_TESTNET],
+  [ChainId.NBC_CHAIN]: WETH9[ChainId.NBC_CHAIN],
 } satisfies Record<ChainId, ERC20Token>
 
 const ETHER = { name: 'Ether', symbol: 'ETH', decimals: 18 } as const
@@ -300,6 +309,11 @@ export const NATIVE = {
   [ChainId.MONAD_TESTNET]: {
     name: 'Monad Testnet Ether',
     symbol: 'MON',
+    decimals: 18,
+  },
+  [ChainId.NBC_CHAIN]: {
+    name: 'NBC',
+    symbol: 'NBC',
     decimals: 18,
   },
 } satisfies Record<

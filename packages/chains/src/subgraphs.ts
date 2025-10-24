@@ -46,6 +46,7 @@ export function getV3Subgraphs({ noderealApiKey, theGraphApiKey }: SubgraphParam
     [ChainId.ARBITRUM_SEPOLIA]: null,
     [ChainId.BASE_SEPOLIA]: null,
     [ChainId.MONAD_TESTNET]: null,
+    [ChainId.NBC_CHAIN]: null, // NBC Chain暂未配置subgraph
   } as const satisfies Record<ChainId, string | null>
 }
 
@@ -61,6 +62,7 @@ export function getV2Subgraphs({ noderealApiKey, theGraphApiKey }: SubgraphParam
     [ChainId.LINEA]: `https://gateway-arbitrum.network.thegraph.com/api/${theGraphApiKey}/subgraphs/id/Eti2Z5zVEdARnuUzjCbv4qcimTLysAizsqH3s6cBfPjB`,
     [ChainId.BASE]: `https://gateway-arbitrum.network.thegraph.com/api/${theGraphApiKey}/subgraphs/id/2NjL7L4CmQaGJSacM43ofmH6ARf6gJoBeBaJtz9eWAQ9`,
     [ChainId.OPBNB]: `https://open-platform-ap.nodereal.io/${noderealApiKey}/opbnb-mainnet-graph-query/subgraphs/name/pancakeswap/exchange-v2`,
+    [ChainId.NBC_CHAIN]: null, // NBC Chain暂未配置V2 subgraph
   }
 }
 
@@ -74,5 +76,6 @@ export function getBlocksSubgraphs({ noderealApiKey }: SubgraphParams) {
     [ChainId.LINEA]: 'https://api.studio.thegraph.com/query/45376/blocks-linea/version/latest',
     [ChainId.BASE]: 'https://api.studio.thegraph.com/query/48211/base-blocks/version/latest',
     [ChainId.OPBNB]: `https://open-platform-ap.nodereal.io/${noderealApiKey}/opbnb-mainnet-graph-query/subgraphs/name/pancakeswap/blocks`,
+    [ChainId.NBC_CHAIN]: null, // NBC Chain暂未配置blocks subgraph
   } as const
 }

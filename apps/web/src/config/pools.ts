@@ -23,6 +23,7 @@ export const POOLS_FAST_REVALIDATE = {
   [ChainId.ARBITRUM_SEPOLIA]: 10_000,
   [ChainId.BASE_SEPOLIA]: 10_000,
   [ChainId.MONAD_TESTNET]: 10_000,
+  [ChainId.NBC_CHAIN]: 10_000, // NBC Chain快速重新验证时间设为10秒
 } as const satisfies Record<ChainId, number>
 
 export const POOLS_SLOW_REVALIDATE = {
@@ -47,4 +48,5 @@ export const POOLS_SLOW_REVALIDATE = {
   [ChainId.ARBITRUM_SEPOLIA]: 20_000,
   [ChainId.BASE_SEPOLIA]: 20_000,
   [ChainId.MONAD_TESTNET]: 20_000,
+  [ChainId.NBC_CHAIN]: 20_000, // NBC Chain慢速重新验证时间设为20秒
 } as const satisfies Record<ChainId, number>

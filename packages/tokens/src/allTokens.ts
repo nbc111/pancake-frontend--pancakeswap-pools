@@ -13,6 +13,7 @@ import { goerliTestnetTokens } from './constants/goerli'
 import { lineaTokens } from './constants/linea'
 import { lineaTestnetTokens } from './constants/lineaTestnet'
 import { monadTestnetTokens } from './constants/monadTestnet'
+import { nbcChainTokens } from './constants/nbcChain'
 import { opBnbTokens } from './constants/opBNB'
 import { opBnbTestnetTokens } from './constants/opBnbTestnet'
 import { polygonZkEvmTokens } from './constants/polygonZkEVM'
@@ -44,4 +45,5 @@ export const allTokens = {
   [ChainId.ARBITRUM_SEPOLIA]: arbSepoliaTokens,
   [ChainId.BASE_SEPOLIA]: baseSepoliaTokens,
   [ChainId.MONAD_TESTNET]: monadTestnetTokens,
+  [ChainId.NBC_CHAIN]: nbcChainTokens,
 }

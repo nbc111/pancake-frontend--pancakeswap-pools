@@ -32,6 +32,7 @@ export const QUOTE_TIMEOUT = {
 
   // Misc
   [ChainId.MONAD_TESTNET]: 8_000,
+  [ChainId.NBC_CHAIN]: 8_000, // NBC Chain报价超时设为8秒
 
   [NonEVMChainId.SOLANA]: 5_000,
   [NonEVMChainId.APTOS]: 5_000,
@@ -75,6 +76,7 @@ export const QUOTE_SUCC_REVALIDATE = {
 
   // Misc
   [ChainId.MONAD_TESTNET]: 10,
+  [ChainId.NBC_CHAIN]: 10, // NBC Chain成功报价重新验证时间设为10秒
 
   // Solana
   [NonEVMChainId.SOLANA]: 5,
@@ -115,6 +117,7 @@ export const QUOTE_FAIL_REVALIDATE = {
 
   // Misc
   [ChainId.MONAD_TESTNET]: 5,
+  [ChainId.NBC_CHAIN]: 5, // NBC Chain失败报价重新验证时间设为5秒
   [NonEVMChainId.SOLANA]: 5,
   [NonEVMChainId.APTOS]: 5,
 } as const satisfies Record<ChainId | NonEVMChainId, number>

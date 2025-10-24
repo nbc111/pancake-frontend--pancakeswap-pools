@@ -60,6 +60,7 @@ export const CHAIN_REFRESH_TIME = {
   [ChainId.BASE_SEPOLIA]: 6_000,
   [ChainId.ARBITRUM_SEPOLIA]: 6_000,
   [ChainId.MONAD_TESTNET]: 6_000,
+  [ChainId.NBC_CHAIN]: 6_000, // NBC Chain刷新时间设为6秒
 } as const satisfies Record<ChainId, number>
 
 // used for display in the default list when adding liquidity
@@ -90,6 +91,7 @@ export const SUGGESTED_BASES: ChainTokenList = {
   [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc, arbSepoliaTokens.weth],
   [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc, baseSepoliaTokens.weth],
   [ChainId.MONAD_TESTNET]: [monadTestnetTokens.wmon, monadTestnetTokens.usdc, monadTestnetTokens.usdt],
+  [ChainId.NBC_CHAIN]: [], // NBC Chain暂未配置建议的基础token
   [NonEVMChainId.SOLANA]: [solanaTokens.usdc, solanaTokens.usdt],
   [NonEVMChainId.APTOS]: [],
 }
@@ -117,6 +119,7 @@ export const BASES_TO_TRACK_LIQUIDITY_FOR: ChainTokenList = {
   [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc, arbSepoliaTokens.weth],
   [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc, baseSepoliaTokens.weth],
   [ChainId.MONAD_TESTNET]: [monadTestnetTokens.usdc, monadTestnetTokens.busd],
+  [ChainId.NBC_CHAIN]: [], // NBC Chain暂未配置流动性跟踪token
   [NonEVMChainId.SOLANA]: [solanaTokens.usdc, solanaTokens.usdt],
   [NonEVMChainId.APTOS]: [],
 }

@@ -86,4 +86,5 @@ export const DEFAULT_COMMON_PRICE: Record<FarmV3SupportedChainId, CommonPrice> =
   [ChainId.OPBNB_TESTNET]: {},
   [ChainId.OPBNB]: {},
   [ChainId.MONAD_TESTNET]: {},
+  [ChainId.NBC_CHAIN]: {}, // NBC Chain暂未配置农场价格
 }

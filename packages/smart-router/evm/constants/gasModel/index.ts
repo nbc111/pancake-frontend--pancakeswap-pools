@@ -14,6 +14,7 @@ import {
   lineaTestnetTokens,
   lineaTokens,
   monadTestnetTokens,
+  nbcChainTokens,
   opBnbTestnetTokens,
   opBnbTokens,
   polygonZkEvmTestnetTokens,
@@ -46,6 +47,7 @@ export const usdGasTokensByChain = {
   [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc],
   [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc],
   [ChainId.MONAD_TESTNET]: [monadTestnetTokens.usdc],
+  [ChainId.NBC_CHAIN]: [], // NBC Chain暂未配置USD gas token
 } satisfies Record<ChainId, Token[]>
 
 export * from './stableSwap'

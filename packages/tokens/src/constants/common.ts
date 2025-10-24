@@ -588,4 +588,5 @@ export const STABLE_COIN = {
   [ChainId.ARBITRUM_SEPOLIA]: USDC[ChainId.ARBITRUM_SEPOLIA],
   [ChainId.BASE_SEPOLIA]: USDC[ChainId.BASE_SEPOLIA],
   [ChainId.MONAD_TESTNET]: USDC[ChainId.MONAD_TESTNET],
+  [ChainId.NBC_CHAIN]: USDC[ChainId.BSC], // 使用BSC的USDC作为NBC Chain的稳定币
 } satisfies Record<ChainId, ERC20Token>

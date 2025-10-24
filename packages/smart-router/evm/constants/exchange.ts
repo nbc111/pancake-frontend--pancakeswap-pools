@@ -17,6 +17,7 @@ import {
   lineaTestnetTokens,
   lineaTokens,
   monadTestnetTokens,
+  nbcChainTokens,
   opBnbTestnetTokens,
   opBnbTokens,
   polygonZkEvmTestnetTokens,
@@ -51,6 +52,7 @@ export const SMART_ROUTER_ADDRESSES = {
   [ChainId.ARBITRUM_SEPOLIA]: '0x678Aa4bF4E210cf2166753e054d5b7c31cc7fa86',
   [ChainId.BASE_SEPOLIA]: '0x678Aa4bF4E210cf2166753e054d5b7c31cc7fa86',
   [ChainId.MONAD_TESTNET]: '0xe27dC57FcE896350a38D8d8aDcEefBfb5649D9De',
+  [ChainId.NBC_CHAIN]: '0x0000000000000000000000000000000000000000', // 需要替换为实际的NBC Chain智能路由器地址
 } as const satisfies Record<ChainId, string>
 
 export const V2_ROUTER_ADDRESS: ChainMap<string> = {
@@ -75,6 +77,7 @@ export const V2_ROUTER_ADDRESS: ChainMap<string> = {
   [ChainId.ARBITRUM_SEPOLIA]: '0x8cFe327CEc66d1C090Dd72bd0FF11d690C33a2Eb',
   [ChainId.BASE_SEPOLIA]: '0x8cFe327CEc66d1C090Dd72bd0FF11d690C33a2Eb',
   [ChainId.MONAD_TESTNET]: '0x3a3eBAe0Eec80852FBC7B9E824C6756969cc8dc1',
+  [ChainId.NBC_CHAIN]: '0x0000000000000000000000000000000000000000', // 需要替换为实际的NBC Chain V2路由器地址
 }
 
 export const STABLE_SWAP_INFO_ADDRESS: ChainMap<string> = {
@@ -99,6 +102,7 @@ export const STABLE_SWAP_INFO_ADDRESS: ChainMap<string> = {
   [ChainId.ARBITRUM_SEPOLIA]: '',
   [ChainId.BASE_SEPOLIA]: '',
   [ChainId.MONAD_TESTNET]: '',
+  [ChainId.NBC_CHAIN]: '', // NBC Chain暂未配置稳定币交换
 }
 
 // used to construct intermediary pairs for trading
@@ -132,6 +136,7 @@ export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.ARBITRUM_SEPOLIA]: [arbSepoliaTokens.usdc, arbSepoliaTokens.weth],
   [ChainId.BASE_SEPOLIA]: [baseSepoliaTokens.usdc, baseSepoliaTokens.weth],
   [ChainId.MONAD_TESTNET]: [monadTestnetTokens.weth, monadTestnetTokens.usdc, monadTestnetTokens.busd],
+  [ChainId.NBC_CHAIN]: [], // NBC Chain暂未配置交易对基础token
 }
 
 const czusd = new ERC20Token(ChainId.BSC, '0xE68b79e51bf826534Ff37AA9CeE71a3842ee9c70', 18, 'CZUSD', 'CZUSD')

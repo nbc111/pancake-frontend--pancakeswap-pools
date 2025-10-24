@@ -22,4 +22,5 @@ export const AVERAGE_CHAIN_BLOCK_TIMES: Record<ChainId, number> = {
   [ChainId.BASE_SEPOLIA]: 0,
   [ChainId.SEPOLIA]: 0,
   [ChainId.MONAD_TESTNET]: 1,
+  [ChainId.NBC_CHAIN]: 2, // NBC Chain平均出块时间设为2秒
 }

@@ -33,6 +33,7 @@ const UNIVERSAL_ROUTER_ADDRESSES: Record<ChainId, Address> = {
   [ChainId.OPBNB_TESTNET]: '0xa8EEA7aa6620712524d18D742821848e55E773B5',
 
   [ChainId.MONAD_TESTNET]: '0x94D220C58A23AE0c2eE29344b00A30D1c2d9F1bc',
+  [ChainId.NBC_CHAIN]: '0x0000000000000000000000000000000000000000', // 需要替换为实际的NBC Chain Universal Router地址
 }
 
 export const getUniversalRouterAddress = (chainId: ChainId): Address => {
