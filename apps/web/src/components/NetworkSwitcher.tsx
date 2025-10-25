@@ -10,6 +10,17 @@ import { useRouter } from 'next/router'
 import { useCallback, useMemo } from 'react'
 import { NetworkSwitcherModal, networkSwitcherModalAtom } from './NetworkSwitcherModal'
 
+// Helper function to get chain icon URL with local fallback
+const getChainIconUrl = (chainId: number): string => {
+  // For NBC Chain, prioritize local image
+  if (chainId === 1281) {
+    return `/images/chains/${chainId}.png`
+  }
+  
+  // For other chains, use CDN
+  return `${ASSET_CDN}/web/chains/${chainId}.png`
+}
+
 export const SHORT_SYMBOL = {
   [ChainId.ETHEREUM]: 'ETH',
   [ChainId.BSC]: 'BNB',
@@ -70,7 +81,7 @@ export const NetworkSwitcher = () => {
         mr="8px"
         placement="bottom"
         variant={isLoading ? 'pending' : isWrongNetwork ? 'danger' : 'default'}
-        avatarSrc={`${ASSET_CDN}/web/chains/${chainId}.png`}
+        avatarSrc={getChainIconUrl(chainId)}
         disabled={cannotChangeNetwork}
         text={
           isLoading ? (
