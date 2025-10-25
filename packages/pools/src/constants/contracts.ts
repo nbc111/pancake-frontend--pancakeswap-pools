@@ -20,6 +20,7 @@ export const ICAKE = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: '0x',
   [ChainId.OPBNB]: '0x',
   [ChainId.BASE]: '0x',
+  [ChainId.NBC_CHAIN]: '0x',
 } as const satisfies ContractAddresses<SupportedChainId>
 
 export const CAKE_VAULT = {
@@ -35,6 +36,7 @@ export const CAKE_VAULT = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: '0x',
   [ChainId.OPBNB]: '0x',
   [ChainId.BASE]: '0x',
+  [ChainId.NBC_CHAIN]: '0x',
 } as const satisfies ContractAddresses<SupportedChainId>
 
 export const CAKE_FLEXIBLE_SIDE_VAULT = {
@@ -50,4 +52,5 @@ export const CAKE_FLEXIBLE_SIDE_VAULT = {
   [ChainId.POLYGON_ZKEVM_TESTNET]: '0x',
   [ChainId.OPBNB]: '0x',
   [ChainId.BASE]: '0x',
+  [ChainId.NBC_CHAIN]: '0x',
 } as const satisfies ContractAddresses<SupportedChainId>

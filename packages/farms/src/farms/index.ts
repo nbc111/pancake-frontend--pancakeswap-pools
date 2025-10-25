@@ -3,6 +3,7 @@ import { fetchUniversalFarms } from '../fetchUniversalFarms'
 import { UniversalFarmConfig } from '../types'
 import { getFarmConfigKey } from '../utils'
 import { bscTestnetFarmConfig } from './bscTestnet'
+import { nbcChainFarmConfig } from './nbcChain'
 import { polygonZkEVMTestnetFarmConfig } from './polygonZkEVMTestnet'
 import { zkSyncTestnetFarmConfig } from './zkSyncTestnet'
 
@@ -49,6 +50,7 @@ export const fetchAllUniversalFarmsMap = async (): Promise<Record<string, Univer
 
 export const UNIVERSAL_FARMS_WITH_TESTNET: UniversalFarmConfig[] = [
   ...bscTestnetFarmConfig,
+  ...nbcChainFarmConfig,
   ...polygonZkEVMTestnetFarmConfig,
   ...zkSyncTestnetFarmConfig,
 ]

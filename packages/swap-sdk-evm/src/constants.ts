@@ -177,7 +177,7 @@ export const WETH9 = {
   ),
   [ChainId.NBC_CHAIN]: new ERC20Token(
     ChainId.NBC_CHAIN,
-    '0x0000000000000000000000000000000000000000', // 需要替换为实际的NBC Chain WNBC地址
+    '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83', // NBC Chain WNBC合约地址 (需要部署后更新)
     18,
     'WNBC',
     'Wrapped NBC',

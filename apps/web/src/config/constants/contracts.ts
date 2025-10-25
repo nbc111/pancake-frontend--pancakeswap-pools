@@ -46,6 +46,7 @@ export default {
     [ChainId.BASE_TESTNET]: '0xcA11bde05977b3631167028862bE2a173976CA11',
     [ChainId.SCROLL_SEPOLIA]: '0xcA11bde05977b3631167028862bE2a173976CA11',
     [ChainId.MONAD_TESTNET]: '0xcA11bde05977b3631167028862bE2a173976CA11',
+    [ChainId.NBC_CHAIN]: '0xcA11bde05977b3631167028862bE2a173976CA11', // NBC Chain multicall3合约地址 (需要部署后更新)
   },
   pancakeProfile: {
     [ChainId.BSC]: '0xDf4dBf6536201370F95e06A0F8a7a70fE40E388a',
@@ -241,6 +242,7 @@ export default {
     [ChainId.ETHEREUM]: '0x',
     [ChainId.BSC]: '0xC0E92c9B437734a0c0e0466F76cDf71c5478b0AB',
     [ChainId.BSC_TESTNET]: '0x',
+    [ChainId.NBC_CHAIN]: '0x1234567890123456789012345678901234567890', // NBC Chain固定质押合约地址 (需要部署后更新)
   },
   veCake: {
     [ChainId.BSC]: '0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB',
