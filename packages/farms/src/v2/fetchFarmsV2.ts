@@ -153,32 +153,43 @@ export async function farmV2FetchFarms({
   }, new Map<string, CurrencyParams>())
   const tokenInfoList = Array.from(tokensWithoutPrice.values())
   if (tokenInfoList.length) {
-    const prices = await getCurrencyListUsdPrice(tokenInfoList)
-
-    return farmsDataWithPrices.map((f) => {
-      if (f.tokenPriceBusd !== '0' && f.quoteTokenPriceBusd !== '0') {
-        return f
-      }
-      const tokenKey = getCurrencyKey(f.token)
-      const quoteTokenKey = getCurrencyKey(f.quoteToken)
-      const tokenVsQuote = new BN(f.tokenPriceVsQuote)
-      let tokenPrice = new BN(tokenKey ? prices[tokenKey] ?? 0 : 0)
-      let quoteTokenPrice = new BN(quoteTokenKey ? prices[quoteTokenKey] ?? 0 : 0)
-      if (tokenVsQuote.gt(0)) {
-        if (tokenPrice.eq(0) && quoteTokenPrice.gt(0)) {
-          tokenPrice = quoteTokenPrice.div(tokenVsQuote)
-        } else if (quoteTokenPrice.eq(0) && tokenPrice.gt(0)) {
-          quoteTokenPrice = tokenPrice.times(tokenVsQuote)
+    try {
+      const prices = await getCurrencyListUsdPrice(tokenInfoList)
+      
+      return farmsDataWithPrices.map((f) => {
+        if (f.tokenPriceBusd !== '0' && f.quoteTokenPriceBusd !== '0') {
+          return f
         }
-      }
-      const lpTokenPrice = getFarmLpTokenPrice(f, tokenPrice, quoteTokenPrice, decimals)
-      return {
+        const tokenKey = getCurrencyKey(f.token)
+        const quoteTokenKey = getCurrencyKey(f.quoteToken)
+        const tokenVsQuote = new BN(f.tokenPriceVsQuote)
+        let tokenPrice = new BN(tokenKey ? prices[tokenKey] ?? 0 : 0)
+        let quoteTokenPrice = new BN(quoteTokenKey ? prices[quoteTokenKey] ?? 0 : 0)
+        if (tokenVsQuote.gt(0)) {
+          if (tokenPrice.eq(0) && quoteTokenPrice.gt(0)) {
+            tokenPrice = quoteTokenPrice.div(tokenVsQuote)
+          } else if (quoteTokenPrice.eq(0) && tokenPrice.gt(0)) {
+            quoteTokenPrice = tokenPrice.times(tokenVsQuote)
+          }
+        }
+        const lpTokenPrice = getFarmLpTokenPrice(f, tokenPrice, quoteTokenPrice, decimals)
+        return {
+          ...f,
+          tokenPriceBusd: tokenPrice.toString(),
+          quoteTokenPriceBusd: quoteTokenPrice.toString(),
+          lpTokenPrice: lpTokenPrice.toString(),
+        }
+      })
+    } catch (error) {
+      console.error('Failed to fetch farm token prices:', error)
+      // Return farms without price data if API fails
+      return farmsDataWithPrices.map((f) => ({
         ...f,
-        tokenPriceBusd: tokenPrice.toString(),
-        quoteTokenPriceBusd: quoteTokenPrice.toString(),
-        lpTokenPrice: lpTokenPrice.toString(),
-      }
-    })
+        tokenPriceBusd: '0',
+        quoteTokenPriceBusd: '0',
+        lpTokenPrice: '0',
+      }))
+    }
   }
 
   return farmsDataWithPrices

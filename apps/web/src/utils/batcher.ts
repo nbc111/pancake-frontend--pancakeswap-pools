@@ -4,7 +4,12 @@ import { create, windowedFiniteBatchScheduler } from '@yornaath/batshit'
 export const usdPriceBatcher = create<CurrencyUsdResult, CurrencyParams, number>({
   // The fetcher resolves the list of queries to one single api call.
   fetcher: async (params: CurrencyParams[]) => {
-    return getCurrencyListUsdPrice(params)
+    try {
+      return await getCurrencyListUsdPrice(params)
+    } catch (error) {
+      console.error('Failed to fetch currency prices:', error)
+      return {}
+    }
   },
   // when we call usdPriceBatcher.fetch, this will resolve the correct currency from the result.
   resolver(items, query) {

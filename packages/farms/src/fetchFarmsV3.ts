@@ -443,12 +443,17 @@ export const fetchTokenUSDValues = async (currencies: Currency[] = []): Promise<
   }
 
   if (currencies.length > 0) {
-    const prices = await getCurrencyListUsdPrice(currencies)
+    try {
+      const prices = await getCurrencyListUsdPrice(currencies)
 
-    Object.entries(prices || {}).forEach(([key, value]) => {
-      const [, address] = key.split(':')
-      commonTokenUSDValue[getAddress(address)] = value.toString()
-    })
+      Object.entries(prices || {}).forEach(([key, value]) => {
+        const [, address] = key.split(':')
+        commonTokenUSDValue[getAddress(address)] = value.toString()
+      })
+    } catch (error) {
+      console.error('Failed to fetch V3 farm token prices:', error)
+      // Return empty object if API fails
+    }
   }
 
   return commonTokenUSDValue

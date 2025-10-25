@@ -69,6 +69,11 @@ export async function getCurrencyUsdPrice(currencyParams?: CurrencyParams, optio
     return 0
   }
 
+  // NBC Chain is not supported by PancakeSwap price API yet
+  if (currencyParams.chainId === 1281) {
+    return 0
+  }
+
   const prices = await getCurrencyListUsdPrice([currencyParams], options)
   const key = getCurrencyKey(currencyParams)
   return (key && prices[key]) ?? 0
@@ -85,6 +90,9 @@ export async function getCurrencyListUsdPrice(
 
   try {
     const res = await fetch(requestUrl, options)
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
     const data = await res.json()
     return data
   } catch (error) {

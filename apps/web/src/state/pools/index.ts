@@ -217,7 +217,12 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
           stakingTokenPrice = await fetchTokenAplPrice()
         } else {
           // eslint-disable-next-line no-await-in-loop
-          stakingTokenPrice = await getCurrencyUsdPrice({ chainId, address: stakingTokenAddress })
+          try {
+            stakingTokenPrice = await getCurrencyUsdPrice({ chainId, address: stakingTokenAddress })
+          } catch (error) {
+            console.error('Failed to fetch staking token price:', error)
+            stakingTokenPrice = 0
+          }
         }
       }
 
@@ -225,7 +230,12 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
       let earningTokenPrice = earningTokenAddress ? prices[earningTokenAddress] : 0
       if (earningTokenAddress && !prices[earningTokenAddress] && !isPoolFinished) {
         // eslint-disable-next-line no-await-in-loop
-        earningTokenPrice = await getCurrencyUsdPrice({ chainId, address: earningTokenAddress })
+        try {
+          earningTokenPrice = await getCurrencyUsdPrice({ chainId, address: earningTokenAddress })
+        } catch (error) {
+          console.error('Failed to fetch earning token price:', error)
+          earningTokenPrice = 0
+        }
       }
       const totalStaked = getBalanceNumber(new BigNumber(totalStaking.totalStaked), pool.stakingToken.decimals)
       const apr = !isPoolFinished
