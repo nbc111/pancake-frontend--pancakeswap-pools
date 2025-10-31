@@ -4,12 +4,19 @@ import { ExtendedNextReq, MiddlewareFactory, NextMiddleware } from './types'
 
 export const withUserIp: MiddlewareFactory = (next: NextMiddleware) => {
   return async (request: ExtendedNextReq, _next: NextFetchEvent) => {
-    let ip = ipAddress(request) ?? request.headers.get('x-real-ip')
-    const forwardedFor = request.headers.get('x-forwarded-for')
-    if (!ip && forwardedFor) ip = forwardedFor.split(',').at(0) ?? ip
+    try {
+      let ip = ipAddress(request) ?? request.headers.get('x-real-ip')
+      const forwardedFor = request.headers.get('x-forwarded-for')
+      if (!ip && forwardedFor) ip = forwardedFor.split(',').at(0) ?? ip
 
-    // eslint-disable-next-line no-param-reassign
-    request.userIp = ip
+      // eslint-disable-next-line no-param-reassign
+      request.userIp = ip
+    } catch (error) {
+      // 如果 ipAddress 不可用（本地环境），使用备选方法
+      const forwardedFor = request.headers.get('x-forwarded-for')
+      // eslint-disable-next-line no-param-reassign
+      request.userIp = request.headers.get('x-real-ip') ?? (forwardedFor ? forwardedFor.split(',').at(0) : null)
+    }
     return next(request, _next)
   }
 }

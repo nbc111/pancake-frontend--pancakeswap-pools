@@ -35,7 +35,7 @@
     "build-all": "pnpm build-dist && pnpm build-lib",
     "build": "pnpm build-lib",
     "push": "pnpm build && pnpm publish",
-    "dev": "rm -rf dist && tsup src --watch --format cjs,esm --dts --sourcemap --no-splitting --minify -d dist"
+    "dev": "tsup src --watch --format cjs,esm --dts --sourcemap --no-splitting --minify -d dist --clean"
   },
   "dependencies": {
     "@noble/hashes": "^1.3.0",
