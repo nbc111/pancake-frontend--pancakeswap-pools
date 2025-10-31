@@ -3,6 +3,7 @@ import { useTranslation } from '@pancakeswap/localization'
 import { NATIVE } from '@pancakeswap/sdk'
 import { Box, UserMenu, useTooltip } from '@pancakeswap/uikit'
 import { ASSET_CDN } from 'config/constants/endpoints'
+import { CHAINS } from 'config/chains'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { useSwitchNetwork } from 'hooks/useSwitchNetwork'
 import { useAtom } from 'jotai'
@@ -34,7 +35,8 @@ export const SHORT_SYMBOL = {
   [ChainId.MONAD_TESTNET]: 'tMonad',
   [NonEVMChainId.SOLANA]: 'Sol',
   [NonEVMChainId.APTOS]: 'Aptos',
-} as const satisfies Record<UnifiedChainId, string>
+  1281: 'NBC', // NBC Chain
+} as const
 
 export const NetworkSwitcher = () => {
   const { t } = useTranslation()
@@ -43,8 +45,12 @@ export const NetworkSwitcher = () => {
   const router = useRouter()
   const [, setIsNetworkSwitcherOpen] = useAtom(networkSwitcherModalAtom)
 
-  const foundChain = useMemo(() => Chains.find((c) => c.id === chainId), [chainId])
-  const symbol = foundChain?.id ? SHORT_SYMBOL[foundChain.id] ?? NATIVE[foundChain.id]?.symbol : undefined
+  // Combine both Chains (from package) and CHAINS (local config) to include custom chains like NBC
+  const allChains = useMemo(() => [...Chains, ...CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))], [])
+  const foundChain = useMemo(() => allChains.find((c) => c.id === chainId), [allChains, chainId])
+  const symbol = foundChain?.id 
+    ? (SHORT_SYMBOL[foundChain.id as keyof typeof SHORT_SYMBOL] ?? NATIVE[foundChain.id]?.symbol ?? foundChain.nativeCurrency?.symbol)
+    : undefined
   const { targetRef, tooltip, tooltipVisible } = useTooltip(
     t('Unable to switch network. Please try it on your wallet'),
     { placement: 'bottom' },
@@ -78,7 +84,9 @@ export const NetworkSwitcher = () => {
             t('Network')
           ) : foundChain ? (
             <>
-              <Box display={['none', null, null, null, null, null, 'block']}>{foundChain.fullName}</Box>
+              <Box display={['none', null, null, null, null, null, 'block']}>
+                {(foundChain as any).fullName || foundChain.name}
+              </Box>
               <Box display={['block', null, null, null, null, null, 'none']}>{symbol}</Box>
             </>
           ) : (

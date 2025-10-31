@@ -24,7 +24,10 @@ import {
   zkSync,
 } from 'wagmi/chains'
 
-export const CHAIN_QUERY_NAME = chainNames
+export const CHAIN_QUERY_NAME = {
+  ...chainNames,
+  [1281 as ChainId]: 'nbc',
+} as Record<number, string>
 
 const CHAIN_QUERY_NAME_TO_ID = Object.entries(CHAIN_QUERY_NAME).reduce((acc, [chainId, chainName]) => {
   return {
@@ -32,6 +35,9 @@ const CHAIN_QUERY_NAME_TO_ID = Object.entries(CHAIN_QUERY_NAME).reduce((acc, [ch
     ...acc,
   }
 }, {} as Record<string, ChainId>)
+
+// Add NBC Chain (1281) mapping for URL query parameter
+CHAIN_QUERY_NAME_TO_ID['nbc'] = 1281 as ChainId
 
 export const getChainId = memoize((chainName: string) => {
   if (!chainName) return undefined
@@ -74,6 +80,21 @@ export const L2_CHAIN_IDS: ChainId[] = [
   ChainId.BASE_SEPOLIA,
 ]
 
+// NBC Chain definition
+const nbc = {
+  id: 1281,
+  name: 'NBC Chain',
+  nativeCurrency: { name: 'NBC', symbol: 'NBC', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.nbcex.com'] },
+    public: { http: ['https://rpc.nbcex.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'NBC Explorer', url: 'https://www.nbblocks.cc' },
+  },
+  // Ensure it's recognized as an EVM chain
+} as const satisfies Chain
+
 export const CHAINS: [Chain, ...Chain[]] = [
   bsc,
   bscTestnet,
@@ -95,4 +116,5 @@ export const CHAINS: [Chain, ...Chain[]] = [
   opBNBTestnet,
   scrollSepolia,
   monadTestnet,
+  nbc,
 ]

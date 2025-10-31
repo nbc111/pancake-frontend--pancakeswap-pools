@@ -1,6 +1,7 @@
 import { useTranslation } from '@pancakeswap/localization'
 import { bscTokens } from '@pancakeswap/tokens'
-import { Flex, FlexLayout, Heading, PageHeader, ToggleView, ViewMode } from '@pancakeswap/uikit'
+import { Flex, FlexLayout, Heading, PageHeader, ToggleView, ViewMode, Button } from '@pancakeswap/uikit'
+import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
 import { Pool } from '@pancakeswap/widgets-internal'
 import BigNumber from 'bignumber.js'
 import Page from 'components/Layout/Page'
@@ -86,6 +87,13 @@ const FixedStaking = () => {
             <Heading scale="md" color="text">
               {t('Single-Sided Simple Earn Staking')}
             </Heading>
+          </Flex>
+          <Flex alignItems="center" mt={['16px', '16px', 0]}>
+            <NextLinkFromReactRouter to="/nbc-staking">
+              <Button variant="subtle" scale="sm">
+                {t('NBC Chain Staking')}
+              </Button>
+            </NextLinkFromReactRouter>
           </Flex>
         </Flex>
       </PageHeader>

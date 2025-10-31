@@ -25,7 +25,7 @@ const UnsupportedNetworkModal = dynamic(
 
 export const NetworkModal = ({ pageSupportedChains = SUPPORT_ONLY_BSC }: { pageSupportedChains?: number[] }) => {
   const { chainId, isWrongNetwork } = useActiveChainId()
-  const { chain } = useAccount()
+  const { chain, isConnected } = useAccount()
   const [mustSwitchNetworkModal, setMustSwitchNetworkModal] = useAtom(mustSwitchNetworkModalAtom)
 
   const isBNBOnlyPage = useMemo(() => {
@@ -39,6 +39,9 @@ export const NetworkModal = ({ pageSupportedChains = SUPPORT_ONLY_BSC }: { pageS
   const handleDismiss = useCallback(() => setMustSwitchNetworkModal(false), [setMustSwitchNetworkModal])
 
   if (pageSupportedChains?.length === 0) return null // open to all chains
+
+  // Only show network modal if wallet is connected
+  if (!isConnected) return null
 
   if (isPageNotSupported && isBNBOnlyPage) {
     return (

@@ -17,7 +17,7 @@ import {
 } from '@pancakeswap/farms'
 import { priceHelperTokens } from '@pancakeswap/farms/constants/common'
 import { bCakeFarmBoosterVeCakeABI } from '@pancakeswap/farms/constants/v3/abi/bCakeFarmBoosterVeCake'
-import { TvlMap, fetchCommonTokenUSDValue } from '@pancakeswap/farms/src/fetchFarmsV3'
+import { TvlMap, fetchCommonTokenUSDValue, CommonPrice } from '@pancakeswap/farms/src/fetchFarmsV3'
 import { deserializeToken } from '@pancakeswap/token-lists'
 import { masterChefV3ABI } from '@pancakeswap/v3-sdk'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -90,7 +90,18 @@ export const useFarmsV3Public = () => {
         // direct copy from api routes, the client side fetch is preventing cache due to migration phase we want fresh data
         const fetchFarmsV3 = await fetchUniversalFarms(chainId, Protocol.V3)
         const farms = defineFarmV3ConfigsFromUniversalFarm(fetchFarmsV3 as UniversalFarmConfigV3[])
-        const commonPrice = await fetchCommonTokenUSDValue(priceHelperTokens[chainId ?? -1])
+        
+        // Safely fetch common token USD value with error handling
+        const priceHelper = priceHelperTokens[chainId ?? -1]
+        let commonPrice: CommonPrice = {}
+        if (priceHelper) {
+          try {
+            commonPrice = await fetchCommonTokenUSDValue(priceHelper)
+          } catch (error) {
+            console.error('Failed to fetch common token USD value:', error)
+            // Continue with empty commonPrice
+          }
+        }
 
         const data = await farmFetcherV3.fetchFarms({
           chainId: chainId ?? -1,

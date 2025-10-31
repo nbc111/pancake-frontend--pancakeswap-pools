@@ -79,11 +79,37 @@ export const customMetaMaskConnector = createConnector(() => ({
     if (!provider) throw new Error('MetaMask not found')
 
     const { chainId } = parameters
-    await provider.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${chainId.toString(16)}` }],
-    })
-    const chain = chains.find((x) => x.id === chainId)!
-    return chain
+    const hexChainId = `0x${chainId.toString(16)}`
+    const target = chains.find((x) => x.id === chainId)
+    if (!target) {
+      throw new Error(`Chain ${chainId} not configured`)
+    }
+
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: hexChainId }],
+      })
+    } catch (err) {
+      const error = err as any
+      if (error?.code === 4902 || (typeof error?.message === 'string' && error.message.includes('Unrecognized chain ID'))) {
+        const params = {
+          chainId: hexChainId,
+          chainName: (target as any).fullName || target.name,
+          nativeCurrency: target.nativeCurrency,
+          rpcUrls: target.rpcUrls?.default?.http || target.rpcUrls?.public?.http || [],
+          blockExplorerUrls: target.blockExplorers?.default?.url ? [target.blockExplorers.default.url] : [],
+        }
+        if (!params.rpcUrls?.length) {
+          throw new Error(`No RPC urls configured for chain ${chainId}`)
+        }
+        await provider.request({ method: 'wallet_addEthereumChain', params: [params] })
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hexChainId }] })
+      } else {
+        throw error
+      }
+    }
+
+    return target
   },
 }))

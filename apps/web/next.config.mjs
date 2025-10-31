@@ -256,10 +256,24 @@ const config = {
   webpack: (webpackConfig, { webpack, isServer }) => {
     webpackConfig.resolve = webpackConfig.resolve || {}
     webpackConfig.resolve.alias = webpackConfig.resolve.alias || {}
+    // Shim Solana core sdk to avoid requiring local package build on Windows
+    webpackConfig.resolve.alias['@pancakeswap/solana-core-sdk'] = path.resolve(
+      __dirname,
+      'src',
+      'shims',
+      'solana-core-sdk.ts'
+    )
     webpackConfig.resolve.alias['@solana/wallet-adapter-react'] = path.resolve(
       __dirname,
       'node_modules',
       '@solana/wallet-adapter-react'
+    )
+    // Shim canonical-bridge to avoid requiring local package build
+    webpackConfig.resolve.alias['@pancakeswap/canonical-bridge'] = path.resolve(
+      __dirname,
+      'src',
+      'shims',
+      'canonical-bridge.tsx'
     )
     webpackConfig.infrastructureLogging = {
       level: 'info', // or 'verbose' for more detail

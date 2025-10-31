@@ -3,7 +3,7 @@ import { cyberWalletConnector as createCyberWalletConnector, isCyberWallet } fro
 import { ChainId, Chains } from '@pancakeswap/chains'
 import { blocto } from '@pancakeswap/wagmi/connectors/blocto'
 import { EvmConnectorNames } from '@pancakeswap/ui-wallets'
-import { CHAINS } from 'config/chains'
+import { CHAINS as LOCAL_CHAINS } from 'config/chains'
 import { PUBLIC_NODES } from 'config/nodes'
 import { ConnectorNames } from 'config/wallet'
 import memoize from 'lodash/memoize'
@@ -16,7 +16,7 @@ import { ASSET_CDN } from 'config/constants/endpoints'
 import { fallbackWithRank } from './fallbackWithRank'
 import { CLIENT_CONFIG, publicClient } from './viem'
 
-export const chains = CHAINS
+export const chains = LOCAL_CHAINS
 
 export const injectedConnector = injected({
   shimDisconnect: false,
@@ -63,7 +63,7 @@ export const noopStorage = {
 
 const PUBLIC_MAINNET = 'https://ethereum.publicnode.com'
 
-export const transports = chains.reduce((ts, chain) => {
+export const transports = LOCAL_CHAINS.reduce((ts, chain) => {
   let httpStrings: string[] | readonly string[] = []
 
   if (process.env.NODE_ENV === 'test' && chain.id === mainnet.id) {
@@ -137,8 +137,10 @@ export const createW3WWagmiConfig = () => {
   })
 }
 
-export const CHAIN_IDS = Chains.map((c) => c.id)
-export const EVM_CHAIN_IDS = Chains.filter((c) => c.isEVM).map((c) => c.id) as ChainId[]
+// Combine Chains from package and local CHAINS config to include custom chains
+const allChainsList = [...Chains, ...LOCAL_CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))]
+export const CHAIN_IDS = allChainsList.map((c) => c.id)
+export const EVM_CHAIN_IDS = allChainsList.filter((c) => c.isEVM).map((c) => c.id) as ChainId[]
 
 export const isChainSupported = memoize((chainId: number) => (CHAIN_IDS as number[]).includes(chainId))
 export const isChainTestnet = memoize((chainId: number) => {

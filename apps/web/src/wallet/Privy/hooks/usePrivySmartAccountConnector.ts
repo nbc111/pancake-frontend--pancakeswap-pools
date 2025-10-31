@@ -35,6 +35,17 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
 
   useEffect(() => {
     const setupSmartAccountConnector = async () => {
+      // Disable Privy smart account on NBC Chain page to avoid blocking switch
+      try {
+        const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+        const chainParam = urlParams.get('chain') || ''
+        if (chainParam.toLowerCase() === 'nbc') {
+          setIsSmartWalletReady(true)
+          setIsSettingUp(false)
+          return
+        }
+      } catch {}
+
       // Track setup start time for first attempt
       if (retryCount === 0 && !setupStartTime) {
         setSetupStartTime(Date.now())

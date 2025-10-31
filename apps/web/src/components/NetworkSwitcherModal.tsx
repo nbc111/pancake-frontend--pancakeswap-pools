@@ -1,5 +1,6 @@
 import { Chain, ChainId, Chains, isTestnetChainId, NonEVMChainId, UnifiedChainId } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
+import { CHAINS } from 'config/chains'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -45,7 +46,9 @@ interface NetworkSelectProps {
 }
 
 function getSortedChains(chainId: UnifiedChainId, showTestnet: boolean): Chain[] {
-  return Chains.filter((chain) => {
+  // Combine both Chains (from package) and CHAINS (local config) to include custom chains
+  const allChains = [...Chains, ...CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))]
+  return allChains.filter((chain) => {
     if (chain.isEVM) {
       if (chain.id === chainId) return true
       if (isTestnetChainId(chain.id as ChainId) && chain.id !== ChainId.MONAD_TESTNET) {
@@ -55,10 +58,19 @@ function getSortedChains(chainId: UnifiedChainId, showTestnet: boolean): Chain[]
     }
     // always include non-EVM chains
     return true
-  }).map((chain) => ({
-    ...chain,
-    isEvm: chain.isEVM,
-  }))
+  }).map((chain) => {
+    // Ensure EVM chains have isEVM property set to true
+    // For chains from local CHAINS config, check if it's not a known non-EVM chain
+    const isNonEVMChain = chain.id === NonEVMChainId.SOLANA || chain.id === NonEVMChainId.APTOS
+    const isEvmChain = chain.isEVM !== undefined ? chain.isEVM : !isNonEVMChain
+    
+    return {
+      ...chain,
+      isEVM: isEvmChain,
+      isEvm: isEvmChain,
+      fullName: (chain as any).fullName || chain.name,
+    }
+  })
 }
 
 const NetworkSelect = ({ switchNetwork, chainId, isWrongNetwork, onDismiss }: NetworkSelectProps) => {
@@ -147,12 +159,14 @@ interface WrongNetworkSelectProps {
 
 const WrongNetworkSelect = ({ switchNetwork, chainId, onDismiss }: WrongNetworkSelectProps) => {
   const { t } = useTranslation()
+  // Combine both Chains and CHAINS to find chain name
+  const allChainsForLookup = [...Chains, ...CHAINS]
   const { targetRef, tooltip, tooltipVisible } = useTooltip(
     t(
-      'The URL you are accessing (Chain id: %chainId%) belongs to %network%; mismatching your wallet’s network. Please switch the network to continue.',
+      "The URL you are accessing (Chain id: %chainId%) belongs to %network%; mismatching your wallet's network. Please switch the network to continue.",
       {
         chainId,
-        network: Chains.find((c) => c.id === chainId)?.fullName ?? 'Unknown network',
+        network: allChainsForLookup.find((c) => c.id === chainId)?.fullName ?? allChainsForLookup.find((c) => c.id === chainId)?.name ?? 'Unknown network',
       },
     ),
     {
@@ -163,7 +177,7 @@ const WrongNetworkSelect = ({ switchNetwork, chainId, onDismiss }: WrongNetworkS
   const { chain } = useAccount()
   const localChainId = getQueryChainId() || ChainId.BSC
 
-  const localChainName = Chains.find((c) => c.id === localChainId)?.fullName ?? 'BSC'
+  const localChainName = allChainsForLookup.find((c) => c.id === localChainId)?.fullName ?? allChainsForLookup.find((c) => c.id === localChainId)?.name ?? 'BSC'
 
   const [ref1, isHover] = useHover<HTMLButtonElement>()
 
