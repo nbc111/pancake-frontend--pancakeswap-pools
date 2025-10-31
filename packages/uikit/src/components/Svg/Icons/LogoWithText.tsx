@@ -12,7 +12,7 @@ const Logo: React.FC<React.PropsWithChildren<SvgProps>> = (props) => {
       <text
         x="220"
         y="135"
-        fontSize="80"
+        fontSize="140"
         fontWeight="700"
         fill={vars.colors.contrast}
         fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
