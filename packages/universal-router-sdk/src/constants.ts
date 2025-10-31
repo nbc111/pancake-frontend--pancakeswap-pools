@@ -35,9 +35,12 @@ const UNIVERSAL_ROUTER_ADDRESSES: Record<ChainId, Address> = {
   [ChainId.MONAD_TESTNET]: '0x94D220C58A23AE0c2eE29344b00A30D1c2d9F1bc',
 }
 
-export const getUniversalRouterAddress = (chainId: ChainId): Address => {
-  if (!(chainId in UNIVERSAL_ROUTER_ADDRESSES)) throw new Error(`Universal Router not deployed on chain ${chainId}`)
+export const getUniversalRouterAddress = (chainId: ChainId): Address | undefined => {
   return UNIVERSAL_ROUTER_ADDRESSES[chainId]
+}
+
+export const isUniversalRouterSupported = (chainId: ChainId): boolean => {
+  return chainId in UNIVERSAL_ROUTER_ADDRESSES
 }
 
 export const CONTRACT_BALANCE = 2n ** 255n

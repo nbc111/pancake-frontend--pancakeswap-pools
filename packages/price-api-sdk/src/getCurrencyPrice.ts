@@ -80,19 +80,39 @@ export async function getCurrencyListUsdPrice(
 ): Promise<CurrencyUsdResult> {
   const requestUrl = getRequestUrl(currencyListParams)
   if (!requestUrl || !currencyListParams) {
-    throw new Error(`Invalid request for currency prices, request url: ${requestUrl}`)
+    // Return empty object instead of throwing error for invalid requests
+    return {}
   }
 
   try {
-    const res = await fetch(requestUrl, options)
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`)
+    // Add timeout to prevent hanging requests (10 seconds)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    const fetchOptions = {
+      ...options,
+      signal: options?.signal || controller.signal,
     }
-    const data = await res.json()
-    return data
+
+    try {
+      const res = await fetch(requestUrl, fetchOptions)
+      clearTimeout(timeoutId)
+      if (!res.ok) {
+        // Return empty object for non-ok responses instead of throwing
+        console.warn(`Price API returned non-ok status: ${res.status}`)
+        return {}
+      }
+      const data = await res.json()
+      return data || {}
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      throw fetchError
+    }
   } catch (error) {
-    // in case wallet api is down, return empty object
-    console.error('Failed to get currency list usd price:', error)
+    // in case wallet api is down or network error, return empty object
+    // This includes timeout, network errors, CORS errors, etc.
+    if (error instanceof Error && error.name !== 'AbortError') {
+      console.error('Failed to get currency list usd price:', error.message)
+    }
     return {}
   }
 }
