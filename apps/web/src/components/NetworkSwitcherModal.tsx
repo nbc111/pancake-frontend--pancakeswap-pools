@@ -50,7 +50,7 @@ function getSortedChains(chainId: UnifiedChainId, showTestnet: boolean): Chain[]
   const allChains = [...Chains, ...CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))]
   return allChains
     .filter((chain) => {
-      if (chain.isEVM) {
+      if ((chain as any).isEVM) {
         if (chain.id === chainId) return true
         if (isTestnetChainId(chain.id as ChainId) && chain.id !== ChainId.MONAD_TESTNET) {
           return showTestnet
