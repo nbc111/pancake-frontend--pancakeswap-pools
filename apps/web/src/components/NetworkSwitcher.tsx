@@ -46,10 +46,15 @@ export const NetworkSwitcher = () => {
   const [, setIsNetworkSwitcherOpen] = useAtom(networkSwitcherModalAtom)
 
   // Combine both Chains (from package) and CHAINS (local config) to include custom chains like NBC
-  const allChains = useMemo(() => [...Chains, ...CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))], [])
+  const allChains = useMemo(
+    () => [...Chains, ...CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))],
+    [],
+  )
   const foundChain = useMemo(() => allChains.find((c) => c.id === chainId), [allChains, chainId])
-  const symbol = foundChain?.id 
-    ? (SHORT_SYMBOL[foundChain.id as keyof typeof SHORT_SYMBOL] ?? NATIVE[foundChain.id]?.symbol ?? foundChain.nativeCurrency?.symbol)
+  const symbol = foundChain?.id
+    ? SHORT_SYMBOL[foundChain.id as keyof typeof SHORT_SYMBOL] ??
+      NATIVE[foundChain.id]?.symbol ??
+      (foundChain as any).nativeCurrency?.symbol
     : undefined
   const { targetRef, tooltip, tooltipVisible } = useTooltip(
     t('Unable to switch network. Please try it on your wallet'),

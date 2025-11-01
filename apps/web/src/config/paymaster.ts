@@ -89,7 +89,9 @@ export const paymasterInfo: {
 export const PAYMASTER_CONTRACT_WHITELIST = [
   getUniversalRouterAddress(ChainId.ZKSYNC), // Universal Router on zkSync
   getAddressFromMap(addresses.zkSyncAirDrop, ChainId.ZKSYNC), // ZKSync AirDrop
-].map((address) => address.toLowerCase())
+]
+  .map((address) => address?.toLowerCase())
+  .filter(Boolean) as string[]
 
 // Zyfi
 export const ZYFI_PAYMASTER_URL = 'https://api.zyfi.org/api/erc20_paymaster/v1'

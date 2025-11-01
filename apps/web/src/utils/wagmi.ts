@@ -140,7 +140,7 @@ export const createW3WWagmiConfig = () => {
 // Combine Chains from package and local CHAINS config to include custom chains
 const allChainsList = [...Chains, ...LOCAL_CHAINS.filter((c) => !Chains.find((existing) => existing.id === c.id))]
 export const CHAIN_IDS = allChainsList.map((c) => c.id)
-export const EVM_CHAIN_IDS = allChainsList.filter((c) => c.isEVM).map((c) => c.id) as ChainId[]
+export const EVM_CHAIN_IDS = allChainsList.filter((c) => (c as any).isEVM).map((c) => c.id) as ChainId[]
 
 export const isChainSupported = memoize((chainId: number) => (CHAIN_IDS as number[]).includes(chainId))
 export const isChainTestnet = memoize((chainId: number) => {

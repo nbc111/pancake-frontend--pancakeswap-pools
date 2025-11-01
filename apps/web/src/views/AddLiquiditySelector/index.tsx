@@ -107,7 +107,7 @@ export const AddLiquiditySelector = () => {
       if (Array.isArray(value)) {
         value.forEach((item) => queryParams.append(key, item))
       } else {
-        queryParams.append(key, value)
+        queryParams.append(key, String(value))
       }
     }
     const tokenParams =
