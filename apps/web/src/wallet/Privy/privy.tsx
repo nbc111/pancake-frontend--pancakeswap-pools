@@ -23,6 +23,14 @@ export function PrivyProvider({ children }: PropsWithChildren) {
   // Show wallet UIs only on bridge pages
   const showWalletUIs = router.pathname.includes('/bridge')
 
+  // Only enable embedded wallets over HTTPS or localhost (for development)
+  // Privy embedded wallets require HTTPS for security reasons
+  const isHTTPS =
+    typeof window !== 'undefined' &&
+    (window.location.protocol === 'https:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1')
+
   return (
     <Provider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ''}
@@ -47,16 +55,18 @@ export function PrivyProvider({ children }: PropsWithChildren) {
             useSandbox: process.env.NODE_ENV !== 'production',
           },
         },
-        embeddedWallets: {
-          requireUserPasswordOnCreate: false, // we will trigger it by ourself when create wallet
-          showWalletUIs,
-          ethereum: {
-            createOnLogin: 'users-without-wallets',
-          },
-          solana: {
-            createOnLogin: 'off',
-          },
-        },
+        embeddedWallets: isHTTPS
+          ? {
+              requireUserPasswordOnCreate: false, // we will trigger it by ourself when create wallet
+              showWalletUIs,
+              ethereum: {
+                createOnLogin: 'users-without-wallets',
+              },
+              solana: {
+                createOnLogin: 'off',
+              },
+            }
+          : undefined,
         mfa: {
           noPromptOnMfaRequired: false,
         },
