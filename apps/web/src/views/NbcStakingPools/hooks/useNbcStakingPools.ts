@@ -31,6 +31,27 @@ const POOL_CONFIGS = [
     rewardTokenName: 'Ether',
     rewardTokenDecimals: 18,
   },
+  {
+    sousId: 3,
+    rewardTokenAddress: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81' as `0x${string}`,
+    rewardTokenSymbol: 'SOL',
+    rewardTokenName: 'Solana',
+    rewardTokenDecimals: 18,
+  },
+  {
+    sousId: 4,
+    rewardTokenAddress: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c' as `0x${string}`,
+    rewardTokenSymbol: 'BNB',
+    rewardTokenName: 'Binance Coin',
+    rewardTokenDecimals: 18,
+  },
+  {
+    sousId: 5,
+    rewardTokenAddress: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093' as `0x${string}`,
+    rewardTokenSymbol: 'XRP',
+    rewardTokenName: 'Ripple',
+    rewardTokenDecimals: 18,
+  },
 ]
 
 export const useNbcStakingPools = () => {
@@ -143,12 +164,111 @@ export const useNbcStakingPools = () => {
     chainId: CHAIN_ID,
   })
 
+  // Pool 3 (SOL)
+  const { data: staked3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [3, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [3, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+
+  // Pool 4 (BNB)
+  const { data: staked4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [4, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [4, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+
+  // Pool 5 (XRP)
+  const { data: staked5 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [5, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned5 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [5, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked5 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [5],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo5 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [5],
+    chainId: CHAIN_ID,
+  })
+
   const pools = useMemo(() => {
     // 将数据组织成数组
     const poolDataQueries = [
       { staked: staked0, earned: earned0, totalStaked: totalStaked0, poolInfo: poolInfo0 },
       { staked: staked1, earned: earned1, totalStaked: totalStaked1, poolInfo: poolInfo1 },
       { staked: staked2, earned: earned2, totalStaked: totalStaked2, poolInfo: poolInfo2 },
+      { staked: staked3, earned: earned3, totalStaked: totalStaked3, poolInfo: poolInfo3 },
+      { staked: staked4, earned: earned4, totalStaked: totalStaked4, poolInfo: poolInfo4 },
+      { staked: staked5, earned: earned5, totalStaked: totalStaked5, poolInfo: poolInfo5 },
     ]
 
     const result = POOL_CONFIGS.map((config, index) => {
@@ -285,6 +405,18 @@ export const useNbcStakingPools = () => {
     earned2,
     totalStaked2,
     poolInfo2,
+    staked3,
+    earned3,
+    totalStaked3,
+    poolInfo3,
+    staked4,
+    earned4,
+    totalStaked4,
+    poolInfo4,
+    staked5,
+    earned5,
+    totalStaked5,
+    poolInfo5,
     currentChainTimestamp,
   ])
 
