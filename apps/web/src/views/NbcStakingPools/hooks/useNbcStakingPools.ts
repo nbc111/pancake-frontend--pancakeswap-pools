@@ -205,8 +205,7 @@ export const useNbcStakingPools = () => {
 
       // 判断池是否已结束
       // poolInfo 返回 [rewardToken, totalStakedAmount, rewardRate, periodFinish, active]
-      // 池结束的条件：periodFinish 已过期 或者 (active === false 且 periodFinish <= 当前时间)
-      // 如果 poolInfo 还没有加载，默认认为池是活跃的（isFinished = false）
+      // 池结束的条件：active === false 或者 periodFinish 已过期
       let isPoolFinished = false
       let endTimestamp = 0
       if (Array.isArray(poolInfo) && poolInfo.length >= 5) {
@@ -220,16 +219,14 @@ export const useNbcStakingPools = () => {
         // 设置 endTimestamp
         endTimestamp = periodFinishNum
 
-        // 池结束的条件：periodFinish 已过期 或者 active === false 且 periodFinish <= 当前时间
-        // 如果 periodFinish 为 0，表示池还没有开始，应该显示在 Live 列表中
-        if (periodFinishNum > 0 && periodFinishNum <= currentTime) {
+        // 如果池被禁用（active === false），直接标记为已完成
+        if (active === false) {
+          isPoolFinished = true
+        } else if (periodFinishNum > 0 && periodFinishNum <= currentTime) {
           // 奖励期已结束
           isPoolFinished = true
-        } else if (active === false && periodFinishNum > 0 && periodFinishNum <= currentTime) {
-          // 池被禁用且奖励期已结束
-          isPoolFinished = true
         } else {
-          // 池还在运行中（即使 active 为 false，只要 periodFinish 还没到，就认为是活跃的）
+          // 池还在运行中
           isPoolFinished = false
         }
       }

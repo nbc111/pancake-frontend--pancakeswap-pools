@@ -86,11 +86,12 @@ const PoolTabButtons = ({
   const isExact =
     router.pathname === "/pools" || router.pathname === "/_mp/pools" || router.pathname === "/nbc-staking";
 
+  const isNbcStakingPage = router.pathname?.startsWith("/nbc-staking") ?? false;
+
   const viewModeToggle = hideViewMode ? null : (
     <ToggleView idPrefix="clickPool" viewMode={viewMode} onToggle={setViewMode} />
   );
 
-  const isNbcStakingPage = router.pathname === "/nbc-staking";
   const livePath = isNbcStakingPage ? "/nbc-staking" : "/pools";
   const historyPath = isNbcStakingPage ? "/nbc-staking/history" : "/pools/history";
 
