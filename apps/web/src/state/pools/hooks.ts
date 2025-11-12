@@ -1,6 +1,6 @@
 import { ChainId } from '@pancakeswap/chains'
 import { getSourceChain, isIfoSupported } from '@pancakeswap/ifos'
-import { getLivePoolsConfig } from '@pancakeswap/pools'
+import { getLivePoolsConfig, isPoolsSupported } from '@pancakeswap/pools'
 import { Token } from '@pancakeswap/sdk'
 import { Pool } from '@pancakeswap/widgets-internal'
 import { FAST_INTERVAL } from 'config/constants'
@@ -61,7 +61,7 @@ export const useFetchPublicPoolsData = () => {
 
   useSlowRefreshEffect(() => {
     const fetchPoolsDataWithFarms = async () => {
-      if (!chainId) return
+      if (!chainId || !isPoolsSupported(chainId)) return // 添加链支持检查
       const activeFarms = await getActiveFarms(chainId)
       await dispatch(fetchFarmsPublicDataAsync({ pids: activeFarms, chainId }))
 
@@ -88,7 +88,8 @@ export const usePoolsConfigInitialize = () => {
   const dispatch = useAppDispatch()
   const { chainId } = useActiveChainId()
   useEffect(() => {
-    if (chainId) {
+    if (chainId && isPoolsSupported(chainId)) {
+      // 添加链支持检查
       dispatch(fetchPoolsConfigAsync({ chainId }))
     }
   }, [dispatch, chainId])
@@ -103,7 +104,8 @@ export const usePoolsPageFetch = () => {
   useFetchPublicPoolsData()
 
   useFastRefreshEffect(() => {
-    if (chainId) {
+    if (chainId && isPoolsSupported(chainId)) {
+      // 添加链支持检查
       batch(() => {
         if (account) {
           dispatch(fetchPoolsUserDataAsync({ account, chainId }))
@@ -113,7 +115,8 @@ export const usePoolsPageFetch = () => {
   }, [account, chainId, dispatch])
 
   useEffect(() => {
-    if (chainId) {
+    if (chainId && isPoolsSupported(chainId)) {
+      // 添加链支持检查
       batch(() => {
         dispatch(fetchCakeVaultFees(chainId))
         dispatch(fetchCakeFlexibleSideVaultFees(chainId))

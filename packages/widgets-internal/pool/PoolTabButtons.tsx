@@ -83,20 +83,44 @@ const PoolTabButtons = ({
   const filterModal = useModalV2();
   const { isMobile } = useMatchBreakpoints();
 
-  const isExact = router.pathname === "/pools" || router.pathname === "/_mp/pools";
+  const isExact =
+    router.pathname === "/pools" || router.pathname === "/_mp/pools" || router.pathname === "/nbc-staking";
 
   const viewModeToggle = hideViewMode ? null : (
     <ToggleView idPrefix="clickPool" viewMode={viewMode} onToggle={setViewMode} />
   );
 
+  const isNbcStakingPage = router.pathname === "/nbc-staking";
+  const livePath = isNbcStakingPage ? "/nbc-staking" : "/pools";
+  const historyPath = isNbcStakingPage ? "/nbc-staking/history" : "/pools/history";
+
+  // 保留所有查询参数
+  const buildPathWithQuery = (path: string) => {
+    const queryString = new URLSearchParams();
+    Object.entries(router.query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach((v) => queryString.append(key, v));
+        } else {
+          queryString.set(key, value);
+        }
+      }
+    });
+    const queryStr = queryString.toString();
+    return queryStr ? `${path}?${queryStr}` : path;
+  };
+
+  const livePathWithQuery = buildPathWithQuery(livePath);
+  const historyPathWithQuery = buildPathWithQuery(historyPath);
+
   const liveOrFinishedSwitch = (
     <Wrapper>
       <ButtonMenu activeIndex={isExact ? 0 : 1} scale="sm" variant="subtle">
-        <ButtonMenuItem as={NextLinkFromReactRouter} to="/pools" replace>
+        <ButtonMenuItem as={NextLinkFromReactRouter} to={livePathWithQuery} replace>
           {t("Live")}
         </ButtonMenuItem>
         <NotificationDot show={hasStakeInFinishedPools}>
-          <ButtonMenuItem id="finished-pools-button" as={NextLinkFromReactRouter} to="/pools/history" replace>
+          <ButtonMenuItem id="finished-pools-button" as={NextLinkFromReactRouter} to={historyPathWithQuery} replace>
             {t("Old")}
           </ButtonMenuItem>
         </NotificationDot>

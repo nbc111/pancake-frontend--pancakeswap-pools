@@ -21,6 +21,7 @@ import {
   getPoolAprByTokenPerSecond,
   getPoolsConfig,
   isLegacyPool,
+  isPoolsSupported,
 } from '@pancakeswap/pools'
 import { getCurrencyUsdPrice } from '@pancakeswap/price-api-sdk'
 import { bscTokens } from '@pancakeswap/tokens'
@@ -259,6 +260,8 @@ export const fetchPoolsPublicDataAsync = (chainId: number) => async (dispatch, g
 }
 
 export const fetchPoolsStakingLimitsAsync = (chainId: ChainId) => async (dispatch, getState) => {
+  if (!isPoolsSupported(chainId)) return // 添加链支持检查
+
   const poolsWithStakingLimit = getState()
     .pools.data.filter(({ stakingLimit }) => stakingLimit !== null && stakingLimit !== undefined)
     .map((pool) => pool.sousId)
@@ -267,6 +270,8 @@ export const fetchPoolsStakingLimitsAsync = (chainId: ChainId) => async (dispatc
     const stakingLimits = await fetchPoolsStakingLimits({ poolsWithStakingLimit, chainId, provider: getViemClients })
 
     const poolsConfig = await getPoolsConfig(chainId)
+    if (!poolsConfig) return // 如果配置为空，直接返回
+
     const stakingLimitData = poolsConfig?.map((pool) => {
       if (poolsWithStakingLimit.includes(pool.sousId)) {
         return { sousId: pool.sousId }
@@ -296,6 +301,10 @@ export const fetchPoolsUserDataAsync = createAsyncThunk<
     chainId: ChainId
   }
 >('pool/fetchPoolsUserData', async ({ account, chainId }: any, { rejectWithValue }: any) => {
+  if (!isPoolsSupported(chainId)) {
+    return [] // 如果不支持，返回空数组
+  }
+
   try {
     const [allowances, stakingTokenBalances, stakedBalances, pendingRewards] = await Promise.all([
       fetchPoolsAllowance({ account, chainId, provider: getViemClients }),
@@ -305,6 +314,10 @@ export const fetchPoolsUserDataAsync = createAsyncThunk<
     ])
 
     const poolsConfig = await getPoolsConfig(chainId)
+    if (!poolsConfig) {
+      return [] // 如果配置为空，返回空数组
+    }
+
     const userData = poolsConfig?.map((pool) => ({
       sousId: pool.sousId,
       allowance: allowances[pool.sousId],
@@ -312,9 +325,11 @@ export const fetchPoolsUserDataAsync = createAsyncThunk<
       stakedBalance: stakedBalances[pool.sousId],
       pendingReward: pendingRewards[pool.sousId],
     }))
+
     return userData
-  } catch (e) {
-    return rejectWithValue(e)
+  } catch (error) {
+    console.error('[Pools Action] error fetching user data', error)
+    return rejectWithValue(error)
   }
 })
 
