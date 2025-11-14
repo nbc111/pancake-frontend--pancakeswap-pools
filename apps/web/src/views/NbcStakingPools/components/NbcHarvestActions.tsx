@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js'
 import { useTranslation } from '@pancakeswap/localization'
-import { Button, Flex, Skeleton, Text, useToast } from '@pancakeswap/uikit'
+import { Button, useToast } from '@pancakeswap/uikit'
 import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
 import { usePublicClient, useWriteContract } from 'wagmi'
 import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
@@ -59,29 +59,11 @@ const NbcHarvestActions: React.FC<NbcHarvestActionsProps> = ({
   }
 
   const rawEarnings = getBalanceNumber(earnings, earningTokenDecimals)
-  const earningsDollarValue = new BigNumber(rawEarnings).times(earningTokenPrice).toNumber()
 
   return (
-    <Flex flexDirection="column" mb="8px">
-      <Flex justifyContent="space-between" alignItems="center">
-        <Text bold fontSize="20px" color={rawEarnings > 0 ? 'secondary' : 'textDisabled'}>
-          {isLoading ? <Skeleton width="80px" height="20px" /> : rawEarnings.toFixed(4)}
-        </Text>
-        <Button
-          onClick={handleClaim}
-          disabled={rawEarnings === 0 || isPending || isLoading}
-          scale="sm"
-          variant="tertiary"
-        >
-          {t('Harvest')}
-        </Button>
-      </Flex>
-      {earningsDollarValue > 0 && (
-        <Text fontSize="12px" color="textSubtle">
-          ~${earningsDollarValue.toFixed(2)}
-        </Text>
-      )}
-    </Flex>
+    <Button onClick={handleClaim} disabled={rawEarnings === 0 || isPending || isLoading} scale="md">
+      {t('Harvest')}
+    </Button>
   )
 }
 

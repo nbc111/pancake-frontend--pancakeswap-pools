@@ -1,9 +1,10 @@
 import React from 'react'
-import { Box, Flex, Text } from '@pancakeswap/uikit'
+import { Box, Flex, Text, useMatchBreakpoints } from '@pancakeswap/uikit'
 import { Pool } from '@pancakeswap/widgets-internal'
 import { css, keyframes, styled } from 'styled-components'
 import { Token } from '@pancakeswap/sdk'
 import NbcCardActions from './NbcCardActions'
+import PoolStatsInfo from '../../Pools/components/PoolStatsInfo'
 
 const expandAnimation = keyframes`
   from {
@@ -82,12 +83,14 @@ interface NbcActionPanelProps {
   expanded: boolean
 }
 
-const NbcActionPanel: React.FC<NbcActionPanelProps> = ({ pool, account: _account, expanded }) => {
+const NbcActionPanel: React.FC<NbcActionPanelProps> = ({ pool, account, expanded }) => {
+  const { isMobile } = useMatchBreakpoints()
+
   return (
     <StyledActionPanel expanded={expanded}>
       <InfoSection>
         <Flex flexDirection="column" mb="8px">
-          {/* 可以在这里添加池的统计信息，如果需要的话 */}
+          <PoolStatsInfo pool={pool} account={account} showTotalStaked={isMobile} alignLinksToRight={isMobile} />
         </Flex>
       </InfoSection>
       <ActionContainer>

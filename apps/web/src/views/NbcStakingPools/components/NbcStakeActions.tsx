@@ -39,14 +39,14 @@ const NbcStakeActions: React.FC<NbcStakeActionsProps> = ({
 
   if (isStaked) {
     return (
-      <Button onClick={onPresentUnstake} disabled={isLoading} width="100%" variant="secondary" mt="8px">
+      <Button onClick={onPresentUnstake} disabled={isLoading} width="100%" variant="secondary">
         {t('Unstake %symbol%', { symbol: stakingToken.symbol })}
       </Button>
     )
   }
 
   return (
-    <Button onClick={onPresentStake} disabled={isLoading} width="100%" mt="8px">
+    <Button onClick={onPresentStake} disabled={isLoading} width="100%">
       {t('Stake %symbol%', { symbol: stakingToken.symbol })}
     </Button>
   )

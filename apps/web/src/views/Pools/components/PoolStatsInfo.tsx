@@ -54,6 +54,11 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
     pool,
     currentBlock,
   )
+
+  // 如果 shouldShowBlockCountdown 为 false，但池未结束且有 endTimestamp，仍然显示倒计时
+  // 这样可以支持 startTimestamp 为 0 的情况（如 NBC Staking）
+  const shouldShowEndCountdown = shouldShowBlockCountdown || (!isFinished && endTimestamp && endTimestamp > 0)
+
   const tokenInfoPath = useMemo(
     () => (chainId ? getTokenInfoPath(chainId, earningToken.address) : ''),
     [chainId, earningToken.address],
@@ -94,13 +99,18 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
           endTimestamp={endTimestamp || 0}
         />
       )}
-      {shouldShowBlockCountdown && (
+      {shouldShowEndCountdown && (
         <Flex mb="2px" justifyContent="space-between" alignItems="center">
-          <Text small>{hasPoolStarted ? t('Ends in') : t('Starts in')}:</Text>
-          {timeRemaining || timeUntilStart ? (
-            <Pool.TimeCountdownDisplay timestamp={(hasPoolStarted ? endTimestamp : startTimestamp) || 0} />
+          <Text small>{hasPoolStarted || !shouldShowBlockCountdown ? t('Ends in') : t('Starts in')}:</Text>
+          {shouldShowBlockCountdown ? (
+            timeRemaining || timeUntilStart ? (
+              <Pool.TimeCountdownDisplay timestamp={(hasPoolStarted ? endTimestamp : startTimestamp) || 0} />
+            ) : (
+              <Skeleton width="54px" height="21px" />
+            )
           ) : (
-            <Skeleton width="54px" height="21px" />
+            // 如果 shouldShowBlockCountdown 为 false，直接使用 endTimestamp
+            <Pool.TimeCountdownDisplay timestamp={endTimestamp || 0} />
           )}
         </Flex>
       )}
