@@ -62,6 +62,7 @@ const NbcWithdrawModal: React.FC<NbcWithdrawModalProps> = ({ pool, stakingTokenB
   )
 
   const { stakingToken, earningToken, apr, stakingTokenPrice, earningTokenPrice, userData } = pool
+  const tokenWithLogo = stakingToken as Token & { logoURI?: string }
 
   return (
     <Pool.StakeModal
@@ -87,6 +88,7 @@ const NbcWithdrawModal: React.FC<NbcWithdrawModalProps> = ({ pool, stakingTokenB
       handleConfirmClick={handleConfirmClick}
       isRemovingStake
       imageUrl=""
+      stakingTokenLogoURI={tokenWithLogo.logoURI}
       warning={undefined}
     />
   )
