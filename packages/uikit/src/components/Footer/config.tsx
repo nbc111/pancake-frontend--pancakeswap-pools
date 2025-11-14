@@ -1,6 +1,5 @@
 import { Language } from "../LangSelector/types";
 import { FooterLinkType } from "./types";
-import { TwitterIcon, TelegramIcon, RedditIcon, InstagramIcon, GithubIcon, DiscordIcon, YoutubeIcon } from "../Svg";
 
 export const footerLinks: FooterLinkType[] = [
   {
@@ -76,92 +75,7 @@ export const footerLinks: FooterLinkType[] = [
   },
 ];
 
-export const socials = [
-  {
-    label: "Twitter",
-    icon: TwitterIcon,
-    href: "https://twitter.com/pancakeswap",
-  },
-  {
-    label: "Telegram",
-    icon: TelegramIcon,
-    items: [
-      {
-        label: "English",
-        href: "https://t.me/pancakeswap",
-      },
-      {
-        label: "Bahasa Indonesia",
-        href: "https://t.me/pancakeswapIndonesia",
-      },
-      {
-        label: "中文",
-        href: "https://t.me/pancakeswap_CN",
-      },
-      {
-        label: "Tiếng Việt",
-        href: "https://t.me/PancakeSwapVN",
-      },
-      {
-        label: "русский",
-        href: "https://t.me/pancakeswap_ru",
-      },
-      {
-        label: "Português",
-        href: "https://t.me/pancakeswapPortuguese",
-      },
-      {
-        label: "Español",
-        href: "https://t.me/pancakeswapES",
-      },
-      {
-        label: "日本語",
-        href: "https://t.me/pancakeswapJP",
-      },
-      {
-        label: "Filipino",
-        href: "https://t.me/pancakeswap_PH",
-      },
-      {
-        label: "हिन्दी",
-        href: "https://t.me/pancakeswap_INDIA",
-      },
-      {
-        label: "한국어",
-        href: "https://t.me/PancakeSwapSouthKorea",
-      },
-      {
-        label: "Announcements",
-        href: "https://t.me/PancakeSwapAnn",
-      },
-    ],
-  },
-  {
-    label: "Reddit",
-    icon: RedditIcon,
-    href: "https://reddit.com/r/pancakeswap",
-  },
-  {
-    label: "Instagram",
-    icon: InstagramIcon,
-    href: "https://instagram.com/pancakeswap_official",
-  },
-  {
-    label: "Github",
-    icon: GithubIcon,
-    href: "https://github.com/pancakeswap/",
-  },
-  {
-    label: "Discord",
-    icon: DiscordIcon,
-    href: "https://discord.gg/pancakeswap",
-  },
-  {
-    label: "Youtube",
-    icon: YoutubeIcon,
-    href: "https://www.youtube.com/@pancakeswap_official",
-  },
-];
+export const socials = [];
 
 export const langs: Language[] = [...Array(20)].map((_, i) => ({
   code: `en${i}`,

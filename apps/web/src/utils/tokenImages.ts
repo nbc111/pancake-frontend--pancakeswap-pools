@@ -22,19 +22,29 @@ export const tokenImageChainNameMapping = {
   [NonEVMChainId.SOLANA]: 'solana/',
 }
 
+type TokenWithLogo = UnifiedCurrency & { logoURI?: string }
+
 export const getImageUrlFromToken = (token?: UnifiedCurrency) => {
+  if (!token) {
+    return ''
+  }
+
+  const tokenWithLogo = token as TokenWithLogo
+  const hasChainMapping = tokenImageChainNameMapping[token.chainId] !== undefined
+  if (!hasChainMapping && tokenWithLogo.logoURI) {
+    return tokenWithLogo.logoURI
+  }
+
   let address = token?.isNative ? token.wrapped.address : token?.address
   if (token && token.chainId === ChainId.BSC && !token.isNative && isAddressEqual(token.address, zeroAddress)) {
     address = WBNB[ChainId.BSC].wrapped.address
   }
 
-  return token
-    ? token.isNative && token.chainId !== ChainId.BSC
-      ? `${ASSET_CDN}/web/native/${token.chainId}.png`
-      : `https://tokens.pancakeswap.finance/images/${tokenImageChainNameMapping[token.chainId]}${
-          isSolana(token.chainId) && !token.isNative ? token.address : safeGetAddress(address)
-        }.png`
-    : ''
+  return token.isNative && token.chainId !== ChainId.BSC
+    ? `${ASSET_CDN}/web/native/${token.chainId}.png`
+    : `https://tokens.pancakeswap.finance/images/${tokenImageChainNameMapping[token.chainId]}${
+        isSolana(token.chainId) && !token.isNative ? token.address : safeGetAddress(address)
+      }.png`
 }
 
 export const getImageUrlsFromToken = (token?: UnifiedCurrency & { logoURI?: string | undefined }) => {

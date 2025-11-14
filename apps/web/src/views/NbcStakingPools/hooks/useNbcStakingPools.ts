@@ -9,13 +9,23 @@ import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp'
 const STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
 const CHAIN_ID = 1281
 
-const POOL_CONFIGS = [
+type PoolConfig = {
+  sousId: number
+  rewardTokenAddress: `0x${string}`
+  rewardTokenSymbol: string
+  rewardTokenName: string
+  rewardTokenDecimals: number
+  rewardTokenLogoURI: string
+}
+
+const POOL_CONFIGS: PoolConfig[] = [
   {
     sousId: 0,
     rewardTokenAddress: '0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6' as `0x${string}`,
     rewardTokenSymbol: 'NBC',
     rewardTokenName: 'NBC Token',
     rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/nbc.png',
   },
   {
     sousId: 1,
@@ -23,6 +33,7 @@ const POOL_CONFIGS = [
     rewardTokenSymbol: 'BTC',
     rewardTokenName: 'Bitcoin',
     rewardTokenDecimals: 8,
+    rewardTokenLogoURI: '/images/custom-tokens/btc.png',
   },
   {
     sousId: 2,
@@ -30,6 +41,7 @@ const POOL_CONFIGS = [
     rewardTokenSymbol: 'ETH',
     rewardTokenName: 'Ether',
     rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/eth.png',
   },
   {
     sousId: 3,
@@ -37,6 +49,7 @@ const POOL_CONFIGS = [
     rewardTokenSymbol: 'SOL',
     rewardTokenName: 'Solana',
     rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/sol.png',
   },
   {
     sousId: 4,
@@ -44,6 +57,7 @@ const POOL_CONFIGS = [
     rewardTokenSymbol: 'BNB',
     rewardTokenName: 'Binance Coin',
     rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/bnb.png',
   },
   {
     sousId: 5,
@@ -51,6 +65,7 @@ const POOL_CONFIGS = [
     rewardTokenSymbol: 'XRP',
     rewardTokenName: 'Ripple',
     rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/xrp.png',
   },
 ]
 
@@ -271,6 +286,8 @@ export const useNbcStakingPools = () => {
       { staked: staked5, earned: earned5, totalStaked: totalStaked5, poolInfo: poolInfo5 },
     ]
 
+    const stakingLogoURI = '/images/custom-tokens/nbc.png'
+
     const result = POOL_CONFIGS.map((config, index) => {
       const { staked, earned, totalStaked, poolInfo } = poolDataQueries[index]
 
@@ -281,6 +298,7 @@ export const useNbcStakingPools = () => {
         'NBC',
         'NBC',
       )
+      ;(stakingToken as Token & { logoURI?: string }).logoURI = stakingLogoURI
 
       const earningToken = new ERC20Token(
         CHAIN_ID,
@@ -289,6 +307,7 @@ export const useNbcStakingPools = () => {
         config.rewardTokenSymbol,
         config.rewardTokenName,
       )
+      ;(earningToken as Token & { logoURI?: string }).logoURI = config.rewardTokenLogoURI
 
       // 计算 APR（简化计算，实际需要根据奖励速率和总质押量计算）
       let apr = 0
@@ -389,7 +408,7 @@ export const useNbcStakingPools = () => {
       return pool
     })
 
-    return result
+    return result.filter((pool) => pool.sousId !== 0)
   }, [
     account,
     nativeBalance,

@@ -1,5 +1,5 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { Menu as UikitMenu, footerLinks, useModal } from '@pancakeswap/uikit'
+import { Menu as UikitMenu, useModal } from '@pancakeswap/uikit'
 import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
 import USCitizenConfirmModal from 'components/Modal/USCitizenConfirmModal'
@@ -69,10 +69,6 @@ const Menu = (props) => {
     return () => setTheme(isDark ? 'light' : 'dark')
   }, [setTheme, isDark])
 
-  const getFooterLinks = useMemo(() => {
-    return footerLinks(t)
-  }, [t])
-
   return (
     <UikitMenu
       linkComponent={LinkComponent}
@@ -102,7 +98,7 @@ const Menu = (props) => {
           ? []
           : activeSubMenuItem?.items ?? activeMenuItem?.items)
       }
-      footerLinks={getFooterLinks}
+      footerLinks={[]}
       activeItem={activeMenuItem?.href}
       activeSubItem={activeSubMenuItem?.href}
       activeSubItemChildItem={activeSubChildMenuItem?.href}

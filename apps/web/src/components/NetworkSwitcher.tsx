@@ -9,6 +9,7 @@ import { useSwitchNetwork } from 'hooks/useSwitchNetwork'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/router'
 import { useCallback, useMemo } from 'react'
+import { getChainLogoUrlFromChainId } from 'components/TokenImage'
 import { NetworkSwitcherModal, networkSwitcherModalAtom } from './NetworkSwitcherModal'
 
 export const SHORT_SYMBOL = {
@@ -80,7 +81,7 @@ export const NetworkSwitcher = () => {
         mr="8px"
         placement="bottom"
         variant={isLoading ? 'pending' : isWrongNetwork ? 'danger' : 'default'}
-        avatarSrc={`${ASSET_CDN}/web/chains/${chainId}.png`}
+        avatarSrc={chainId ? getChainLogoUrlFromChainId(chainId) : undefined}
         disabled={cannotChangeNetwork}
         text={
           isLoading ? (

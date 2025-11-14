@@ -21,7 +21,12 @@ interface TokenPairImageProps extends Omit<UIKitTokenPairImageProps, 'primarySrc
   withChainLogo?: boolean
 }
 
-export const getChainLogoUrlFromChainId = (chainId: number) => `${ASSET_CDN}/web/chains/${chainId}.png`
+export const getChainLogoUrlFromChainId = (chainId: number) => {
+  if (chainId === 1281) {
+    return '/images/chains/1281.png'
+  }
+  return `${ASSET_CDN}/web/chains/${chainId}.png`
+}
 
 export const TokenPairImage: React.FC<React.PropsWithChildren<TokenPairImageProps>> = ({
   primaryToken,
