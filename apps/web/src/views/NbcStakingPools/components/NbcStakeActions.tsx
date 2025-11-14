@@ -22,7 +22,7 @@ const NbcStakeActions: React.FC<NbcStakeActionsProps> = ({
   isStaked,
 }) => {
   const { t } = useTranslation()
-  const { sousId, stakingToken } = pool
+  const { sousId, stakingToken, isFinished } = pool
 
   const [onPresentStake] = useModal(
     <NbcStakeModal pool={pool} stakingTokenBalance={stakingTokenBalance} poolIndex={sousId} />,
@@ -46,7 +46,7 @@ const NbcStakeActions: React.FC<NbcStakeActionsProps> = ({
   }
 
   return (
-    <Button onClick={onPresentStake} disabled={isLoading} width="100%">
+    <Button onClick={onPresentStake} disabled={isLoading || isFinished} width="100%">
       {t('Stake %symbol%', { symbol: stakingToken.symbol })}
     </Button>
   )
