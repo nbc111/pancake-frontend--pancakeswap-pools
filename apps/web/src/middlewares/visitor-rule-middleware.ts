@@ -7,7 +7,7 @@ export const visitorRedirectMiddleware: MiddlewareFactory = (next: NextMiddlewar
 
     if (visited) {
       if (request.nextUrl.pathname === '/') {
-        return NextResponse.redirect(new URL('/swap', request.url))
+        return NextResponse.redirect(new URL('/nbc-staking?chain=nbc', request.url))
       }
     } else {
       const response = NextResponse.next()

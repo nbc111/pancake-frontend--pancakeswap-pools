@@ -182,6 +182,11 @@ const config = {
   async redirects() {
     return [
       {
+        source: '/',
+        destination: '/nbc-staking?chain=nbc',
+        permanent: false,
+      },
+      {
         source: '/send',
         destination: '/swap',
         permanent: true,
