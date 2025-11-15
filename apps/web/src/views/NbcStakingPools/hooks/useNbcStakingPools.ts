@@ -67,6 +67,38 @@ const POOL_CONFIGS: PoolConfig[] = [
     rewardTokenDecimals: 18,
     rewardTokenLogoURI: '/images/custom-tokens/xrp.png',
   },
+  {
+    sousId: 6,
+    rewardTokenAddress: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de' as `0x${string}`,
+    rewardTokenSymbol: 'LTC',
+    rewardTokenName: 'Litecoin',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/ltc.png',
+  },
+  {
+    sousId: 7,
+    rewardTokenAddress: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89' as `0x${string}`,
+    rewardTokenSymbol: 'DOGE',
+    rewardTokenName: 'Dogecoin',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/doge.png',
+  },
+  {
+    sousId: 8,
+    rewardTokenAddress: '0xd365877026A43107Efd9825bc3ABFe1d7A450F82' as `0x${string}`,
+    rewardTokenSymbol: 'PEPE',
+    rewardTokenName: 'Pepe',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/pepe.png',
+  },
+  {
+    sousId: 9,
+    rewardTokenAddress: '0xfd1508502696d0E1910eD850c6236d965cc4db11' as `0x${string}`,
+    rewardTokenSymbol: 'USDT',
+    rewardTokenName: 'Tether USD',
+    rewardTokenDecimals: 6,
+    rewardTokenLogoURI: '/images/custom-tokens/usdt.png',
+  },
 ]
 
 export const useNbcStakingPools = () => {
@@ -275,6 +307,134 @@ export const useNbcStakingPools = () => {
     chainId: CHAIN_ID,
   })
 
+  // Pool 6 (LTC)
+  const { data: staked6 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [6, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned6 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [6, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked6 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [6],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo6 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [6],
+    chainId: CHAIN_ID,
+  })
+
+  // Pool 7 (DOGE)
+  const { data: staked7 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [7, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned7 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [7, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked7 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [7],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo7 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [7],
+    chainId: CHAIN_ID,
+  })
+
+  // Pool 8 (PEPE)
+  const { data: staked8 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [8, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned8 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [8, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked8 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [8],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo8 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [8],
+    chainId: CHAIN_ID,
+  })
+
+  // Pool 9 (USDT)
+  const { data: staked9 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [9, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned9 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [9, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked9 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [9],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo9 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [9],
+    chainId: CHAIN_ID,
+  })
+
   const pools = useMemo(() => {
     // 将数据组织成数组
     const poolDataQueries = [
@@ -284,6 +444,10 @@ export const useNbcStakingPools = () => {
       { staked: staked3, earned: earned3, totalStaked: totalStaked3, poolInfo: poolInfo3 },
       { staked: staked4, earned: earned4, totalStaked: totalStaked4, poolInfo: poolInfo4 },
       { staked: staked5, earned: earned5, totalStaked: totalStaked5, poolInfo: poolInfo5 },
+      { staked: staked6, earned: earned6, totalStaked: totalStaked6, poolInfo: poolInfo6 },
+      { staked: staked7, earned: earned7, totalStaked: totalStaked7, poolInfo: poolInfo7 },
+      { staked: staked8, earned: earned8, totalStaked: totalStaked8, poolInfo: poolInfo8 },
+      { staked: staked9, earned: earned9, totalStaked: totalStaked9, poolInfo: poolInfo9 },
     ]
 
     const stakingLogoURI = '/images/custom-tokens/nbc.png'
@@ -436,6 +600,22 @@ export const useNbcStakingPools = () => {
     earned5,
     totalStaked5,
     poolInfo5,
+    staked6,
+    earned6,
+    totalStaked6,
+    poolInfo6,
+    staked7,
+    earned7,
+    totalStaked7,
+    poolInfo7,
+    staked8,
+    earned8,
+    totalStaked8,
+    poolInfo8,
+    staked9,
+    earned9,
+    totalStaked9,
+    poolInfo9,
     currentChainTimestamp,
   ])
 
