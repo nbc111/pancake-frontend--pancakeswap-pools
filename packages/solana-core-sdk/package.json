@@ -31,7 +31,7 @@
     "build-docs": "typedoc",
     "build-docs-watch": "typedoc --watch",
     "build-dist": "rm -rf dist && mkdir dist && pnpm build-docs",
-    "build-lib": "rm -rf dist && tsup src --format cjs,esm --dts --sourcemap --no-splitting --minify -d dist --silent",
+    "build-lib": "tsup src --format cjs,esm --dts --sourcemap --no-splitting --minify -d dist --clean --silent",
     "build-all": "pnpm build-dist && pnpm build-lib",
     "build": "pnpm build-lib",
     "push": "pnpm build && pnpm publish",
