@@ -1,4 +1,8 @@
-import NbcStakingPools from 'views/NbcStakingPools'
+import dynamic from 'next/dynamic'
+
+const NbcStakingPools = dynamic(() => import('views/NbcStakingPools'), {
+  ssr: false,
+})
 
 const NbcStakingPage = () => <NbcStakingPools />
 

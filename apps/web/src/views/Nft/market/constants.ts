@@ -1,4 +1,1 @@
-import { getPancakeBunniesAddress } from 'utils/addressHelpers'
-
-export const nftsBaseUrl = '/nfts'
-export const pancakeBunniesAddress = getPancakeBunniesAddress()
+export const pancakeBunniesAddress = '0x0000000000000000000000000000000000000000' as const

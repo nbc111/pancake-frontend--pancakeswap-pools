@@ -1,11 +1,29 @@
-import { createContext, useState } from 'react'
+﻿import { createContext, useContext, useState, ReactNode } from 'react'
 
-export const CancelGiftContext = createContext({
-  codeHash: '',
-  setCodeHash: (_codeHash: string) => {},
-})
+interface CancelGiftContextType {
+  isCancelling: boolean
+  setIsCancelling: (value: boolean) => void
+}
 
-export const CancelGiftProvider = ({ children }: { children: React.ReactNode }) => {
-  const [codeHash, setCodeHash] = useState('')
-  return <CancelGiftContext.Provider value={{ codeHash, setCodeHash }}>{children}</CancelGiftContext.Provider>
+const CancelGiftContext = createContext<CancelGiftContextType | undefined>(undefined)
+
+interface CancelGiftProviderProps {
+  children: ReactNode
+}
+
+/**
+ * Placeholder Provider - Provides cancel gift context
+ */
+export function CancelGiftProvider({ children }: CancelGiftProviderProps) {
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  return <CancelGiftContext.Provider value={{ isCancelling, setIsCancelling }}>{children}</CancelGiftContext.Provider>
+}
+
+export function useCancelGiftContext(): CancelGiftContextType {
+  const context = useContext(CancelGiftContext)
+  if (!context) {
+    return { isCancelling: false, setIsCancelling: () => {} }
+  }
+  return context
 }

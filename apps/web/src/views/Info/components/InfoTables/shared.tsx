@@ -1,42 +1,25 @@
 import { styled } from 'styled-components'
-import { Text, Flex } from '@pancakeswap/uikit'
+import { Box, Flex } from '@pancakeswap/uikit'
 
-export const ClickableColumnHeader = styled(Text)`
-  cursor: pointer;
-  display: flex;
-  justify-content: start;
-  gap: 5px;
+export const TableWrapper = styled(Box)`
+  width: 100%;
+  overflow-x: auto;
 `
 
-export const TableWrapper = styled(Flex)`
+export const PageButtons = styled(Flex)`
   width: 100%;
-  padding-top: 16px;
-  flex-direction: column;
-  gap: 16px;
-  background-color: ${({ theme }) => theme.card.background};
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.radii.card};
-  ${({ theme }) => theme.mediaQueries.md} {
-    border-radius: ${({ theme }) => theme.radii.card};
-  }
-  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
 `
 
-export const PageButtons = styled.div`
-  width: 100%;
+export const Arrow = styled(Box)<{ disabled?: boolean }>`
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 0.2em;
-  margin-bottom: 1.2em;
-`
-
-export const Arrow = styled.div`
-  color: ${({ theme }) => theme.colors.primary};
-  padding: 0 20px;
-  &:hover {
-    cursor: pointer;
-  }
 `
 
 export const Break = styled.div`

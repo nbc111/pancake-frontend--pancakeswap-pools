@@ -1,58 +1,24 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { createQueryKey } from 'utils/reactQuery'
-import { Address } from 'viem/accounts'
-import { useExperimentalFeatureEnabled } from 'hooks/useExperimentalFeatureEnabled'
-import { EXPERIMENTAL_FEATURES } from 'config/experimentalFeatures'
-import { getUserBridgeOrders, getUserBridgeOrdersV2 } from '../api'
-import { BridgeStatus } from '../types'
+import { Address } from 'viem'
+import { UserBridgeOrder } from '../types'
 
-const getRecentBridgeOrdersQueryKey = createQueryKey<'recent-bridge-orders', [address: string]>('recent-bridge-orders')
-
-interface UseRecentBridgeOrdersParameters {
-  address?: string
+interface UseRecentBridgeOrdersParams {
+  address?: Address | string
 }
 
-export const useRecentBridgeOrders = ({ address }: UseRecentBridgeOrdersParameters) => {
-  const isBridgeV2Enabled = useExperimentalFeatureEnabled(EXPERIMENTAL_FEATURES.BRIDGE_V2)
+/**
+ * 占位符 Hook - 获取最近的跨链桥接订单
+ * 由于 Bridge 功能已移除，此 Hook 返回空数据
+ */
+export function useRecentBridgeOrders({ address }: UseRecentBridgeOrdersParams = {}) {
   return useInfiniteQuery({
-    queryKey: getRecentBridgeOrdersQueryKey([address!]),
-    queryFn: async ({ pageParam }) => {
-      if (!address) {
-        throw new Error("No address provided for user's bridge orders")
-      }
-
-      if (!isBridgeV2Enabled) {
-        return getUserBridgeOrders(address as Address, pageParam)
-      }
-
-      const responsev2 = await getUserBridgeOrdersV2(address, pageParam)
-
-      const mergedRows = [...responsev2.EVM.rows, ...responsev2['NON-EVM'].rows].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
-      return {
-        endCursor: responsev2.EVM.endCursor,
-        continuation: responsev2['NON-EVM'].endCursor,
-        hasNextPage: responsev2.EVM.hasNextPage || responsev2['NON-EVM'].hasNextPage,
-        rows: mergedRows,
-      }
-    },
-    enabled: !!address,
+    queryKey: ['recentBridgeOrders', address],
+    queryFn: () => ({
+      pages: [] as UserBridgeOrder[][],
+      pageParams: [] as string[],
+    }),
+    enabled: false, // 禁用查询，因为功能已移除
+    getNextPageParam: () => undefined,
     initialPageParam: undefined,
-    getNextPageParam: (lastPage: any) => {
-      return {
-        after: lastPage.endCursor as string,
-        continuation: lastPage.continuation as string,
-      }
-    },
-    retry: 3,
-    retryDelay: 1_000,
-    refetchOnMount: true,
-    refetchInterval: (query) =>
-      query.state.data?.pages
-        .flatMap((page) => (Array.isArray(page.rows) ? page.rows.map((row) => row.status) : []))
-        .find((status) => status === BridgeStatus.PENDING || status === BridgeStatus.BRIDGE_PENDING)
-        ? 20_000
-        : 60_000,
   })
 }

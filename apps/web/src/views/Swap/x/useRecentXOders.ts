@@ -1,40 +1,33 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
-import { createQueryKey, type UseQueryParameters } from 'utils/reactQuery'
+import { useQuery } from '@tanstack/react-query'
 import { Address } from 'viem'
-import { getRecentXOrders, GetXOrdersResponse } from './api'
+import { GetXOrderReceiptResponseOrder } from './api'
 
-const getRecentXOrdersQueryKey = createQueryKey<'x-orders', [chainId: number, address: Address]>('x-orders')
+interface UseRecentXOrdersParams {
+  chainId?: number
+  address?: Address | string
+  refetchInterval?: number
+  enabled?: boolean
+}
 
-export type GetRecentXOrdersQueryKey = ReturnType<typeof getRecentXOrdersQueryKey>
+interface UseRecentXOrdersResponse {
+  orders: GetXOrderReceiptResponseOrder[]
+}
 
-export type GetRecentXOrdersReturnType = GetXOrdersResponse
-
-type UseRecentXOrdersParameters<selectData = GetRecentXOrdersReturnType> = Partial<{
-  chainId: number
-  address: Address
-}> &
-  UseQueryParameters<GetRecentXOrdersReturnType, Error, selectData, GetRecentXOrdersQueryKey>
-
-type UseRecentXOrdersReturnType<selectData = GetRecentXOrdersReturnType> = UseQueryResult<selectData, Error>
-
-export function useRecentXOrders<selectData = GetRecentXOrdersReturnType>(
-  parameters: UseRecentXOrdersParameters<selectData> = {},
-): UseRecentXOrdersReturnType<selectData> {
-  const { chainId, address, enabled = true, ...query } = parameters
-
+/**
+ * 占位符 Hook - 获取最近的 X 订单
+ * 由于 Swap/X 功能已移除，此 Hook 返回空数据
+ */
+export function useRecentXOrders({ chainId, address, refetchInterval, enabled = false }: UseRecentXOrdersParams = {}): {
+  data?: UseRecentXOrdersResponse
+  isLoading: boolean
+  isFetching: boolean
+} {
   return useQuery({
-    ...query,
-    staleTime: 5_000,
-    retry: 3,
-    refetchOnMount: true,
-    queryKey: getRecentXOrdersQueryKey([chainId!, address!]),
-    queryFn: async () => {
-      if (!chainId || !address) {
-        throw new Error('No chainId or address provided')
-      }
-
-      return getRecentXOrders(chainId, address)
-    },
-    enabled: enabled && Boolean(chainId && address),
+    queryKey: ['recentXOrders', chainId, address],
+    queryFn: () => ({
+      orders: [] as GetXOrderReceiptResponseOrder[],
+    }),
+    enabled: enabled && false, // 禁用查询，因为功能已移除
+    refetchInterval,
   })
 }
