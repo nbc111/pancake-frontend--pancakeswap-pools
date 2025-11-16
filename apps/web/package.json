@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "analyze": "ANALYZE=true pnpm build",
-    "dev": "concurrently  \"next-typesafe-url -w\" \"next dev\"",
+    "dev": "concurrently  \"next-typesafe-url -w\" \"next dev -p 3001\"",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next",
     "build": "npm run build:check && next info && next build --debug  --no-lint",
     "build:check": "tsc --noEmit",
