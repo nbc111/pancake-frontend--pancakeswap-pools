@@ -31,8 +31,8 @@ export function PrivyProvider({ children }: PropsWithChildren) {
     (window.location.protocol === 'https:' ||
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
-      // Allow HTTP for development server IP addresses
-      window.location.hostname === '156.251.17.96' ||
+      // Allow HTTP for any IP address in development (matches xxx.xxx.xxx.xxx format)
+      (window.location.protocol === 'http:' && /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) ||
       // Allow HTTP in development environment
       (process.env.NODE_ENV === 'development' && window.location.protocol === 'http:'))
 
