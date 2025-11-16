@@ -25,11 +25,14 @@ export function PrivyProvider({ children }: PropsWithChildren) {
 
   // Only enable embedded wallets over HTTPS or localhost (for development)
   // Privy embedded wallets require HTTPS for security reasons
+  // Allow HTTP in development environment for development servers
   const isHTTPS =
     typeof window !== 'undefined' &&
     (window.location.protocol === 'https:' ||
       window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1')
+      window.location.hostname === '127.0.0.1' ||
+      // Allow HTTP in development environment
+      (process.env.NODE_ENV === 'development' && window.location.protocol === 'http:'))
 
   return (
     <Provider
