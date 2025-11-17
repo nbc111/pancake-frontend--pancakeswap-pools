@@ -1,17 +1,18 @@
 import { isInBinance } from '@binance/w3w-utils'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/router'
 import { useAtom, useAtomValue } from 'jotai'
-import { usePrivy } from '@privy-io/react-auth'
+import { usePrivy } from 'wallet/Privy/usePrivy'
 import { atomWithStorage } from 'jotai/utils'
 import { useCallback, useEffect, useRef } from 'react'
 import { WagmiProvider as PrivyWagmiProvider } from '@privy-io/wagmi'
+import { WagmiProvider } from 'wagmi'
 import { rpcUrlAtom } from '@pancakeswap/utils/user'
 import { W3WConfigProvider } from './W3WConfigContext'
 import { useSyncWagmiState } from './hook/useSyncWagmiState'
 import { useWagmiConfig } from './hook/useWagmiConfig'
 import { useSyncPersistChain } from './hook/useSyncPersistChain'
 import { SolanaWalletStateUpdater } from './SolanaProvider'
+import { isPrivyEnabled } from './Privy/config'
 
 interface WalletProviderProps {
   reconnectOnMount?: boolean
@@ -34,11 +35,16 @@ const walletRecoveryRecordsAtom = atomWithStorage<Record<string, number>>('pcs:s
 const SolanaProviders = dynamic(() => import('@pancakeswap/ui-wallets').then((m) => m.SolanaProvider), { ssr: false })
 
 const usePrivyProvider = () => {
-  const { authenticated, ready, user, createWallet, setWalletRecovery, logout: privyLogout, login } = usePrivy()
+  const privyEnabled = isPrivyEnabled
+  const { authenticated, ready, user, createWallet, setWalletRecovery } = usePrivy()
   const [recoveryRecords, setRecoveryRecords] = useAtom(walletRecoveryRecordsAtom)
   const attemptedWalletCreation = useRef(false)
 
   const handleWalletRecovery = useCallback(() => {
+    if (!privyEnabled) {
+      return
+    }
+
     const smartWalletAddress = user?.smartWallet?.address
     const lastRecoveryForThisWallet = smartWalletAddress ? recoveryRecords[smartWalletAddress] || 0 : 0
 
@@ -58,16 +64,24 @@ const usePrivyProvider = () => {
         }))
       }
     }
-  }, [ready, user, authenticated, recoveryRecords])
+  }, [privyEnabled, ready, user, authenticated, recoveryRecords, setRecoveryRecords, setWalletRecovery])
 
   useEffect(() => {
+    if (!privyEnabled) {
+      return
+    }
+
     if (ready && authenticated && user?.wallet?.address && user?.smartWallet?.address) {
       handleWalletRecovery()
     }
-  }, [ready, authenticated, user?.wallet])
+  }, [privyEnabled, ready, authenticated, user?.wallet, user?.smartWallet?.address, handleWalletRecovery])
 
   useEffect(() => {
     const createWalletWithUserManagedRecovery = async () => {
+      if (!privyEnabled) {
+        return
+      }
+
       if (ready && authenticated && user?.wallet === undefined && attemptedWalletCreation.current === false) {
         attemptedWalletCreation.current = true
         try {
@@ -97,12 +111,11 @@ const usePrivyProvider = () => {
       }
     }
     createWalletWithUserManagedRecovery()
-  }, [ready, user, authenticated, createWallet])
+  }, [privyEnabled, ready, user, authenticated, createWallet])
 }
 
 export const WalletProvider = (props: WalletProviderProps) => {
   const { children } = props
-  const router = useRouter()
   const endpoint = useAtomValue(rpcUrlAtom)
   usePrivyProvider()
 
@@ -114,8 +127,22 @@ export const WalletProvider = (props: WalletProviderProps) => {
 
   // const needSolanaProvider = SOLANA_SUPPORTED_PATH.includes(router.pathname)
 
+  if (isPrivyEnabled) {
+    return (
+      <PrivyWagmiProvider reconnectOnMount config={wagmiConfig}>
+        <W3WConfigProvider value={isInBinance()}>
+          <Sync />
+          <SolanaProviders endpoint={endpoint}>
+            <SolanaWalletStateUpdater />
+            {children}
+          </SolanaProviders>
+        </W3WConfigProvider>
+      </PrivyWagmiProvider>
+    )
+  }
+
   return (
-    <PrivyWagmiProvider reconnectOnMount config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig}>
       <W3WConfigProvider value={isInBinance()}>
         <Sync />
         <SolanaProviders endpoint={endpoint}>
@@ -123,7 +150,7 @@ export const WalletProvider = (props: WalletProviderProps) => {
           {children}
         </SolanaProviders>
       </W3WConfigProvider>
-    </PrivyWagmiProvider>
+    </WagmiProvider>
   )
 }
 

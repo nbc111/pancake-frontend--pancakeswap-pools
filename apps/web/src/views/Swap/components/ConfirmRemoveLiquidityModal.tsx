@@ -1,37 +1,40 @@
 import React, { useCallback } from 'react'
-import { Currency, CurrencyAmount, Pair, Percent, Token } from '@pancakeswap/sdk'
-import { AddIcon, Button, InjectedModalProps, Text, AutoColumn } from '@pancakeswap/uikit'
-import { ConfirmationModalContent } from '@pancakeswap/widgets-internal'
-
+import { Currency, CurrencyAmount, Percent, Token } from '@pancakeswap/sdk'
+import { AutoColumn, Button, InjectedModalProps, RowBetween, RowFixed, Text } from '@pancakeswap/uikit'
+import { ConfirmationModalContent, TransactionErrorContent } from '@pancakeswap/widgets-internal'
 import { useTranslation } from '@pancakeswap/localization'
 import TransactionConfirmationModal from 'components/TransactionConfirmationModal'
-import { RowBetween, RowFixed } from 'components/Layout/Row'
-import { Field } from 'state/burn/actions'
-import { CurrencyLogo, DoubleCurrencyLogo } from 'components/Logo'
-import { ApprovalState } from 'hooks/useApproveCallback'
+import CurrencyLogo from 'components/Logo/CurrencyLogo'
+import { useUserSlippage } from '@pancakeswap/utils/user'
+import { formatAmount } from 'utils/formatInfoNumbers'
+
+enum Field {
+  LIQUIDITY_PERCENT = 'LIQUIDITY_PERCENT',
+  LIQUIDITY = 'LIQUIDITY',
+  CURRENCY_A = 'CURRENCY_A',
+  CURRENCY_B = 'CURRENCY_B',
+}
 
 interface ConfirmRemoveLiquidityModalProps {
   title: string
   customOnDismiss: () => void
   attemptingTxn: boolean
-  pair?: Pair
   hash: string
-  pendingText: string
   parsedAmounts: {
     [Field.LIQUIDITY_PERCENT]: Percent
     [Field.LIQUIDITY]?: CurrencyAmount<Token>
     [Field.CURRENCY_A]?: CurrencyAmount<Currency>
     [Field.CURRENCY_B]?: CurrencyAmount<Currency>
   }
-  allowedSlippage: number
   onRemove: () => void
-  liquidityErrorMessage?: string
-  approval: ApprovalState
-  signatureData?: any
+  liquidityErrorMessage: string
   tokenA: Token
   tokenB: Token
-  currencyA?: Currency
-  currencyB?: Currency
+  currencyA: Currency | undefined
+  currencyB: Currency | undefined
+  allowedSlippage?: number
+  pair?: any
+  pendingText?: string
 }
 
 const ConfirmRemoveLiquidityModal: React.FC<
@@ -41,28 +44,38 @@ const ConfirmRemoveLiquidityModal: React.FC<
   onDismiss,
   customOnDismiss,
   attemptingTxn,
-  pair,
   hash,
-  approval,
-  signatureData,
-  pendingText,
   parsedAmounts,
-  allowedSlippage,
   onRemove,
   liquidityErrorMessage,
   tokenA,
   tokenB,
   currencyA,
   currencyB,
+  allowedSlippage,
+  pendingText,
 }) => {
   const { t } = useTranslation()
+  const [userAllowedSlippage] = useUserSlippage()
+  const slippage = allowedSlippage ?? userAllowedSlippage
+
+  const amountA = parsedAmounts[Field.CURRENCY_A]?.toSignificant(6) ?? '0'
+  const amountB = parsedAmounts[Field.CURRENCY_B]?.toSignificant(6) ?? '0'
+
+  const defaultPendingText = t('Removing %amountA% %symbolA% and %amountB% %symbolB%', {
+    amountA,
+    symbolA: currencyA?.symbol ?? '',
+    amountB,
+    symbolB: currencyB?.symbol ?? '',
+  })
+  const finalPendingText = pendingText || defaultPendingText
 
   const modalHeader = useCallback(() => {
     return (
       <AutoColumn gap="md">
         {parsedAmounts[Field.CURRENCY_A] && (
-          <RowBetween align="flex-end">
-            <Text fontSize="24px">{parsedAmounts[Field.CURRENCY_A]?.toSignificant(6)}</Text>
+          <RowBetween justifyContent="space-between">
+            <Text fontSize="24px">{amountA}</Text>
             <RowFixed gap="4px">
               <CurrencyLogo currency={currencyA} size="24px" />
               <Text fontSize="24px" ml="10px">
@@ -71,14 +84,9 @@ const ConfirmRemoveLiquidityModal: React.FC<
             </RowFixed>
           </RowBetween>
         )}
-        {parsedAmounts[Field.CURRENCY_A] && parsedAmounts[Field.CURRENCY_B] && (
-          <RowFixed>
-            <AddIcon width="16px" />
-          </RowFixed>
-        )}
         {parsedAmounts[Field.CURRENCY_B] && (
-          <RowBetween align="flex-end">
-            <Text fontSize="24px">{parsedAmounts[Field.CURRENCY_B]?.toSignificant(6)}</Text>
+          <RowBetween justifyContent="space-between" mt="16px">
+            <Text fontSize="24px">{amountB}</Text>
             <RowFixed gap="4px">
               <CurrencyLogo currency={currencyB} size="24px" />
               <Text fontSize="24px" ml="10px">
@@ -89,57 +97,48 @@ const ConfirmRemoveLiquidityModal: React.FC<
         )}
 
         <Text small textAlign="left" pt="12px">
-          {t('Output is estimated. If the price changes by more than %slippage%% your transaction will revert.', {
-            slippage: allowedSlippage / 100,
-          })}
+          {t(
+            'Output is estimated. You will receive at least %amountA% %symbolA% and %amountB% %symbolB% or the transaction will revert.',
+            {
+              amountA: formatAmount(parseFloat(amountA) * (1 - slippage / 10000)),
+              symbolA: currencyA?.symbol ?? '',
+              amountB: formatAmount(parseFloat(amountB) * (1 - slippage / 10000)),
+              symbolB: currencyB?.symbol ?? '',
+            },
+          )}
         </Text>
       </AutoColumn>
     )
-  }, [allowedSlippage, currencyA, currencyB, parsedAmounts, t])
+  }, [parsedAmounts, amountA, amountB, currencyA, currencyB, slippage, t])
 
   const modalBottom = useCallback(() => {
     return (
       <>
         <RowBetween>
-          <Text>
-            {t('%assetA%/%assetB% Burned', { assetA: currencyA?.symbol ?? '', assetB: currencyB?.symbol ?? '' })}
-          </Text>
+          <Text>{t('%symbolA%/%symbolB% Burned', { symbolA: tokenA.symbol, symbolB: tokenB.symbol })}</Text>
           <RowFixed>
-            <DoubleCurrencyLogo currency0={currencyA} currency1={currencyB} margin />
-            <Text>{parsedAmounts[Field.LIQUIDITY]?.toSignificant(6)}</Text>
+            <CurrencyLogo currency={tokenA} size="24px" style={{ marginRight: '-8px' }} />
+            <CurrencyLogo currency={tokenB} size="24px" />
+            <Text>
+              {parsedAmounts[Field.LIQUIDITY]?.toSignificant(6) ?? '0'} {tokenA.symbol}/{tokenB.symbol}
+            </Text>
           </RowFixed>
         </RowBetween>
-        {pair && (
-          <>
-            <RowBetween>
-              <Text>{t('Price')}</Text>
-              <Text>
-                1 {currencyA?.symbol} = {tokenA ? pair.priceOf(tokenA).toSignificant(6) : '-'} {currencyB?.symbol}
-              </Text>
-            </RowBetween>
-            <RowBetween>
-              <div />
-              <Text>
-                1 {currencyB?.symbol} = {tokenB ? pair.priceOf(tokenB).toSignificant(6) : '-'} {currencyA?.symbol}
-              </Text>
-            </RowBetween>
-          </>
-        )}
-        <Button
-          width="100%"
-          mt="20px"
-          disabled={!(approval === ApprovalState.APPROVED || signatureData !== null)}
-          onClick={onRemove}
-        >
+        <Button onClick={onRemove} mt="20px" width="100%">
           {t('Confirm')}
         </Button>
       </>
     )
-  }, [currencyA, currencyB, parsedAmounts, approval, onRemove, pair, tokenA, tokenB, t, signatureData])
+  }, [tokenA, tokenB, parsedAmounts, onRemove, t])
 
   const confirmationContent = useCallback(
-    () => <ConfirmationModalContent topContent={modalHeader} bottomContent={modalBottom} />,
-    [modalHeader, modalBottom],
+    () =>
+      liquidityErrorMessage ? (
+        <TransactionErrorContent onDismiss={onDismiss} message={liquidityErrorMessage} />
+      ) : (
+        <ConfirmationModalContent topContent={modalHeader} bottomContent={modalBottom} />
+      ),
+    [onDismiss, modalHeader, modalBottom, liquidityErrorMessage],
   )
 
   return (
@@ -149,9 +148,9 @@ const ConfirmRemoveLiquidityModal: React.FC<
       customOnDismiss={customOnDismiss}
       attemptingTxn={attemptingTxn}
       hash={hash}
-      errorMessage={liquidityErrorMessage}
       content={confirmationContent}
-      pendingText={pendingText}
+      pendingText={finalPendingText}
+      currencyToAdd={undefined}
     />
   )
 }

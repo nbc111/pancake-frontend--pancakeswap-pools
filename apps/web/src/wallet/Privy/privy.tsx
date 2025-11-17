@@ -7,17 +7,15 @@ import { PropsWithChildren } from 'react'
 
 import { CHAINS } from 'config/chains'
 import { useFirebaseAuth } from './firebase'
+import { isPrivyEnabled, PRIVY_APP_ID, PRIVY_CLIENT_ID } from './config'
 
 export function PrivyProvider({ children }: PropsWithChildren) {
   const { isLoading, getToken } = useFirebaseAuth()
   const router = useRouter()
 
-  // Validate required environment variables
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
-  const clientId = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID
-
-  if (!appId || !clientId) {
-    console.error('Missing required Privy environment variables')
+  if (!isPrivyEnabled) {
+    console.warn('Privy environment variables are missing - PrivyProvider disabled')
+    return <>{children}</>
   }
 
   // Show wallet UIs only on bridge pages
@@ -36,10 +34,15 @@ export function PrivyProvider({ children }: PropsWithChildren) {
       // Allow HTTP in development environment
       (process.env.NODE_ENV === 'development' && window.location.protocol === 'http:'))
 
-  return (
+  // Check if current chain is supported by Privy SmartWallets
+  // NBC Chain (1281) may not be supported, so we conditionally enable SmartWalletsProvider
+  // Privy SmartWallets requires chain configuration in Privy dashboard
+  const isSmartWalletsSupported = false // Disable SmartWallets for NBC Chain as it's not configured in Privy dashboard
+
+  const providerContent = (
     <Provider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ''}
-      clientId={process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID ?? ''}
+      appId={PRIVY_APP_ID}
+      clientId={PRIVY_CLIENT_ID}
       config={{
         defaultChain: CHAINS[0],
         customAuth: {
@@ -82,7 +85,9 @@ export function PrivyProvider({ children }: PropsWithChildren) {
         },
       }}
     >
-      <SmartWalletsProvider>{children}</SmartWalletsProvider>
+      {isSmartWalletsSupported ? <SmartWalletsProvider>{children}</SmartWalletsProvider> : children}
     </Provider>
   )
+
+  return providerContent
 }

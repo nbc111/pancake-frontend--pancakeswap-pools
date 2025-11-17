@@ -1,4 +1,4 @@
-import { usePrivy } from '@privy-io/react-auth'
+import { usePrivy } from 'wallet/Privy/usePrivy'
 import { useSetAtom } from 'jotai'
 import { useEffect, useRef } from 'react'
 

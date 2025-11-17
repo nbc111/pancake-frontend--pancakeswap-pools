@@ -1,38 +1,23 @@
-import { explorerApiClient } from 'state/info/api/client'
-import type { components } from 'state/info/api/schema'
-import { Transaction } from 'state/info/types'
-import { transformTransaction } from 'views/V3Info/utils'
+﻿import type { ChainId } from '@pancakeswap/chains'
 
-export async function fetchTokenTransactions(
-  address: string,
-  chainName: components['schemas']['ChainName'],
-  signal?: AbortSignal,
-): Promise<{ data: Transaction[] | undefined; error: boolean; loading: boolean }> {
-  try {
-    const data = await explorerApiClient
-      .GET('/cached/tx/v3/{chainName}/recent', {
-        signal,
-        params: {
-          path: {
-            chainName,
-          },
-          query: {
-            token: address,
-          },
-        },
-      })
-      .then((res) => res.data)
+export type TokenTransaction = {
+  hash: string
+  timestamp: number
+  amountUSD: number
+  type: string
+}
 
-    return {
-      data: data?.map(transformTransaction),
-      error: false,
-      loading: false,
-    }
-  } catch {
-    return {
-      data: undefined,
-      error: true,
-      loading: false,
-    }
-  }
+export async function fetchTokenTransactions({
+  chainId: _chainId,
+  address: _address,
+  type: _type,
+  numberOfTransactions: _numberOfTransactions = 0,
+}: {
+  chainId?: ChainId
+  address?: string
+  type?: string
+  numberOfTransactions?: number
+}): Promise<TokenTransaction[]> {
+  // Token transactions API is not available on NBC, so return an empty list
+  return []
 }

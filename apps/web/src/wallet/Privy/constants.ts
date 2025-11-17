@@ -1,5 +1,6 @@
 import { NonEVMChainId, UnifiedChainId } from '@pancakeswap/chains'
 import { initializeApp } from 'firebase/app'
+import { isFirebaseEnabled } from './config'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
@@ -10,7 +11,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
 }
 
-// Initialize Firebase
-export const firebaseApp = initializeApp(firebaseConfig)
+// Initialize Firebase only when config is available
+export const firebaseApp = isFirebaseEnabled ? initializeApp(firebaseConfig) : undefined
 
 export const UNSUPPORTED_SOCIAL_LOGIC_CHAINS: UnifiedChainId[] = [NonEVMChainId.SOLANA, NonEVMChainId.APTOS]

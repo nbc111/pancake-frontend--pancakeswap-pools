@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { getAddress, hexToBigInt } from 'viem'
 import { useChainId, useConfig, useConnectors, useReconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
-import { useSmartWallets } from '@privy-io/react-auth/smart-wallets'
+import { useSmartWalletsSafe } from '../useSmartWallets'
+import { isPrivyEnabled } from '../config'
 
 /**
  * Registers a smart account connector in wagmi for the Privy embedded smart wallet.
@@ -15,27 +16,31 @@ import { useSmartWallets } from '@privy-io/react-auth/smart-wallets'
  *   (e.g. external wallets) will be removed while the user is using the embedded wallet.
  *
  */
-export const useEmbeddedSmartAccountConnectorV2 = () => {
+const useEmbeddedSmartAccountConnectorDisabled = () => ({
+  isSmartWalletReady: true,
+  isSettingUp: false,
+  shouldUseAAWallet: false,
+  hasSetupFailed: false,
+})
+
+const useEmbeddedSmartAccountConnectorEnabled = () => {
   const connectors = useConnectors()
   const config = useConfig()
   const id = useChainId()
-  const { client: isReady, getClientForChain } = useSmartWallets()
+  const { client: isReady, getClientForChain } = useSmartWalletsSafe()
   const { reconnect } = useReconnect()
   const router = useRouter()
 
-  // Add state management to track smart wallet ready status
   const [isSmartWalletReady, setIsSmartWalletReady] = useState(false)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [hasSetupFailed, setHasSetupFailed] = useState(false)
   const [setupStartTime, setSetupStartTime] = useState<number | null>(null)
 
-  // Check URL parameter to disable AA wallet
   const shouldUseAAWallet = router.query.aawallet !== 'false'
 
   useEffect(() => {
     const setupSmartAccountConnector = async () => {
-      // Disable Privy smart account on NBC Chain page to avoid blocking switch
       try {
         const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
         const chainParam = urlParams.get('chain') || ''
@@ -44,14 +49,14 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
           setIsSettingUp(false)
           return
         }
-      } catch {}
+      } catch (error) {
+        console.warn('[PrivySmartAccount] Failed to inspect URL parameters', error)
+      }
 
-      // Track setup start time for first attempt
       if (retryCount === 0 && !setupStartTime) {
         setSetupStartTime(Date.now())
       }
 
-      // Check if total time exceeded 10 seconds
       if (setupStartTime) {
         const totalDuration = (Date.now() - setupStartTime) / 1000
         if (totalDuration > 10) {
@@ -66,14 +71,12 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
         }
       }
 
-      // If AA wallet is disabled via URL param, skip setup
       if (!shouldUseAAWallet) {
         setIsSmartWalletReady(true)
         setIsSettingUp(false)
         return
       }
 
-      // Prevent infinite retry loop - max 3 attempts
       if (retryCount >= 3) {
         const totalDuration = setupStartTime ? ((Date.now() - setupStartTime) / 1000).toFixed(2) : '0'
         console.error('[PrivySmartAccount] ❌ Setup failed after 3 attempts', {
@@ -81,40 +84,35 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
           totalDuration: `${totalDuration}s`,
           timestamp: new Date().toISOString(),
         })
-        setIsSmartWalletReady(true) // Mark as ready to prevent further retries
+        setIsSmartWalletReady(true)
         setIsSettingUp(false)
-        setHasSetupFailed(true) // Mark as failed
+        setHasSetupFailed(true)
         setSetupStartTime(null)
         return
       }
 
       const existingSmartAccountConnector = connectors.find((connector) => connector.id === 'io.privy.smart_wallet')
-
-      // If smart account connector already exists, mark as ready
       if (existingSmartAccountConnector) {
         setIsSmartWalletReady(true)
         setIsSettingUp(false)
-        setHasSetupFailed(false) // Clear failed state if successful
+        setHasSetupFailed(false)
         return
       }
 
-      // If no smart wallet client, mark as ready (use embedded wallet)
       if (!isReady) {
         setIsSmartWalletReady(true)
         setIsSettingUp(false)
         return
       }
 
-      // Start setting up smart account connector
       setIsSettingUp(true)
 
-      // Add timeout to prevent infinite loading (3 seconds per attempt)
       const setupTimeout = setTimeout(() => {
         console.error(`[PrivySmartAccount] ⏱️ Setup timeout after 3 seconds (attempt ${retryCount + 1}/3)`)
         setRetryCount((prev) => prev + 1)
         setIsSmartWalletReady(false)
         setIsSettingUp(false)
-      }, 3000) // 3 seconds timeout per attempt
+      }, 3000)
 
       try {
         // @ts-ignore
@@ -123,7 +121,6 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
         if (!client || !getClientForChain) {
           console.warn('[PrivySmartAccount] ⚠️ Unable to get smart wallet client, falling back to embedded wallet')
           clearTimeout(setupTimeout)
-          // If unable to get client, fallback to embedded wallet
           setIsSmartWalletReady(true)
           setIsSettingUp(false)
           return
@@ -140,8 +137,6 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
           },
         })
 
-        // If a user uses an embedded wallet with a smart account, we will currently set it up as the only connector
-        // for wagmi for the smoothest integration experience.
         // @ts-ignore
         const smartAccountConnector = config._internal.connectors.setup(smartAccountConnectorConstructor)
         // @ts-ignore
@@ -149,14 +144,14 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
         // @ts-ignore
         await config.storage?.setItem('recentConnectorId', smartAccountConnector.id)
 
-        // After setup is complete, mark as ready and reconnect
         const totalDuration = setupStartTime ? ((Date.now() - setupStartTime) / 1000).toFixed(2) : '0'
         clearTimeout(setupTimeout)
         setIsSmartWalletReady(true)
         setIsSettingUp(false)
-        setHasSetupFailed(false) // Clear failed state on success
-        setRetryCount(0) // Reset retry count on success
-        setSetupStartTime(null) // Reset setup start time
+        setHasSetupFailed(false)
+        setRetryCount(0)
+        setSetupStartTime(null)
+        console.info(`[PrivySmartAccount] ✅ Setup completed in ${totalDuration}s`)
         // @ts-ignore
         reconnect()
       } catch (error) {
@@ -167,7 +162,6 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
           attempt: retryCount + 1,
           timestamp: new Date().toISOString(),
         })
-        // Increment retry count and try again
         setRetryCount((prev) => prev + 1)
         setIsSmartWalletReady(false)
         setIsSettingUp(false)
@@ -188,7 +182,6 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
     setupStartTime,
   ])
 
-  // Return state for other components to use
   return {
     isSmartWalletReady,
     isSettingUp,
@@ -196,6 +189,10 @@ export const useEmbeddedSmartAccountConnectorV2 = () => {
     hasSetupFailed,
   }
 }
+
+export const useEmbeddedSmartAccountConnectorV2 = isPrivyEnabled
+  ? useEmbeddedSmartAccountConnectorEnabled
+  : useEmbeddedSmartAccountConnectorDisabled
 
 class SmartWalletEIP1193Provider extends EventEmitter {
   private smartWalletClient: any

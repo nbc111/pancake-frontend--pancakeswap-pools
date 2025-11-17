@@ -1,5 +1,5 @@
-import { usePrivy } from '@privy-io/react-auth'
-import { useSmartWallets } from '@privy-io/react-auth/smart-wallets'
+import { usePrivy } from 'wallet/Privy/usePrivy'
+import { useSmartWalletsSafe } from 'wallet/Privy/useSmartWallets'
 import { useEffect, useState } from 'react'
 import { Address } from 'viem'
 import { useAccount, useConnectors } from 'wagmi'
@@ -11,7 +11,7 @@ import { useEmbeddedSmartAccountConnectorV2 } from './usePrivySmartAccountConnec
  */
 export const usePrivyWalletAddress = () => {
   const { address: wagmiAddress, connector } = useAccount()
-  const { client: smartWalletClient } = useSmartWallets()
+  const { client: smartWalletClient } = useSmartWalletsSafe()
   const { ready, authenticated, user } = usePrivy()
   const connectors = useConnectors()
   const { isSmartWalletReady, isSettingUp, shouldUseAAWallet, hasSetupFailed } = useEmbeddedSmartAccountConnectorV2()
@@ -25,7 +25,6 @@ export const usePrivyWalletAddress = () => {
     if (isLoading && !loadingStartTime) {
       setLoadingStartTime(Date.now())
     } else if (!isLoading && loadingStartTime) {
-      const loadingDuration = (Date.now() - loadingStartTime) / 1000
       setLoadingStartTime(null)
     }
   }, [isLoading, loadingStartTime])

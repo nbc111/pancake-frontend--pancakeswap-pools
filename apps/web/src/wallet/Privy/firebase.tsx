@@ -9,12 +9,14 @@ import {
   TwitterAuthProvider,
   UserCredential,
 } from 'firebase/auth'
+import type { FirebaseApp } from 'firebase/app'
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { nanoid } from 'nanoid'
 import { usePrivySocialLoginAtom, useSocialLoginProviderAtom } from './atom'
 import { loginWithTelegramViaScript } from './telegramLogin'
 
 import { firebaseApp } from './constants'
+import { isFirebaseEnabled } from './config'
 
 // Define the context type
 interface AuthContextType {
@@ -36,17 +38,34 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-export function FirebaseAuthProvider({ children }: AuthProviderProps) {
+const DisabledFirebaseAuthProvider = ({ children }: AuthProviderProps) => {
+  const stubValue: AuthContextType = {
+    token: undefined,
+    isLoading: false,
+    getToken: async () => undefined,
+    loginWithGoogle: async () => console.warn('[FirebaseAuth] Google login called but Firebase is disabled'),
+    loginWithX: async () => console.warn('[FirebaseAuth] X login called but Firebase is disabled'),
+    loginWithDiscord: async () => console.warn('[FirebaseAuth] Discord login called but Firebase is disabled'),
+    loginWithTelegram: async () => console.warn('[FirebaseAuth] Telegram login called but Firebase is disabled'),
+    signOutAndClearUserStates: () => {},
+  }
+  return <AuthContext.Provider value={stubValue}>{children}</AuthContext.Provider>
+}
+
+interface EnabledFirebaseAuthProviderProps extends AuthProviderProps {
+  firebaseAppInstance: FirebaseApp
+}
+
+const EnabledFirebaseAuthProvider = ({ children, firebaseAppInstance }: EnabledFirebaseAuthProviderProps) => {
   const [isLoading, setLoading] = useState(false)
   const [token, setToken] = useState<string | undefined>()
   const [discordPopup, setDiscordPopup] = useState<Window | null>(null)
-  const [telegramPopup, setTelegramPopup] = useState<Window | null>(null)
   const [, setPrivySocialLogin] = usePrivySocialLoginAtom()
   const [, setSocialProvider] = useSocialLoginProviderAtom()
 
   const signInWithGoogle = async (): Promise<UserCredential> => {
     try {
-      const auth = getAuth(firebaseApp)
+      const auth = getAuth(firebaseAppInstance)
       const googleProvider = new GoogleAuthProvider()
       const res = await signInWithPopup(auth, googleProvider)
       return res
@@ -59,14 +78,14 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
       }
       // For other errors, still show alert
       console.error('Google login error:', err)
-      alert(`Google login failed: ${err?.message || err}`)
+      console.error('Google login failed:', err)
       throw err
     }
   }
 
   const signInWithX = async (): Promise<UserCredential> => {
     try {
-      const auth = getAuth(firebaseApp)
+      const auth = getAuth(firebaseAppInstance)
       const twitterProvider = new TwitterAuthProvider()
       const res = await signInWithPopup(auth, twitterProvider)
       return res
@@ -79,7 +98,7 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
       }
       // For other errors, still show alert
       console.error('X login error:', err)
-      alert(`X login failed: ${err?.message || err}`)
+      console.error('X login failed:', err)
       throw err
     }
   }
@@ -129,19 +148,22 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
   }
 
   // Helper function to sign in with custom token
-  const loginWithCustomToken = async (customToken: string) => {
-    try {
-      setPrivySocialLogin(true)
-      const auth = getAuth(firebaseApp)
-      const userCredential = await signInWithCustomToken(auth, customToken)
-      const idToken = await userCredential.user.getIdToken(true)
-      setToken(idToken)
-      return true
-    } catch (error) {
-      console.error('Error signing in with custom token:', error)
-      return false
-    }
-  }
+  const loginWithCustomToken = useCallback(
+    async (customToken: string) => {
+      try {
+        setPrivySocialLogin(true)
+        const auth = getAuth(firebaseAppInstance)
+        const userCredential = await signInWithCustomToken(auth, customToken)
+        const idToken = await userCredential.user.getIdToken(true)
+        setToken(idToken)
+        return true
+      } catch (error) {
+        console.error('Error signing in with custom token:', error)
+        return false
+      }
+    },
+    [firebaseAppInstance, setPrivySocialLogin],
+  )
 
   const loginWithDiscord = async () => {
     try {
@@ -190,17 +212,17 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
     if (token) {
       return token
     }
-    const auth = getAuth(firebaseApp)
+    const auth = getAuth(firebaseAppInstance)
     if (!auth.currentUser) {
       return undefined
     }
     const idToken = await auth.currentUser.getIdToken(true)
     setToken(idToken)
     return idToken
-  }, [token])
+  }, [token, firebaseAppInstance])
 
   useEffect(() => {
-    const auth = getAuth(firebaseApp)
+    const auth = getAuth(firebaseAppInstance)
 
     // Handle auth state changes and set token
     const unsubscribeAuthState = auth.onAuthStateChanged(async (user) => {
@@ -249,7 +271,7 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
       unsubscribeTokenChange()
       window.removeEventListener('firebase-auth-retrigger', handleRetrigger as EventListener)
     }
-  }, [])
+  }, [firebaseAppInstance])
 
   // Social login handler (Discord & Telegram)
   useEffect(() => {
@@ -305,7 +327,7 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
       window.removeEventListener('message', handleMessage)
       clearInterval(checkLocalStorage)
     }
-  }, [])
+  }, [loginWithCustomToken, setSocialProvider])
 
   // Clean up Discord popup window
   useEffect(() => {
@@ -317,20 +339,20 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
   }, [discordPopup])
 
   const signOutFirebase = useCallback(async () => {
-    const auth = getAuth(firebaseApp)
+    const auth = getAuth(firebaseAppInstance)
     try {
       await signOut(auth)
     } catch (err) {
       console.error(err)
     }
-  }, [])
+  }, [firebaseAppInstance])
 
   const signOutAndClearUserStates = useCallback(async () => {
     await signOutFirebase()
     setToken(undefined)
     setLoading(false)
     setSocialProvider(null)
-  }, [])
+  }, [signOutFirebase, setSocialProvider])
 
   const value = {
     token,
@@ -346,6 +368,14 @@ export function FirebaseAuthProvider({ children }: AuthProviderProps) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+export function FirebaseAuthProvider({ children }: AuthProviderProps) {
+  if (!isFirebaseEnabled || !firebaseApp) {
+    return <DisabledFirebaseAuthProvider>{children}</DisabledFirebaseAuthProvider>
+  }
+
+  return <EnabledFirebaseAuthProvider firebaseAppInstance={firebaseApp}>{children}</EnabledFirebaseAuthProvider>
+}
+
 // Custom hook to use the auth context
 export function useFirebaseAuth() {
   const context = useContext(AuthContext)
@@ -357,8 +387,13 @@ export function useFirebaseAuth() {
 
 // Function to retrigger Firebase auth for Privy
 export async function retriggerFirebaseAuth() {
+  if (!isFirebaseEnabled || !firebaseApp) {
+    console.warn('[FirebaseAuth] retrigger requested but Firebase is disabled')
+    return false
+  }
   try {
-    const auth = getAuth(firebaseApp)
+    const firebaseAppInstance = firebaseApp
+    const auth = getAuth(firebaseAppInstance)
     const { currentUser } = auth
 
     if (!currentUser) {
