@@ -1,35 +1,20 @@
-import { useMemo } from 'react'
-import { useRouter } from 'next/router'
-import SubMenu from '../../../views/TradingCompetition/components/SubMenu'
-import EasterCompetition from '../../../views/TradingCompetition/EasterCompetition'
-import MoboxCompetition from '../../../views/TradingCompetition/MoboxCompetition'
-import FanTokenCompetition from '../../../views/TradingCompetition/FanTokenCompetition'
+import { Flex, Text } from '@pancakeswap/uikit'
 
 const CompetitionPage = () => {
-  const router = useRouter()
-  const { competition: competitionId } = router.query
-
-  const competitionPage = useMemo(() => {
-    if (competitionId === 'easter') {
-      return <EasterCompetition />
-    }
-
-    if (competitionId === 'mobox') {
-      return <MoboxCompetition />
-    }
-
-    if (competitionId === 'fantoken') {
-      return <FanTokenCompetition />
-    }
-
-    return null
-  }, [competitionId])
-
   return (
-    <>
-      <SubMenu />
-      {competitionPage}
-    </>
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Trading competitions are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂不支持往期竞赛内容，敬请期待。</Text>
+    </Flex>
   )
 }
 

@@ -51,3 +51,12 @@ export function useInfinityCLPoolTickData(
     }
   }, [data, isLoading, error])
 }
+
+export function usePairPriceChartTokenData() {
+  return {
+    data: [],
+    maxPrice: undefined,
+    minPrice: undefined,
+    averagePrice: undefined,
+  }
+}

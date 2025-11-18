@@ -1,34 +1,21 @@
-import { dehydrate, QueryClient } from '@tanstack/react-query'
-import { GetStaticProps } from 'next'
-import { getTeams } from 'state/teams/helpers'
-import { teamsById } from 'utils/teamsById'
-import Teams from '../../views/Teams'
+import { Flex, Text } from '@pancakeswap/uikit'
 
 const TeamsPage = () => {
-  return <Teams />
-}
-
-export const getStaticProps: GetStaticProps = async () => {
-  const queryClient = new QueryClient()
-
-  const fetchedTeams = await queryClient.fetchQuery({ queryKey: ['teams'], queryFn: getTeams })
-
-  if (fetchedTeams) {
-    await queryClient.prefetchQuery({ queryKey: ['teams'], queryFn: () => teamsById })
-    return {
-      props: {
-        dehydratedState: dehydrate(queryClient),
-      },
-      revalidate: 1,
-    }
-  }
-
-  return {
-    props: {
-      dehydratedState: dehydrate(queryClient),
-    },
-    revalidate: 60 * 60 * 12,
-  }
+  return (
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Teams are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放战队功能。</Text>
+    </Flex>
+  )
 }
 
 export default TeamsPage

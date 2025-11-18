@@ -1,50 +1,21 @@
-import dynamic from 'next/dynamic'
-import { useRouter } from 'next/router'
-import { useEffect } from 'react'
-import { NextPageWithLayout } from 'utils/page.types'
-import { CHAIN_IDS } from 'utils/wagmi'
-import { useIsSmartAccount } from 'hooks/useIsSmartAccount'
-import Page from 'views/Page'
-import SwapLayout from 'views/Swap/SwapLayout'
-import TwapAndLimitSwap from 'views/Swap/Twap/TwapSwap'
+import { Flex, Text } from '@pancakeswap/uikit'
 
-const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
+const TwapPage = () => {
   return (
-    <Page showExternalLink={false} showHelpLink={false} removePadding>
-      {children}
-    </Page>
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        TWAP swaps are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放 TWAP。</Text>
+    </Flex>
   )
 }
-
-// const TwapAndLimitSwap = dynamic(() => import('views/Swap/Twap/TwapSwap'), { ssr: false })
-
-const TwapView = () => {
-  const router = useRouter()
-  const isSmartAccount = useIsSmartAccount()
-
-  useEffect(() => {
-    if (isSmartAccount) {
-      router.replace('/swap')
-    }
-  }, [isSmartAccount, router])
-
-  if (isSmartAccount) {
-    return null
-  }
-
-  return (
-    <SwapLayout>
-      <TwapAndLimitSwap />
-    </SwapLayout>
-  )
-}
-
-const TwapPage = dynamic(() => Promise.resolve(TwapView), {
-  ssr: false,
-}) as NextPageWithLayout
-
-TwapPage.chains = CHAIN_IDS
-TwapPage.screen = true
-TwapPage.Layout = Layout
 
 export default TwapPage

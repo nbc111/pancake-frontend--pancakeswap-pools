@@ -1,23 +1,21 @@
-import { useRouter } from 'next/router'
-import { useAchievementsForAddress, useProfileForAddress } from 'state/profile/hooks'
-import { NftProfileLayout } from 'views/Profile'
-import Achievements from 'views/Profile/components/Achievements'
+import { Flex, Text } from '@pancakeswap/uikit'
 
 const NftProfileAchievementsPage = () => {
-  const accountAddress = useRouter().query.accountAddress as string
-  const { profile } = useProfileForAddress(accountAddress)
-  const { achievements, isFetching: isAchievementFetching, refresh } = useAchievementsForAddress(accountAddress)
-
   return (
-    <Achievements
-      achievements={achievements}
-      isLoading={isAchievementFetching}
-      points={profile?.points}
-      onSuccess={refresh}
-    />
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Profile achievements are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放成就系统。</Text>
+    </Flex>
   )
 }
-
-NftProfileAchievementsPage.Layout = NftProfileLayout
 
 export default NftProfileAchievementsPage

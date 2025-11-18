@@ -1,7 +1,21 @@
-import dynamic from 'next/dynamic'
-import { NextPageWithLayout } from 'utils/page.types'
-import Voting from '../../views/Voting'
+import { Flex, Text } from '@pancakeswap/uikit'
 
-const Page = dynamic(() => Promise.resolve(Voting), { ssr: false }) as NextPageWithLayout
+const VotingPage = () => {
+  return (
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Voting is unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放治理投票。</Text>
+    </Flex>
+  )
+}
 
-export default Page
+export default VotingPage

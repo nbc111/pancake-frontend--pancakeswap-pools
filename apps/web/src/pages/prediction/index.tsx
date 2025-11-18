@@ -1,19 +1,21 @@
-import { SUPPORTED_CHAIN_IDS } from '@pancakeswap/prediction'
-import dynamic from 'next/dynamic'
-import { NextPageWithLayout } from 'utils/page.types'
-import Predictions from '../../views/Predictions'
-import PredictionConfigProviders from '../../views/Predictions/context/PredictionConfigProviders'
+import { Flex, Text } from '@pancakeswap/uikit'
 
-function Prediction() {
-  return <Predictions />
+const PredictionPage = () => {
+  return (
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Predictions are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放预测市场。</Text>
+    </Flex>
+  )
 }
-
-const PredictionPage = dynamic(() => Promise.resolve(Prediction), {
-  ssr: false,
-}) as NextPageWithLayout
-
-PredictionPage.Layout = PredictionConfigProviders
-PredictionPage.chains = [...SUPPORTED_CHAIN_IDS]
-PredictionPage.screen = true
 
 export default PredictionPage

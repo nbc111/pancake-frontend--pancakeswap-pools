@@ -20,3 +20,11 @@ export function formatTime(timestamp: string | number, formatType: number = 0): 
   // Default format
   return date.format('MMM D, YYYY')
 }
+
+export function unixToDate(timestamp: string | number): string {
+  const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp
+  if (!timestampNum || Number.isNaN(timestampNum)) {
+    return '-'
+  }
+  return dayjs.unix(timestampNum).format('MMM D, YYYY')
+}

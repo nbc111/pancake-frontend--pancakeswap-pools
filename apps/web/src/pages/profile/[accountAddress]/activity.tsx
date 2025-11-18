@@ -1,16 +1,21 @@
-import { NftProfileLayout } from 'views/Profile'
-import ActivityHistory from 'views/Profile/components/ActivityHistory'
-import SubMenu from 'views/Profile/components/SubMenu'
+import { Flex, Text } from '@pancakeswap/uikit'
 
 const NftProfileActivityPage = () => {
   return (
-    <>
-      <SubMenu />
-      <ActivityHistory />
-    </>
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Profile activity is unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放活动记录。</Text>
+    </Flex>
   )
 }
-
-NftProfileActivityPage.Layout = NftProfileLayout
 
 export default NftProfileActivityPage

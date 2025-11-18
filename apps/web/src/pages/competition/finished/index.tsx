@@ -1,3 +1,21 @@
-import FinishedCompetitions from '../../../views/TradingCompetition/FinishedCompetitions'
+import { Flex, Text } from '@pancakeswap/uikit'
 
-export default FinishedCompetitions
+const FinishedCompetitionsPage = () => {
+  return (
+    <Flex
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="400px"
+      p="24px"
+      textAlign="center"
+    >
+      <Text fontSize="24px" bold mb="8px">
+        Trading competitions are unavailable
+      </Text>
+      <Text color="textSubtle">NBC 版本暂未开放历史竞赛页面。</Text>
+    </Flex>
+  )
+}
+
+export default FinishedCompetitionsPage
