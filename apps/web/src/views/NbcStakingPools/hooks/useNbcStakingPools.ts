@@ -99,6 +99,14 @@ const POOL_CONFIGS: PoolConfig[] = [
     rewardTokenDecimals: 6,
     rewardTokenLogoURI: '/images/custom-tokens/usdt.png',
   },
+  {
+    sousId: 10,
+    rewardTokenAddress: '0x9011191E84Ad832100Ddc891E360f8402457F55E' as `0x${string}`,
+    rewardTokenSymbol: 'SUI',
+    rewardTokenName: 'Sui',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/sui.png',
+  },
 ]
 
 export const useNbcStakingPools = () => {
@@ -435,6 +443,38 @@ export const useNbcStakingPools = () => {
     chainId: CHAIN_ID,
   })
 
+  // Pool 10 (SUI)
+  const { data: staked10 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [10, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned10 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [10, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked10 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [10],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo10 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [10],
+    chainId: CHAIN_ID,
+  })
+
   const pools = useMemo(() => {
     // 将数据组织成数组
     const poolDataQueries = [
@@ -448,6 +488,7 @@ export const useNbcStakingPools = () => {
       { staked: staked7, earned: earned7, totalStaked: totalStaked7, poolInfo: poolInfo7 },
       { staked: staked8, earned: earned8, totalStaked: totalStaked8, poolInfo: poolInfo8 },
       { staked: staked9, earned: earned9, totalStaked: totalStaked9, poolInfo: poolInfo9 },
+      { staked: staked10, earned: earned10, totalStaked: totalStaked10, poolInfo: poolInfo10 },
     ]
 
     const stakingLogoURI = '/images/custom-tokens/nbc.png'
@@ -616,6 +657,10 @@ export const useNbcStakingPools = () => {
     earned9,
     totalStaked9,
     poolInfo9,
+    staked10,
+    earned10,
+    totalStaked10,
+    poolInfo10,
     currentChainTimestamp,
   ])
 
