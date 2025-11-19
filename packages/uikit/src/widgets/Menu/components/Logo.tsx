@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { keyframes, styled } from "styled-components";
 import Flex from "../../../components/Box/Flex";
-import { LogoIcon, LogoWithTextIcon } from "../../../components/Svg";
+import { LogoWithTextIcon } from "../../../components/Svg";
 import { MenuContext } from "../context";
 
 interface Props {
@@ -16,7 +16,7 @@ const blink = keyframes`
 const StyledLink = styled("a")`
   display: flex;
   .mobile-icon {
-    width: 32px;
+    width: 160px;
     ${({ theme }) => theme.mediaQueries.xl} {
       display: none;
     }
@@ -49,7 +49,7 @@ const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   };
   const innerLogo = (
     <>
-      <LogoIcon className="mobile-icon" />
+      <LogoWithTextIcon className="mobile-icon" />
       <LogoWithTextIcon className="desktop-icon" />
     </>
   );
