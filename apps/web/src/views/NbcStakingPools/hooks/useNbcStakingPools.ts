@@ -531,19 +531,13 @@ export const useNbcStakingPools = () => {
             : Number(totalStakedValue)
           : 0
 
-        if (rewardRate > 0) {
-          if (totalStakedNum > 0) {
-            // 有质押时，基于实际总质押量计算 APR
-            // 年化收益率 = (每秒奖励 * 365 * 24 * 60 * 60) / 总质押量 * 100
-            const annualReward = rewardRate * 365 * 24 * 60 * 60
-            apr = (annualReward / totalStakedNum) * 100
-          } else {
-            // 没有质押时，基于假设质押 1 个代币计算理论 APR
-            // 这样可以显示一个理论上的 APR，让用户知道如果质押会获得多少收益
-            const assumedStaked = 1e18 // 假设质押 1 NBC (18 decimals)
-            const annualReward = rewardRate * 365 * 24 * 60 * 60
-            apr = (annualReward / assumedStaked) * 100
-          }
+        if (rewardRate > 0 && totalStakedNum > 0) {
+          // 有质押时，基于实际总质押量计算 APR
+          // 年化收益率 = (每秒奖励 * 365 * 24 * 60 * 60) / 总质押量 * 100
+          const annualReward = rewardRate * 365 * 24 * 60 * 60
+          apr = (annualReward / totalStakedNum) * 100
+        } else {
+          apr = 0
         }
       }
 

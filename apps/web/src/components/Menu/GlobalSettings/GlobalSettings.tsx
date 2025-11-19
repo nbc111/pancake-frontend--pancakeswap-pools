@@ -4,12 +4,10 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { GlobalSettingsTab } from './GlobalSettingsTab'
 import { EVMSettingsTab } from './EVMSettingsTab'
-import { SolanaSettingsTab } from './SolanaSettingsTab'
 
 enum GlobalSettingsTabIndex {
   GLOBAL = 0,
   EVM_SETTINGS = 1,
-  SOLANA_SETTINGS = 2,
 }
 
 const GlobalSettings: React.FC = () => {
@@ -38,11 +36,6 @@ const GlobalSettings: React.FC = () => {
         index: GlobalSettingsTabIndex.EVM_SETTINGS,
         label: t('EVM Settings'),
         component: <EVMSettingsTab />,
-      },
-      {
-        index: GlobalSettingsTabIndex.SOLANA_SETTINGS,
-        label: t('Solana Settings'),
-        component: <SolanaSettingsTab />,
       },
     ],
     [t],

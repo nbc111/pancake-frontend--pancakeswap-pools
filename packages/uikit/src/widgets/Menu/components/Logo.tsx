@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { keyframes, styled } from "styled-components";
 import Flex from "../../../components/Box/Flex";
-import { LogoIcon, LogoWithTextIcon } from "../../../components/Svg";
+import { LogoWithTextIcon } from "../../../components/Svg";
 import { MenuContext } from "../context";
 
 interface Props {
@@ -16,7 +16,7 @@ const blink = keyframes`
 const StyledLink = styled("a")`
   display: flex;
   .mobile-icon {
-    width: 32px;
+    width: 160px;
     ${({ theme }) => theme.mediaQueries.xl} {
       display: none;
     }
@@ -44,9 +44,12 @@ const StyledLink = styled("a")`
 const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   const { linkComponent } = useContext(MenuContext);
   const isAbsoluteUrl = href.startsWith("http");
+  const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
+    event.preventDefault();
+  };
   const innerLogo = (
     <>
-      <LogoIcon className="mobile-icon" />
+      <LogoWithTextIcon className="mobile-icon" />
       <LogoWithTextIcon className="desktop-icon" />
     </>
   );
@@ -54,11 +57,11 @@ const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   return (
     <Flex alignItems="center">
       {isAbsoluteUrl ? (
-        <StyledLink as="a" href={href} aria-label="Pancake home page">
+        <StyledLink as="a" href={href} aria-label="Pancake home page" onClick={handleClick}>
           {innerLogo}
         </StyledLink>
       ) : (
-        <StyledLink href={href} as={linkComponent} aria-label="Pancake home page">
+        <StyledLink href={href} as={linkComponent} aria-label="Pancake home page" onClick={handleClick}>
           {innerLogo}
         </StyledLink>
       )}

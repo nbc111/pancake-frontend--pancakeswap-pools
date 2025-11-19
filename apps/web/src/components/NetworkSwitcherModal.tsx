@@ -75,6 +75,8 @@ function getSortedChains(chainId: UnifiedChainId, showTestnet: boolean): Chain[]
     })
 }
 
+const ALLOWED_NETWORK_IDS = new Set<number>([1281])
+
 const NetworkSelect = ({ switchNetwork, chainId, isWrongNetwork, onDismiss }: NetworkSelectProps) => {
   const { t } = useTranslation()
   const [showTestnet] = useUserShowTestnet()
@@ -98,7 +100,10 @@ const NetworkSelect = ({ switchNetwork, chainId, isWrongNetwork, onDismiss }: Ne
     }),
     [router, onDismiss, switchNetwork],
   )
-  const networks = useMemo(() => getSortedChains(chainId, showTestnet), [chainId, showTestnet])
+  const networks = useMemo(
+    () => getSortedChains(chainId, showTestnet).filter((net) => ALLOWED_NETWORK_IDS.has(net.id)),
+    [chainId, showTestnet],
+  )
 
   return (
     <Box borderRadius={isMobile ? '32px' : '32px 32px 0 0'} overflow="hidden">

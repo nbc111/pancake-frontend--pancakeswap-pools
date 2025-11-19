@@ -48,46 +48,9 @@ const config: (
       fillIcon: EarnFillIcon,
       image: '/images/decorations/pe2.png',
       supportChainIds: SUPPORT_FARMS,
-      overrideSubNavItems: [
-        {
-          label: t('Farm / Liquidity'),
-          href: '/liquidity/pools',
-          supportChainIds: SUPPORT_FARMS,
-        },
-        {
-          label: t('veCake Redeem'),
-          href: '/cake-staking/redeem',
-          supportChainIds: POOL_SUPPORTED_CHAINS,
-        },
-        {
-          label: t('Syrup Pools'),
-          href: '/pools',
-          supportChainIds: POOL_SUPPORTED_CHAINS,
-        },
-      ].map((item) => addMenuItemSupported(item, chainId)),
-      items: [
-        {
-          label: t('Farm / Liquidity'),
-          href: '/liquidity/pools',
-          matchHrefs: ['/liquidity/positions', '/farms'],
-          supportChainIds: SUPPORT_FARMS,
-        },
-        {
-          label: t('Staking'),
-          items: [
-            {
-              label: t('veCake Redeem'),
-              href: '/cake-staking/redeem',
-              supportChainIds: POOL_SUPPORTED_CHAINS,
-            },
-            {
-              label: t('Syrup Pools'),
-              href: '/pools',
-              supportChainIds: POOL_SUPPORTED_CHAINS,
-            },
-          ].map((item) => addMenuItemSupported(item, chainId)),
-        },
-      ].map((item) => addMenuItemSupported(item, chainId)),
+      // Temporarily disable submenu popup for Earn by removing dropdown items
+      overrideSubNavItems: [],
+      items: [],
     },
   ].map((item) => addMenuItemSupported(item, chainId))
 
