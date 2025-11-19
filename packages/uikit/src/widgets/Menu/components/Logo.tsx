@@ -44,6 +44,9 @@ const StyledLink = styled("a")`
 const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   const { linkComponent } = useContext(MenuContext);
   const isAbsoluteUrl = href.startsWith("http");
+  const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
+    event.preventDefault();
+  };
   const innerLogo = (
     <>
       <LogoIcon className="mobile-icon" />
@@ -54,11 +57,11 @@ const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   return (
     <Flex alignItems="center">
       {isAbsoluteUrl ? (
-        <StyledLink as="a" href={href} aria-label="Pancake home page">
+        <StyledLink as="a" href={href} aria-label="Pancake home page" onClick={handleClick}>
           {innerLogo}
         </StyledLink>
       ) : (
-        <StyledLink href={href} as={linkComponent} aria-label="Pancake home page">
+        <StyledLink href={href} as={linkComponent} aria-label="Pancake home page" onClick={handleClick}>
           {innerLogo}
         </StyledLink>
       )}
