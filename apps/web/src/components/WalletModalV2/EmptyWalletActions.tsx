@@ -12,9 +12,11 @@ const EmptyWalletActions: React.FC<EmptyWalletActionsProps> = ({ description }) 
 
   return (
     <Box padding="8px 16px">
-      <Text color="textSubtle" textAlign="center" mb="16px">
-        {description || t('This wallet looks new — choose an option below to add crypto and start trading')}
-      </Text>
+      {description ? (
+        <Text color="textSubtle" textAlign="center" mb="16px">
+          {description || t('This wallet looks new — choose an option below to add crypto and start trading')}
+        </Text>
+      ) : null}
     </Box>
   )
 }
