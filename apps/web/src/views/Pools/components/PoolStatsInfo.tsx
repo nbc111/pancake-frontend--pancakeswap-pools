@@ -1,4 +1,4 @@
-import { Flex, LinkExternal, ScanLink, Skeleton, Text } from '@pancakeswap/uikit'
+import { Flex, ScanLink, Skeleton, Text } from '@pancakeswap/uikit'
 import { Pool } from '@pancakeswap/widgets-internal'
 
 import { useTranslation } from '@pancakeswap/localization'
@@ -6,9 +6,8 @@ import { Token } from '@pancakeswap/sdk'
 import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import AddToWalletButton, { AddToWalletTextOptions } from 'components/AddToWallet/AddToWalletButton'
 import { useActiveChainId } from 'hooks/useActiveChainId'
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 import { useCurrentBlock } from 'state/block/hooks'
-import { getTokenInfoPath } from 'state/info/utils'
 import { getBlockExploreLink } from 'utils'
 import { getPoolBlockInfo } from 'views/Pools/helpers'
 import MaxStakeRow from './MaxStakeRow'
@@ -58,11 +57,6 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
   // 如果 shouldShowBlockCountdown 为 false，但池未结束且有 endTimestamp，仍然显示倒计时
   // 这样可以支持 startTimestamp 为 0 的情况（如 NBC Staking）
   const shouldShowEndCountdown = shouldShowBlockCountdown || (!isFinished && endTimestamp && endTimestamp > 0)
-
-  const tokenInfoPath = useMemo(
-    () => (chainId ? getTokenInfoPath(chainId, earningToken.address) : ''),
-    [chainId, earningToken.address],
-  )
 
   return (
     <>
@@ -114,16 +108,6 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
           )}
         </Flex>
       )}
-      <Flex mb="2px" justifyContent={alignLinksToRight ? 'flex-end' : 'flex-start'}>
-        <LinkExternal href={tokenInfoPath || undefined} bold={false} small>
-          {t('See Token Info')}
-        </LinkExternal>
-      </Flex>
-      <Flex mb="2px" justifyContent={alignLinksToRight ? 'flex-end' : 'flex-start'}>
-        <LinkExternal href={earningToken.projectLink} bold={false} small>
-          {t('View Project Site')}
-        </LinkExternal>
-      </Flex>
       {poolContractAddress && (
         <Flex mb="2px" justifyContent={alignLinksToRight ? 'flex-end' : 'flex-start'}>
           <ScanLink href={getBlockExploreLink(poolContractAddress ?? '', 'address', chainId)} bold={false} small>

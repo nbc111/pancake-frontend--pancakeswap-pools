@@ -3,6 +3,11 @@
     "es6": true,
     "browser": true
   },
+  "settings": {
+    "next": {
+      "rootDir": ["apps/web"]
+    }
+  },
   "extends": ["plugin:@next/next/recommended", "../../packages/eslint-config/lib/next-page-router.js"],
   "rules": {
     "no-empty-function": 0,

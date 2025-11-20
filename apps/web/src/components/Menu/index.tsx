@@ -1,5 +1,5 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { Menu as UikitMenu, useModal } from '@pancakeswap/uikit'
+import { Menu as UikitMenu, useMatchBreakpoints, useModal } from '@pancakeswap/uikit'
 import { BIG_ZERO } from '@pancakeswap/utils/bigNumber'
 import { NextLinkFromReactRouter } from '@pancakeswap/widgets-internal'
 import USCitizenConfirmModal from 'components/Modal/USCitizenConfirmModal'
@@ -20,10 +20,6 @@ import { getActiveMenuItem, getActiveSubMenuChildItem, getActiveSubMenuItem } fr
 
 const Notifications = lazy(() => import('views/Notifications'))
 
-const LinkComponent = (linkProps) => {
-  return <NextLinkFromReactRouter to={linkProps.href} {...linkProps} prefetch={false} />
-}
-
 const Menu = (props) => {
   const { enabled } = useWebNotifications()
   const { chainId } = useActiveChainId()
@@ -33,6 +29,7 @@ const Menu = (props) => {
   const { pathname } = useRouter()
   const perpUrl = usePerpUrl({ chainId, isDark, languageCode: currentLanguage.code })
   const [perpConfirmed] = useUserNotUsCitizenAcknowledgement(IdType.PERPETUALS)
+  const { isMobile } = useMatchBreakpoints()
 
   const [onPerpConfirmModalPresent] = useModal(
     <USCitizenConfirmModal title={t('PancakeSwap Perpetuals')} id={IdType.PERPETUALS} href={perpUrl} />,
@@ -54,6 +51,21 @@ const Menu = (props) => {
   const menuItems = useMenuItems({
     onClick: onSubMenuClick,
   })
+
+  const LinkComponent = useMemo(() => {
+    return ({ href, onClick, ...linkProps }) => {
+      const handleClick = (event) => {
+        if (isMobile && typeof href === 'string' && href.startsWith('/liquidity/pools')) {
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+        onClick?.(event)
+      }
+
+      return <NextLinkFromReactRouter to={href} prefetch={false} {...linkProps} onClick={handleClick} />
+    }
+  }, [isMobile])
 
   const activeMenuItem = useMemo(() => getActiveMenuItem({ menuConfig: menuItems, pathname }), [menuItems, pathname])
   const activeSubMenuItem = useMemo(
@@ -113,7 +125,7 @@ function filterItemsProps(items: ReturnType<typeof useMenuItems>) {
     return {
       ...item,
       items: item.items?.map((subItem) => {
-        const { matchHrefs, overrideSubNavItems, ...rest } = subItem
+        const { matchHrefs: _matchHrefs, overrideSubNavItems: _overrideSubNavItems, ...rest } = subItem
         return rest
       }),
     }
