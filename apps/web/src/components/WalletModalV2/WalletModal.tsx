@@ -15,8 +15,6 @@ import {
   useMatchBreakpoints,
 } from '@pancakeswap/uikit'
 
-import { RecentTransactions } from 'components/App/Transactions/TransactionsModal'
-
 import { useTheme } from '@pancakeswap/hooks'
 import { useMenuTab, WalletView } from 'components/Menu/UserMenu/providers/MenuTabProvider'
 import { StyledButtonMenuItem, TabsComponent } from 'components/Menu/UserMenu/WalletModal'
@@ -38,8 +36,6 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { previouslyUsedEvmWalletsAtom } from '@pancakeswap/ui-wallets/src/state/atom'
 import { walletsConfig } from 'config/wallet'
 import { useClaimGiftContext } from 'views/Gift/providers/ClaimGiftProvider'
-import { ActionButton } from './ActionButton'
-import { AssetsList } from './AssetsList'
 import { SendAssets } from './SendAssets'
 import { SEND_ENTRY, ViewState } from './type'
 import { useWalletModalV2ViewState } from './WalletModalV2ViewStateProvider'
@@ -77,16 +73,6 @@ const TotalBalanceDecimal = styled(Text)`
   font-size: 40px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textSubtle};
-`
-
-const ActionButtonsContainer = styled(FlexGap)`
-  padding: 16px 0px;
-  justify-content: center;
-  flex-direction: column;
-  gap: 8px;
-  ${({ theme }) => theme.mediaQueries.md} {
-    padding: 16px;
-  }
 `
 
 const WalletModal: React.FC<WalletModalProps> = ({ evmAccount, solanaAccount, onDismiss, isOpen }) => {
@@ -338,70 +324,11 @@ export const WalletContent = ({
                   </FlexGap>
                 </CardBody>
               </Card>
-              {view === WalletView.GIFTS ? (
-                <GiftsDashboard setViewState={setViewState} />
-              ) : view === WalletView.WALLET_INFO && !noAssets ? (
-                <Box mt="16px">
-                  <AssetsList assets={balances} isLoading={isLoading} />
-                </Box>
-              ) : (
-                !noAssets && (
-                  <Box padding="16px 0" maxHeight="280px" overflow="auto">
-                    <RecentTransactions />
-                  </Box>
-                )
-              )}
+              {view === WalletView.GIFTS ? <GiftsDashboard setViewState={setViewState} /> : null}
             </>
           )}
         </Box>
       </CancelGiftProvider>
-      {viewState === ViewState.WALLET_INFO && (
-        <>
-          {!noAssets && view !== WalletView.GIFTS && (
-            <ActionButtonsContainer>
-              <FlexGap gap="8px" width="100%">
-                <ActionButton
-                  onClick={() => {
-                    router.push('/buy-crypto')
-                    onDismiss()
-                  }}
-                  variant="tertiary"
-                >
-                  {t('Buy')}
-                </ActionButton>
-                <ActionButton
-                  onClick={() => {
-                    setViewState(ViewState.SEND_ASSETS)
-                    setSendEntry(SEND_ENTRY.SEND_ONLY)
-                  }}
-                  variant="tertiary"
-                >
-                  {t('Send')}
-                </ActionButton>
-                <ActionButton
-                  onClick={() => {
-                    setViewState(ViewState.RECEIVE_OPTIONS)
-                  }}
-                  variant="tertiary"
-                >
-                  {t('Receive')}
-                </ActionButton>
-              </FlexGap>
-
-              <Button
-                variant="text"
-                onClick={() => {
-                  router.push('/bridge')
-                  onDismiss()
-                }}
-              >
-                {t('Bridge Crypto')}?
-                <ArrowForwardIcon color="primary" />
-              </Button>
-            </ActionButtonsContainer>
-          )}
-        </>
-      )}
     </Box>
   )
 }

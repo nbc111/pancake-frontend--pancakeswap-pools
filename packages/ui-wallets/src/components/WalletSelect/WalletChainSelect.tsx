@@ -154,41 +154,6 @@ export const WalletChainSelect: React.FC<WalletChainSelectProps> = ({
                   )}
                 </RowBetween>
               )}
-
-              {supportsSolana && (
-                <>
-                  <RowBetween flexWrap="nowrap">
-                    <Row gap="8px" alignItems="center">
-                      <SquareNetworkIcon>
-                        <img
-                          src={`${ASSET_CDN}/web/wallet-ui/network-tag-solana.png`}
-                          width={32}
-                          height={32}
-                          alt="Solana"
-                        />
-                      </SquareNetworkIcon>
-
-                      <Text fontSize="16px" fontWeight="600" color="text">
-                        Solana
-                      </Text>
-                    </Row>
-                    {solanaAddress ? (
-                      <Checkbox checked disabled scale="sm" />
-                    ) : (
-                      <Button variant="primary" onClick={onConnectSolana} scale={isMobile ? 'sm' : 'md'}>
-                        {t('Connect')}
-                      </Button>
-                    )}
-                  </RowBetween>
-                  {shouldShowMetamaskVersionWarning && (
-                    <Message variant="warning">
-                      <MessageText>
-                        {t(`If you're having trouble connecting with MetaMask, try updating to the latest version.`)}
-                      </MessageText>
-                    </Message>
-                  )}
-                </>
-              )}
             </Column>
           </Column>
         </CardBody>

@@ -118,39 +118,6 @@ export const ConnectedWallets: React.FC<ConnectedWalletsProps> = ({ title, onBac
           </Button>
         )}
       </RowBetween>
-      <RowBetween>
-        <FlexGap alignItems="center" gap="8px">
-          <Box position="relative" width={48} height={48}>
-            <NetworkIcon
-              src={`${ASSET_CDN}/web/wallet-ui/network-tag-solana.png`}
-              width={48}
-              height={48}
-              alt="Solana network"
-              style={{ display: 'block' }}
-            />
-            {walletIcons[WalletAdaptedNetwork.Solana] && (
-              <Box position="absolute" bottom="0" right="0" width={24} height={24}>
-                <WalletIcon src={walletIcons[WalletAdaptedNetwork.Solana]} width={24} height={24} alt="Solana Wallet" />
-              </Box>
-            )}
-          </Box>
-          <Column>
-            <Text fontSize="16px" fontWeight={600}>
-              Solana
-            </Text>
-            <Text fontSize="14px" color="textSubtle" title={solanaAddress}>
-              {solanaAddress ? truncateHash(solanaAddress, 6, 4) : t('Disconnected')}
-            </Text>
-          </Column>
-        </FlexGap>
-        {solanaAddress ? (
-          <WalletAction address={solanaAddress} onLogout={() => handleWalletLogout(WalletAdaptedNetwork.Solana)} />
-        ) : (
-          <Button scale="sm" onClick={() => setWalletModalVisible(true)}>
-            {t('Connect')}
-          </Button>
-        )}
-      </RowBetween>
     </Column>
   )
 }

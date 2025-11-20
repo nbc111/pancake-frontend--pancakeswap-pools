@@ -51,15 +51,6 @@ export const ConnectedWalletsButton = ({ evmAccount, solanaAccount, ...props }: 
               style={{ display: 'block' }}
             />
           )}
-          {solanaAccount && (
-            <img
-              src={`${ASSET_CDN}/web/wallet-ui/network-tag-solana.png`}
-              width={16}
-              height={16}
-              alt="Solana network"
-              style={{ display: 'block' }}
-            />
-          )}
         </StyledNetworkIcons>
         <Text fontSize="16px" fontWeight={600}>
           {t('Accounts')}
