@@ -29,7 +29,6 @@ import { ClaimGiftConfirmView } from 'views/Gift/components/ClaimGiftConfirmView
 import { ClaimGiftView } from 'views/Gift/components/ClaimGiftView'
 import { GiftInfoDetailView } from 'views/Gift/components/GiftInfoDetailView'
 import { GiftsDashboard } from 'views/Gift/components/GiftsDashboard'
-import { NonEVMChainId } from '@pancakeswap/chains'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { CancelGiftProvider } from 'views/Gift/providers/CancelGiftProvider'
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -48,7 +47,6 @@ import { ConnectedWalletsButton } from './ConnectedWalletsButton'
 import { ConnectedWallets } from './ConnectedWallets'
 import ReceiveOptionsView from './ReceiveOptionsView'
 import { ReceiveContent } from './ReceiveModal'
-import EmptyWalletActions from './EmptyWalletActions'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -91,14 +89,7 @@ const ActionButtonsContainer = styled(FlexGap)`
   }
 `
 
-const WalletModal: React.FC<WalletModalProps> = ({
-  evmAccount,
-  solanaAccount,
-  onDismiss,
-  isOpen,
-  onReceiveClick,
-  onDisconnect,
-}) => {
+const WalletModal: React.FC<WalletModalProps> = ({ evmAccount, solanaAccount, onDismiss, isOpen }) => {
   const { viewState } = useWalletModalV2ViewState()
 
   // If no account is provided, show a message or redirect
@@ -108,13 +99,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
   return (
     <ModalV2 isOpen={isOpen} onDismiss={onDismiss} closeOnOverlayClick>
       <StyledModal title={undefined} onDismiss={onDismiss} hideCloseButton bodyPadding="16px">
-        <WalletContent
-          evmAccount={evmAccount}
-          solanaAccount={solanaAccount}
-          onDisconnect={onDisconnect}
-          onDismiss={onDismiss}
-          onReceiveClick={onReceiveClick}
-        />
+        <WalletContent evmAccount={evmAccount} solanaAccount={solanaAccount} onDismiss={onDismiss} />
       </StyledModal>
     </ModalV2>
   )
@@ -124,14 +109,10 @@ export const WalletContent = ({
   evmAccount,
   solanaAccount,
   onDismiss,
-  onReceiveClick,
-  onDisconnect,
 }: {
   evmAccount: string | undefined
   solanaAccount: string | undefined
   onDismiss: () => void
-  onReceiveClick: () => void
-  onDisconnect: () => void
 }) => {
   const { view, setView } = useMenuTab()
   const { t } = useTranslation()
@@ -145,12 +126,6 @@ export const WalletContent = ({
   const { chainId } = useActiveChainId()
   const [selectedReceiveAccount, setSelectedReceiveAccount] = useState<string | undefined>(undefined)
   const [selectedReceiveChain, setSelectedReceiveChain] = useState<'evm' | 'solana' | undefined>(undefined)
-  const selectedWallet = useMemo(() => {
-    if (selectedReceiveChain === 'evm') return evmAccount
-    if (selectedReceiveChain === 'solana') return solanaAccount
-    return undefined
-  }, [selectedReceiveChain, evmAccount, solanaAccount])
-
   // Wallet connection hooks for getting icons
   const { connectAsync } = useConnect()
   const { wallet: solanaWallet } = useWallet()
@@ -382,17 +357,7 @@ export const WalletContent = ({
       </CancelGiftProvider>
       {viewState === ViewState.WALLET_INFO && (
         <>
-          {noAssets ? (
-            chainId === NonEVMChainId.SOLANA ? (
-              <EmptyWalletActions
-                onDismiss={onDismiss}
-                setViewState={setViewState}
-                description={t('This wallet looks new. Does not have any assets.')}
-              />
-            ) : (
-              <EmptyWalletActions onDismiss={onDismiss} setViewState={setViewState} />
-            )
-          ) : view === WalletView.GIFTS ? null : (
+          {!noAssets && view !== WalletView.GIFTS && (
             <ActionButtonsContainer>
               <FlexGap gap="8px" width="100%">
                 <ActionButton
