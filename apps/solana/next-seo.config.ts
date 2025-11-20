@@ -4,15 +4,15 @@ import { ASSET_CDN } from '@/utils/config/endpoint'
 export const SEO: DefaultSeoProps = {
   titleTemplate: '%s | PancakeSwap',
   defaultTitle: 'PancakeSwap',
-  description: 'Trade, earn, and own crypto on the all-in-one multichain DEX',
+  description: 'Earn and hold cryptocurrency on NBC Chain',
   twitter: {
     cardType: 'summary_large_image',
     handle: '@PancakeSwap',
     site: '@PancakeSwap'
   },
   openGraph: {
-    title: "🥞 PancakeSwap - Everyone's Favorite DEX",
-    description: 'Trade, earn, and own crypto on the all-in-one multichain DEX',
+    title: "🥞 NBC Staking - Everyone's Favorite Staking",
+    description: 'Earn and hold cryptocurrency on NBC Chain',
     images: [{ url: `${ASSET_CDN}/web/og/v2/hero.jpg` }]
   }
 }
