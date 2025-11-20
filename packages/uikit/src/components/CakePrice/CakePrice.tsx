@@ -39,7 +39,7 @@ const CakePrice: React.FC<React.PropsWithChildren<Props>> = ({
   return cakePriceUsd ? (
     <PriceLink>
       <IconImage src="/images/custom-tokens/nbc.png" alt="NBC" />
-      <Text color={color} bold>{`$${cakePriceUsd.toFixed(3)}`}</Text>
+      <Text color={color} bold>{`$${cakePriceUsd.toFixed(5)}`}</Text>
     </PriceLink>
   ) : showSkeleton ? (
     <Skeleton width={80} height={24} />

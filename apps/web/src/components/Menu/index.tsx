@@ -89,7 +89,7 @@ const Menu = (props) => {
       isDark={isDark}
       toggleTheme={toggleTheme}
       showLangSelector={false}
-      cakePriceUsd={cakePrice.eq(BIG_ZERO) ? undefined : cakePrice}
+      cakePriceUsd={cakePrice.eq(BIG_ZERO) ? undefined : cakePrice.toNumber()}
       links={filterItemsProps(menuItems)}
       subLinks={
         activeSubMenuItem?.overrideSubNavItems ??
