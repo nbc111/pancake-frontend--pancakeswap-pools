@@ -9,6 +9,7 @@ import { chains, createWagmiConfig, walletConnectNoQrCodeConnector } from 'utils
 import { Config } from 'wagmi'
 import { ConnectMutateAsync } from 'wagmi/query'
 import { ASSET_CDN } from './constants/endpoints'
+import { dappHostForDeepLink, normalizedDappUrl } from './constants/dappUrl'
 
 export enum ConnectorNames {
   MetaMask = 'metaMask',
@@ -23,38 +24,6 @@ export enum ConnectorNames {
   TrustWallet = 'trust',
   CyberWallet = 'cyberWallet',
 }
-
-const DEFAULT_DAPP_URL = 'https://staking.nbblocks.cc/nbc-staking?chain=nbc'
-const RAW_DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || DEFAULT_DAPP_URL
-
-const getNormalizedDappUrl = (raw: string) => {
-  try {
-    const parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`)
-    const normalizedPath =
-      parsed.pathname.endsWith('/') && parsed.pathname !== '/' ? parsed.pathname.slice(0, -1) : parsed.pathname
-    return `${parsed.protocol}//${parsed.host}${normalizedPath === '/' ? '' : normalizedPath}`
-  } catch (error) {
-    console.error('Invalid NEXT_PUBLIC_DAPP_URL, falling back to default', error)
-    return DEFAULT_DAPP_URL
-  }
-}
-
-const normalizedDappUrl = getNormalizedDappUrl(RAW_DAPP_URL)
-const dappHostForDeepLink = (() => {
-  try {
-    const parsed = new URL(normalizedDappUrl)
-    const path = parsed.pathname === '/' ? '' : parsed.pathname
-    return `${parsed.host}${path}`
-  } catch {
-    try {
-      const parsed = new URL(DEFAULT_DAPP_URL)
-      const path = parsed.pathname === '/' ? '' : parsed.pathname
-      return `${parsed.host}${path}`
-    } catch {
-      return 'staking.nbblocks.cc'
-    }
-  }
-})()
 
 export const createQrCode =
   <config extends Config = Config, context = unknown>(chainId: number, connect: ConnectMutateAsync<config, context>) =>

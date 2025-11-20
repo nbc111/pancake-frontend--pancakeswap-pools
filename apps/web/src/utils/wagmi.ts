@@ -5,7 +5,6 @@ import { blocto } from '@pancakeswap/wagmi/connectors/blocto'
 import { EvmConnectorNames } from '@pancakeswap/ui-wallets'
 import { CHAINS as LOCAL_CHAINS } from 'config/chains'
 import { PUBLIC_NODES } from 'config/nodes'
-import { ConnectorNames } from 'config/wallet'
 import memoize from 'lodash/memoize'
 import { Transport } from 'viem'
 import { createConfig, http } from 'wagmi'
@@ -13,6 +12,7 @@ import { mainnet } from 'wagmi/chains'
 import { coinbaseWallet, injected, safe, walletConnect } from 'wagmi/connectors'
 import { customMetaMaskConnector } from 'wallet/metamaskConnector'
 import { ASSET_CDN } from 'config/constants/endpoints'
+import { dappOrigin, normalizedDappUrl } from 'config/constants/dappUrl'
 import { fallbackWithRank } from './fallbackWithRank'
 import { CLIENT_CONFIG, publicClient } from './viem'
 
@@ -27,16 +27,25 @@ export const coinbaseConnector = coinbaseWallet({
   appLogoUrl: 'https://pancakeswap.com/logo.png',
 })
 
+const walletConnectMetadata = {
+  name: 'NBC Staking',
+  description: 'Stake and manage NBC liquidity positions',
+  url: normalizedDappUrl,
+  icons: [`${dappOrigin}/favicon.ico`],
+}
+
 export const walletConnectConnector = walletConnect({
   // ignore the error in test environment
   // Error: To use QR modal, please install @walletconnect/modal package
   showQrModal: process.env.NODE_ENV !== 'test',
   projectId: 'e542ff314e26ff34de2d4fba98db70bb',
+  metadata: walletConnectMetadata,
 })
 
 export const walletConnectNoQrCodeConnector = walletConnect({
   showQrModal: false,
   projectId: 'e542ff314e26ff34de2d4fba98db70bb',
+  metadata: walletConnectMetadata,
 })
 
 const bloctoConnector = blocto({
