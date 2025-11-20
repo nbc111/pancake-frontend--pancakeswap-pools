@@ -6,6 +6,7 @@ import { getQueryChainId } from 'wallet/util/getQueryChainId'
 import { accountActiveChainAtom } from 'wallet/atoms/accountStateAtoms'
 import { useAccount } from 'wagmi'
 import { usePrivyWalletAddress } from 'wallet/Privy/hooks'
+import { isPrivyEnabled } from 'wallet/Privy/config'
 import { useSwitchNetworkV2 } from './useSwitchNetworkV2'
 
 export function useSyncWagmiState() {
@@ -41,11 +42,11 @@ export function useSyncWagmiState() {
   }, [wagmiChainId, switchNetwork])
 
   useEffect(() => {
-    if (!ready) {
+    if (isPrivyEnabled && !ready) {
       return
     }
 
-    if (authenticated) {
+    if (isPrivyEnabled && authenticated) {
       if (isPrivyAddressLoading) {
         return
       }
