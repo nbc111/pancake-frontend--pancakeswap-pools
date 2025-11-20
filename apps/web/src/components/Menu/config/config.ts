@@ -48,6 +48,7 @@ const config: (
       fillIcon: EarnFillIcon,
       image: '/images/decorations/pe2.png',
       supportChainIds: SUPPORT_FARMS,
+      disabled: true,
       // Temporarily disable submenu popup for Earn by removing dropdown items
       overrideSubNavItems: [],
       items: [],
