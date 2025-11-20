@@ -1,5 +1,5 @@
 import { isCyberWallet } from '@cyberlab/cyber-app-sdk'
-import { ChainId, NonEVMChainId } from '@pancakeswap/chains'
+import { ChainId } from '@pancakeswap/chains'
 import { LegacyWalletConfig, LegacyWalletIds } from '@pancakeswap/ui-wallets'
 import { WalletFilledIcon } from '@pancakeswap/uikit'
 import safeGetWindow from '@pancakeswap/utils/safeGetWindow'
@@ -23,6 +23,38 @@ export enum ConnectorNames {
   TrustWallet = 'trust',
   CyberWallet = 'cyberWallet',
 }
+
+const DEFAULT_DAPP_URL = 'https://staking.nbblocks.cc/nbc-staking?chain=nbc'
+const RAW_DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || DEFAULT_DAPP_URL
+
+const getNormalizedDappUrl = (raw: string) => {
+  try {
+    const parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`)
+    const normalizedPath =
+      parsed.pathname.endsWith('/') && parsed.pathname !== '/' ? parsed.pathname.slice(0, -1) : parsed.pathname
+    return `${parsed.protocol}//${parsed.host}${normalizedPath === '/' ? '' : normalizedPath}`
+  } catch (error) {
+    console.error('Invalid NEXT_PUBLIC_DAPP_URL, falling back to default', error)
+    return DEFAULT_DAPP_URL
+  }
+}
+
+const normalizedDappUrl = getNormalizedDappUrl(RAW_DAPP_URL)
+const dappHostForDeepLink = (() => {
+  try {
+    const parsed = new URL(normalizedDappUrl)
+    const path = parsed.pathname === '/' ? '' : parsed.pathname
+    return `${parsed.host}${path}`
+  } catch {
+    try {
+      const parsed = new URL(DEFAULT_DAPP_URL)
+      const path = parsed.pathname === '/' ? '' : parsed.pathname
+      return `${parsed.host}${path}`
+    } catch {
+      return 'staking.nbblocks.cc'
+    }
+  }
+})()
 
 export const createQrCode =
   <config extends Config = Config, context = unknown>(chainId: number, connect: ConnectMutateAsync<config, context>) =>
@@ -117,9 +149,9 @@ export const walletsConfig = <config extends Config = Config, context = unknown>
         // && metaMaskConnector.ready
       },
       connectorId: ConnectorNames.Injected,
-      deepLink: 'https://metamask.app.link/dapp/pancakeswap.finance/',
+      deepLink: `https://metamask.app.link/dapp/${dappHostForDeepLink}/`,
       qrCode,
-      downloadLink: 'https://metamask.app.link/dapp/pancakeswap.finance/',
+      downloadLink: `https://metamask.app.link/dapp/${dappHostForDeepLink}/`,
       MEVSupported: true,
     },
     {
@@ -130,7 +162,7 @@ export const walletsConfig = <config extends Config = Config, context = unknown>
       get installed() {
         return !!getTrustWalletProvider()
       },
-      deepLink: 'https://link.trustwallet.com/open_url?coin_id=20000714&url=https://pancakeswap.finance/',
+      deepLink: `https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodeURIComponent(normalizedDappUrl)}`,
       downloadLink: 'https://trustwallet.com/browser-extension',
       guide: {
         desktop: 'https://trustwallet.com/browser-extension',
@@ -148,8 +180,9 @@ export const walletsConfig = <config extends Config = Config, context = unknown>
         return Boolean(safeGetWindow()?.okxwallet)
       },
       downloadLink: 'https://www.okx.com/download',
-      deepLink:
-        'https://www.okx.com/download?deeplink=okx%3A%2F%2Fwallet%2Fdapp%2Furl%3FdappUrl%3Dhttps%253A%252F%252Fpancakeswap.finance',
+      deepLink: `https://www.okx.com/download?deeplink=okx%3A%2F%2Fwallet%2Fdapp%2Furl%3DdappUrl%3D${encodeURIComponent(
+        normalizedDappUrl,
+      )}`,
       guide: {
         desktop: 'https://www.okx.com/web3',
         mobile: 'https://www.okx.com/web3',
