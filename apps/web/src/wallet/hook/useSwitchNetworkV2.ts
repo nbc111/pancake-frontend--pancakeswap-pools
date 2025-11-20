@@ -96,13 +96,15 @@ const requireLogout = async (connector: Connector, chainId: number, address: `0x
     if (typeof connector.getProvider !== 'function') return false
 
     const provider = (await connector.getProvider()) as any
+    const normalizedAddress = address?.toLowerCase()
 
     return Boolean(
       provider &&
         Array.isArray(provider.session?.namespaces?.eip155?.accounts) &&
-        !provider.session.namespaces.eip155.accounts.some((account: string) =>
-          account?.includes(`${chainId}:${address}`),
-        ),
+        !provider.session.namespaces.eip155.accounts.some((account: string) => {
+          const normalizedAccount = account?.toLowerCase()
+          return normalizedAddress ? normalizedAccount?.includes(`${chainId}:${normalizedAddress}`) : false
+        }),
     )
   } catch (error) {
     console.error(error, 'Error detecting provider')
