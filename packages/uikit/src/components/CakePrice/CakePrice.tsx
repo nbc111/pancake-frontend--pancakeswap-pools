@@ -1,6 +1,5 @@
 import React from "react";
 import { styled } from "styled-components";
-import LogoRound from "../Svg/Icons/LogoRound";
 import Text from "../Text/Text";
 import Skeleton from "../Skeleton/Skeleton";
 import { Colors } from "../../theme";
@@ -15,14 +14,20 @@ export interface Props {
 const PriceLink = styled.div`
   display: flex;
   align-items: center;
-  svg {
+  img {
     transition: transform 0.3s;
   }
   &:hover {
-    svg {
+    img {
       transform: scale(1.2);
     }
   }
+`;
+
+const IconImage = styled.img`
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
 `;
 
 const CakePrice: React.FC<React.PropsWithChildren<Props>> = ({
@@ -33,7 +38,7 @@ const CakePrice: React.FC<React.PropsWithChildren<Props>> = ({
 }) => {
   return cakePriceUsd ? (
     <PriceLink>
-      <LogoRound width="24px" mr="8px" />
+      <IconImage src="/images/custom-tokens/nbc.png" alt="NBC" />
       <Text color={color} bold>{`$${cakePriceUsd.toFixed(3)}`}</Text>
     </PriceLink>
   ) : showSkeleton ? (
