@@ -1,5 +1,5 @@
 import { useTranslation } from '@pancakeswap/localization'
-import { ArrowForwardIcon, Box, FlexGap, Text } from '@pancakeswap/uikit'
+import { Box, FlexGap, Text } from '@pancakeswap/uikit'
 import { ASSET_CDN } from 'config/constants/endpoints'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -63,20 +63,6 @@ const EmptyWalletActions: React.FC<EmptyWalletActionsProps> = ({ onDismiss, setV
             {t('Receive crypto from another wallet.')}
           </Text>
         </OptionBox>
-      </FlexGap>
-      <FlexGap
-        justifyContent="center"
-        alignItems="center"
-        mt="24px"
-        onClick={() => {
-          router.push('/bridge')
-        }}
-        style={{ cursor: 'pointer' }}
-      >
-        <Text bold color="primary" fontSize="16px">
-          {t('Bridge Crypto')}
-        </Text>
-        <ArrowForwardIcon color="primary" />
       </FlexGap>
     </Box>
   )
