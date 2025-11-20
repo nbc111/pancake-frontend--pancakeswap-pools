@@ -35,8 +35,6 @@ export const Tabs = styled.div`
 
 interface TabsComponentProps {
   view: WalletView
-  evmAccount?: string
-  solanaAccount?: string
   handleClick: (newIndex: number) => void
   style?: React.CSSProperties
 }
@@ -45,22 +43,12 @@ export const StyledButtonMenuItem = styled(ButtonMenuItem)<{ isActive?: boolean 
   color: ${({ theme, isActive }) => (isActive ? theme.colors.secondary : theme.colors.textSubtle)};
 `
 
-export const TabsComponent: React.FC<React.PropsWithChildren<TabsComponentProps>> = ({
-  view,
-  handleClick,
-  style,
-  evmAccount,
-  solanaAccount,
-}) => {
+export const TabsComponent: React.FC<React.PropsWithChildren<TabsComponentProps>> = ({ view, handleClick, style }) => {
   const { t } = useTranslation()
-  const solanaOnly = !evmAccount && Boolean(solanaAccount)
-
   return (
     <Tabs style={style}>
       <ButtonMenu scale="sm" variant="text" onItemClick={handleClick} activeIndex={view}>
         <StyledButtonMenuItem variant="secondary">{t('Assets')}</StyledButtonMenuItem>
-        <StyledButtonMenuItem variant="secondary">{t('Transactions')}</StyledButtonMenuItem>
-        {solanaOnly ? <></> : <StyledButtonMenuItem variant="secondary">{t('Gift')}</StyledButtonMenuItem>}
       </ButtonMenu>
     </Tabs>
   )
@@ -93,7 +81,7 @@ const WalletModal: React.FC<React.PropsWithChildren<{ onDismiss?: () => void; in
           <CloseIcon width="24px" color="text" />
         </IconButton>
       </ModalHeader>
-      {view !== WalletView.WRONG_NETWORK && chainId !== NonEVMChainId.SOLANA && (
+      {view === WalletView.WALLET_INFO && chainId !== NonEVMChainId.SOLANA && (
         <TabsComponent view={view} handleClick={handleClick} />
       )}
       <ModalBody p="24px" width="100%">
