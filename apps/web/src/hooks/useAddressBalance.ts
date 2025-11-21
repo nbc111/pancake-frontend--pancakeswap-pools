@@ -3,9 +3,13 @@ import { ZERO_ADDRESS } from '@pancakeswap/swap-sdk-core'
 import { useQuery } from '@tanstack/react-query'
 import BigNumber from 'bignumber.js'
 import { useCallback, useMemo } from 'react'
+import type { Address } from 'viem'
+
+import { publicClient } from 'utils/wagmi'
 
 import { useCombinedActiveList } from 'state/lists/hooks'
 import { safeGetAddress } from 'utils/safeGetAddress'
+import { getCakePriceFromNbcApi } from './useCakePrice'
 
 import { useAccountActiveChain } from './useAccountActiveChain'
 
@@ -42,6 +46,15 @@ interface UseAddressBalanceOptions {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_WALLET_API_BASE_URL || 'https://wallet-api.pancakeswap.com/v1'
+const NBC_CHAIN_ID = 1281 as ChainId
+const NBC_NATIVE_TOKEN: TokenData = {
+  address: ZERO_ADDRESS,
+  name: 'NBC Token',
+  symbol: 'NBC',
+  decimals: 18,
+  isSpam: false,
+  logoURI: '/images/custom-tokens/nbc.png',
+}
 
 function isNative(address: string): boolean {
   return address === ZERO_ADDRESS
@@ -76,8 +89,51 @@ export const useAddressBalance = (
   const isListedToken = useIsListedToken()
 
   // Fetch balances from the API
+  const fetchNbcBalances = useCallback(async (addr: string): Promise<BalanceData[]> => {
+    if (!addr) return []
+
+    try {
+      const client = publicClient({ chainId: NBC_CHAIN_ID })
+      const [nativeBalance, priceString] = await Promise.all([
+        client.getBalance({ address: addr as Address }),
+        getCakePriceFromNbcApi().catch(() => null),
+      ])
+
+      const balanceBigNumber = new BigNumber(nativeBalance.toString())
+      const amount = balanceBigNumber.dividedBy(new BigNumber(10).pow(NBC_NATIVE_TOKEN.decimals))
+      const nbcPrice = priceString ? Number(priceString) : null
+      const totalUsd = nbcPrice !== null ? amount.multipliedBy(nbcPrice).toNumber() : null
+
+      return [
+        {
+          id: `${NBC_CHAIN_ID}-${NBC_NATIVE_TOKEN.address}`,
+          chainId: NBC_CHAIN_ID,
+          timestamp: new Date().toISOString(),
+          value: balanceBigNumber.toString(10),
+          quantity: amount.toString(10),
+          token: NBC_NATIVE_TOKEN,
+          price:
+            nbcPrice !== null
+              ? {
+                  usd: nbcPrice,
+                  usd24h: null,
+                  totalUsd,
+                }
+              : null,
+        },
+      ]
+    } catch (error) {
+      console.error('Failed to fetch NBC balances', error)
+      return []
+    }
+  }, [])
+
   const fetchBalances = useCallback(async (): Promise<BalanceData[]> => {
     if (!address) return []
+
+    if (chainId === NBC_CHAIN_ID) {
+      return fetchNbcBalances(address)
+    }
 
     const response = await fetch(`${API_BASE_URL}${chainId === NonEVMChainId.SOLANA ? '/sol' : ''}/balances/${address}`)
 
@@ -88,7 +144,7 @@ export const useAddressBalance = (
     const data = (await response.json()) || []
 
     return data
-  }, [address])
+  }, [address, chainId, fetchNbcBalances])
 
   const {
     data: balances,
@@ -96,7 +152,7 @@ export const useAddressBalance = (
     error,
     refetch,
   } = useQuery({
-    queryKey: ['addressBalances', address],
+    queryKey: ['addressBalances', address, chainId],
     queryFn: fetchBalances,
     enabled: Boolean(address) && enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -226,42 +282,33 @@ export const useAddressBalance = (
 }
 
 export const useMultichainAddressBalance = () => {
-  const { account: evmAccount, solanaAccount } = useAccountActiveChain()
+  const { account: evmAccount } = useAccountActiveChain()
   const isListedToken = useIsListedToken()
 
   const {
-    balances: evmBalances,
-    isLoading: isEvmLoading,
-    totalBalanceUsd: evmTotalBalanceUsd,
-  } = useAddressBalance(evmAccount, ChainId.BSC, {
+    balances: nbcBalances,
+    isLoading: isNbcLoading,
+    totalBalanceUsd: nbcTotalBalanceUsd,
+  } = useAddressBalance(evmAccount, NBC_CHAIN_ID, {
     includeSpam: false,
     onlyWithPrice: false,
     enabled: Boolean(evmAccount),
-  })
-
-  const {
-    balances: solanaBalances,
-    isLoading: isSolanaLoading,
-    totalBalanceUsd: solanaTotalBalanceUsd,
-  } = useAddressBalance(solanaAccount ?? undefined, NonEVMChainId.SOLANA, {
-    includeSpam: false,
-    onlyWithPrice: false,
-    enabled: Boolean(solanaAccount),
+    filterByChainId: NBC_CHAIN_ID,
   })
 
   return useMemo(() => {
     return {
-      balances: [...(evmBalances ?? []), ...(solanaBalances ?? [])].sort((a, b) => {
+      balances: [...(nbcBalances ?? [])].sort((a, b) => {
         const aListed = isListedToken(a.chainId, a.token.address)
         const bListed = isListedToken(b.chainId, b.token.address)
         if (aListed && !bListed) return -1
         if (!aListed && bListed) return 1
         return (b.price?.totalUsd ?? 0) - (a.price?.totalUsd ?? 0)
       }),
-      isLoading: isEvmLoading || isSolanaLoading,
-      totalBalanceUsd: (evmTotalBalanceUsd ?? 0) + (solanaTotalBalanceUsd ?? 0),
+      isLoading: isNbcLoading,
+      totalBalanceUsd: nbcTotalBalanceUsd ?? 0,
     }
-  }, [evmBalances, solanaBalances, isEvmLoading, isSolanaLoading, evmTotalBalanceUsd, solanaTotalBalanceUsd])
+  }, [nbcBalances, isNbcLoading, nbcTotalBalanceUsd, isListedToken])
 }
 
 export default useAddressBalance

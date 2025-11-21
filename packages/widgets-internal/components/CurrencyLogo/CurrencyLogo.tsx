@@ -83,8 +83,28 @@ export function CurrencyLogo({
     return [];
   }, [currency, uriLocations, useTrustWalletUrl]);
 
+  const nativeLogoSrcs = useMemo(() => {
+    if (!currency?.isNative || !currency.logoURI) {
+      return [];
+    }
+    return uriLocations.length > 0 ? uriLocations : [currency.logoURI];
+  }, [currency, uriLocations]);
+
   const renderLogo = () => {
     if (currency?.isNative) {
+      if (currency.logoURI) {
+        return (
+          <StyledLogo
+            size={size}
+            srcs={nativeLogoSrcs}
+            width={size}
+            height={size}
+            imageRef={imageRef}
+            style={style}
+            {...props}
+          />
+        );
+      }
       if (currency.chainId === ChainId.BSC) {
         return <BinanceIcon style={style} imageRef={imageRef} width={size} height={size} {...props} />;
       }

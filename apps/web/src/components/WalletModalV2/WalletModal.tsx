@@ -43,6 +43,7 @@ import { ConnectedWalletsButton } from './ConnectedWalletsButton'
 import { ConnectedWallets } from './ConnectedWallets'
 import ReceiveOptionsView from './ReceiveOptionsView'
 import { ReceiveContent } from './ReceiveModal'
+import { AssetsList } from './AssetsList'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -324,6 +325,7 @@ export const WalletContent = ({
                   </FlexGap>
                 </CardBody>
               </Card>
+              {(!noAssets || isLoading) && <AssetsList assets={balances} isLoading={isLoading} />}
               {view === WalletView.GIFTS ? <GiftsDashboard setViewState={setViewState} /> : null}
             </>
           )}

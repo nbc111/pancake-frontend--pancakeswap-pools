@@ -73,6 +73,11 @@ export const AssetsList: React.FC<AssetsListProps> = ({ assets, isLoading, onRow
           const address = safeGetAddress(asset.token.address)
           const isNative = address === ZERO_ADDRESS
           const enhancedLogoURI = getEnhancedLogoURI(asset.token.address, asset.chainId, asset.token.logoURI)
+          const localLogoURI =
+            !enhancedLogoURI && asset.token.symbol
+              ? `/images/custom-tokens/${asset.token.symbol.toLowerCase()}.png`
+              : undefined
+          const finalLogoURI = enhancedLogoURI ?? localLogoURI ?? asset.token.logoURI
           const tokenInfo = {
             chainId: asset.chainId,
             address: address === ZERO_ADDRESS ? undefined : address,
@@ -81,7 +86,7 @@ export const AssetsList: React.FC<AssetsListProps> = ({ assets, isLoading, onRow
             decimals: asset.token.decimals,
             symbol: asset.token.symbol,
             name: asset.token.name,
-            logoURI: enhancedLogoURI,
+            logoURI: finalLogoURI,
           }
           const chainName = asset.chainId === ChainId.BSC ? 'BNB' : getChainName(asset.chainId)
           return (
