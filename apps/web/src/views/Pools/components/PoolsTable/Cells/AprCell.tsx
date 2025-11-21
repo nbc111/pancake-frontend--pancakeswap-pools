@@ -8,6 +8,8 @@ import BigNumber from 'bignumber.js'
 
 import Apr from '../../Apr'
 
+const NBC_STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
+
 interface AprCellProps {
   pool: Pool.DeserializedPool<Token>
 }
@@ -18,13 +20,17 @@ const AprCell: React.FC<React.PropsWithChildren<AprCellProps>> = ({ pool }) => {
   const { userData } = pool
   const stakedBalance = userData?.stakedBalance ? new BigNumber(userData.stakedBalance) : BIG_ZERO
 
+  // NBC staking pools 使用 4 位小数精度
+  const isNbcStakingPool = pool.contractAddress?.toLowerCase() === NBC_STAKING_CONTRACT_ADDRESS.toLowerCase()
+  const decimals = isNbcStakingPool ? 4 : undefined
+
   return (
     <Pool.BaseCell role="cell" flex={['1 0 50px', '1 0 50px', '2 0 150px', '2 0 150px', '1 0 190px']}>
       <Pool.CellContent>
         <Text fontSize="12px" color="textSubtle" textAlign="left">
           {t('APR')}
         </Text>
-        <Apr pool={pool} stakedBalance={stakedBalance} showIcon={!isMobile} />
+        <Apr pool={pool} stakedBalance={stakedBalance} showIcon={!isMobile} decimals={decimals} />
       </Pool.CellContent>
     </Pool.BaseCell>
   )

@@ -52,6 +52,7 @@ interface AprProps<T> extends FlexProps {
   autoCompoundFrequency: number;
   boostedApr?: number;
   boostedTooltipsText?: string;
+  decimals?: number;
 }
 
 export function Apr<T>({
@@ -65,6 +66,7 @@ export function Apr<T>({
   autoCompoundFrequency,
   boostedApr = 0,
   boostedTooltipsText,
+  decimals = 2,
   ...props
 }: AprProps<T>) {
   const { stakingToken, earningToken, isFinished, earningTokenPrice, stakingTokenPrice, userData, apr } = pool;
@@ -118,8 +120,8 @@ export function Apr<T>({
   const isValidate = apr !== undefined && !Number.isNaN(apr);
 
   const tooltipStakeApy = useMemo(() => {
-    return `${apr?.toLocaleString("en-US", { maximumFractionDigits: 2 }) ?? 0}%`;
-  }, [apr]);
+    return `${apr?.toLocaleString("en-US", { maximumFractionDigits: decimals }) ?? 0}%`;
+  }, [apr, decimals]);
 
   const boostedAprGreaterThanZero = useMemo(() => new BigNumber(boostedApr ?? 0).isGreaterThan(0), [boostedApr]);
 
@@ -131,7 +133,7 @@ export function Apr<T>({
             {t("Total APY:")}
           </Text>
           <Text bold as="span" ml="4px">
-            {`${poolApr?.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`}
+            {`${poolApr?.toLocaleString("en-US", { maximumFractionDigits: decimals })}%`}
           </Text>
         </Box>
         <Box>
@@ -139,7 +141,7 @@ export function Apr<T>({
             {t("Fee APY:")}
           </Text>
           <Text bold as="span" ml="4px">
-            {`${boostedApr?.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`}
+            {`${boostedApr?.toLocaleString("en-US", { maximumFractionDigits: decimals })}%`}
           </Text>
         </Box>
         <Box>
@@ -177,7 +179,7 @@ export function Apr<T>({
                       <GradientText fontSize={fontSize} bold mr="2px">
                         {t("Up to")}
                       </GradientText>
-                      <Balance fontSize={fontSize} bold unit="%" color="#4B3CFF" decimals={2} value={poolApr} />
+                      <Balance fontSize={fontSize} bold unit="%" color="#4B3CFF" decimals={decimals} value={poolApr} />
                     </Flex>
                   </>
                 )}
@@ -191,7 +193,7 @@ export function Apr<T>({
                     isDisabled={isFinished}
                     strikeThrough={boostedAprGreaterThanZero}
                     value={isFinished ? 0 : apr ?? 0}
-                    decimals={2}
+                    decimals={decimals}
                     unit="%"
                   />
                 )}

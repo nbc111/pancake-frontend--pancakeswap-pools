@@ -18,7 +18,7 @@ const NbcAprRow: React.FC<React.PropsWithChildren<NbcAprRowProps>> = ({
 }) => {
   return (
     <Pool.AprRowWithToolTip>
-      <Apr pool={pool} stakedBalance={stakedBalance} performanceFee={performanceFee} showIcon={showIcon} />
+      <Apr pool={pool} stakedBalance={stakedBalance} performanceFee={performanceFee} showIcon={showIcon} decimals={4} />
     </Pool.AprRowWithToolTip>
   )
 }
