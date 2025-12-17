@@ -15,6 +15,13 @@ If you want to contribute, please refer to the [contributing guidelines](./CONTR
 - [Info](doc/Info.md)
 - [Cypress tests](doc/Cypress.md)
 
+### Deployment
+
+- [本地构建部署指南 (推荐)](DEPLOY_LOCAL_BUILD.md) - 适用于服务器资源有限的情况
+- [服务器部署指南](DEPLOY.md) - 在服务器上直接构建部署
+- [快速部署指南](QUICK_DEPLOY.md) - 一键部署命令
+- [Nginx 配置指南](NGINX_SETUP.md) - Nginx 反向代理和 SSL 配置
+
 > Install dependencies using [pnpm](https://pnpm.io)
 
 ## `apps/web`
