@@ -5,109 +5,18 @@ import { Token, ERC20Token } from '@pancakeswap/sdk'
 import BigNumber from 'bignumber.js'
 import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
 import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp'
+import {
+  STAKING_POOL_CONFIGS,
+  type PoolConfig,
+  CONVERSION_RATES,
+  getConversionRate,
+  calculateAPRFromRewardRate,
+} from 'config/staking'
 
 const STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
 const CHAIN_ID = 1281
 
-type PoolConfig = {
-  sousId: number
-  rewardTokenAddress: `0x${string}`
-  rewardTokenSymbol: string
-  rewardTokenName: string
-  rewardTokenDecimals: number
-  rewardTokenLogoURI: string
-}
-
-const POOL_CONFIGS: PoolConfig[] = [
-  {
-    sousId: 0,
-    rewardTokenAddress: '0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6' as `0x${string}`,
-    rewardTokenSymbol: 'NBC',
-    rewardTokenName: 'NBC Token',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/nbc.png',
-  },
-  {
-    sousId: 1,
-    rewardTokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac' as `0x${string}`,
-    rewardTokenSymbol: 'BTC',
-    rewardTokenName: 'Bitcoin',
-    rewardTokenDecimals: 8,
-    rewardTokenLogoURI: '/images/custom-tokens/btc.png',
-  },
-  {
-    sousId: 2,
-    rewardTokenAddress: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3' as `0x${string}`,
-    rewardTokenSymbol: 'ETH',
-    rewardTokenName: 'Ether',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/eth.png',
-  },
-  {
-    sousId: 3,
-    rewardTokenAddress: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81' as `0x${string}`,
-    rewardTokenSymbol: 'SOL',
-    rewardTokenName: 'Solana',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/sol.png',
-  },
-  {
-    sousId: 4,
-    rewardTokenAddress: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c' as `0x${string}`,
-    rewardTokenSymbol: 'BNB',
-    rewardTokenName: 'Binance Coin',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/bnb.png',
-  },
-  {
-    sousId: 5,
-    rewardTokenAddress: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093' as `0x${string}`,
-    rewardTokenSymbol: 'XRP',
-    rewardTokenName: 'Ripple',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/xrp.png',
-  },
-  {
-    sousId: 6,
-    rewardTokenAddress: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de' as `0x${string}`,
-    rewardTokenSymbol: 'LTC',
-    rewardTokenName: 'Litecoin',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/ltc.png',
-  },
-  {
-    sousId: 7,
-    rewardTokenAddress: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89' as `0x${string}`,
-    rewardTokenSymbol: 'DOGE',
-    rewardTokenName: 'Dogecoin',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/doge.png',
-  },
-  {
-    sousId: 8,
-    rewardTokenAddress: '0xd365877026A43107Efd9825bc3ABFe1d7A450F82' as `0x${string}`,
-    rewardTokenSymbol: 'PEPE',
-    rewardTokenName: 'Pepe',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/pepe.png',
-  },
-  {
-    sousId: 9,
-    rewardTokenAddress: '0xfd1508502696d0E1910eD850c6236d965cc4db11' as `0x${string}`,
-    rewardTokenSymbol: 'USDT',
-    rewardTokenName: 'Tether USD',
-    rewardTokenDecimals: 6,
-    rewardTokenLogoURI: '/images/custom-tokens/usdt.png',
-  },
-  {
-    sousId: 10,
-    rewardTokenAddress: '0x9011191E84Ad832100Ddc891E360f8402457F55E' as `0x${string}`,
-    rewardTokenSymbol: 'SUI',
-    rewardTokenName: 'Sui',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/sui.png',
-  },
-]
+const POOL_CONFIGS: PoolConfig[] = STAKING_POOL_CONFIGS
 
 export const useNbcStakingPools = () => {
   const { address: account } = useAccount()
@@ -514,7 +423,7 @@ export const useNbcStakingPools = () => {
       )
       ;(earningToken as Token & { logoURI?: string }).logoURI = config.rewardTokenLogoURI
 
-      // 计算 APR（简化计算，实际需要根据奖励速率和总质押量计算）
+      // 计算 APR（使用兑换比例进行精确计算）
       let apr = 0
       // 优先使用 poolInfo 中的 totalStakedAmount，如果没有则使用 totalStaked 查询结果
       const totalStakedValue =
@@ -524,18 +433,30 @@ export const useNbcStakingPools = () => {
 
       if (poolInfo && Array.isArray(poolInfo) && poolInfo.length >= 3) {
         // poolInfo 返回 [rewardToken, totalStakedAmount, rewardRate, periodFinish, active]
-        const rewardRate = Number(poolInfo[2]) // rewardRate 是第三个元素
-        const totalStakedNum = totalStakedValue
+        const rewardRate = poolInfo[2] // rewardRate 是第三个元素（可能是 BigInt）
+        const rewardRateBigInt = typeof rewardRate === 'bigint' ? rewardRate : BigInt(rewardRate?.toString() || '0')
+        const totalStakedBigInt = totalStakedValue
           ? typeof totalStakedValue === 'bigint'
-            ? Number(totalStakedValue)
-            : Number(totalStakedValue)
-          : 0
+            ? totalStakedValue
+            : BigInt(totalStakedValue?.toString() || '0')
+          : 0n
 
-        if (rewardRate > 0 && totalStakedNum > 0) {
-          // 有质押时，基于实际总质押量计算 APR
-          // 年化收益率 = (每秒奖励 * 365 * 24 * 60 * 60) / 总质押量 * 100
-          const annualReward = rewardRate * 365 * 24 * 60 * 60
-          apr = (annualReward / totalStakedNum) * 100
+        if (rewardRateBigInt > 0n && totalStakedBigInt > 0n) {
+          // 使用配置的兑换比例和精度计算 APR
+          const conversionRate = getConversionRate(config.rewardTokenSymbol)
+          if (conversionRate > 0) {
+            apr = calculateAPRFromRewardRate(
+              rewardRateBigInt,
+              totalStakedBigInt,
+              conversionRate,
+              config.rewardTokenDecimals,
+            )
+          } else {
+            // 如果没有配置兑换比例，使用简化计算（仅适用于 NBC 奖励）
+            const annualReward = Number(rewardRateBigInt) * 365 * 24 * 60 * 60
+            const totalStakedNum = Number(totalStakedBigInt)
+            apr = (annualReward / totalStakedNum) * 100
+          }
         } else {
           apr = 0
         }
