@@ -11,10 +11,22 @@
 // ============ 配置参数 ============
 
 // 总质押量（NBC，wei 单位，18位精度）
+// ⚠️ 重要说明：
+// 1. 这是"预期总质押量"或"设计目标"，用于计算应该设置的 rewardRate
+// 2. 实际运行时，总质押量会从 0 开始，随着用户质押而增加
+// 3. 实际 APR 会根据当前真实总质押量动态计算：APR = (年总奖励 / 当前总质押量) × 100
+// 4. 如果当前总质押量 = 0，APR 显示为 0；随着用户质押，APR 会动态变化
+// 5. 这个值用于"设计"奖励机制：基于预期质押量设置固定的 rewardRate
+//
 // 示例：1,000,000 NBC = 1000000000000000000000000
+// 建议：根据你的预期设置（例如：预期会有 500,000 NBC 质押，就设置为 500,000）
 const totalStakedNBC = BigInt('1000000000000000000000000') // 修改此值
 
 // 目标 APR（年化收益率，例如：100 表示 100%）
+// ⚠️ 这是"目标 APR"，基于预期总质押量计算
+// 实际 APR 会根据真实总质押量动态变化：
+// - 如果实际质押量 < 预期 → 实际 APR > 目标 APR（对早期用户更有利）
+// - 如果实际质押量 > 预期 → 实际 APR < 目标 APR（奖励被稀释）
 const targetAPR = 100 // 修改此值
 
 // 一年期的秒数
@@ -96,8 +108,13 @@ function calculateRewardRate(tokenSymbol) {
   const nbcDecimals = BigInt(10 ** 18)
 
   // 年总奖励代币（wei 单位）
-  // 公式：annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier * nbcDecimals) / conversionRateScaled
-  const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier * nbcDecimals) / conversionRateScaled
+  // 公式：annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
+  // 说明：
+  // - annualRewardNBCWei 是 NBC 的年总奖励（wei 单位，18位精度）
+  // - rewardTokenMultiplier 是奖励代币的精度（例如 BTC 是 10^8）
+  // - conversionRateScaled 是兑换比例（例如 804545 * 10^18，表示 1 BTC = 804,545 NBC）
+  // - 结果：将 NBC 奖励转换为奖励代币的 wei 单位
+  const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
 
   // 每秒奖励率
   const rewardRate = annualRewardToken / BigInt(SECONDS_PER_YEAR)
