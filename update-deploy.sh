@@ -90,7 +90,8 @@ echo "   ✓ 构建完成"
 echo ""
 echo "[6/6] 重启 PM2 服务..."
 cd $DEPLOY_PATH/apps/web
-pm2 restart $PM2_NAME || pm2 start "pnpm start" --name $PM2_NAME --cwd $DEPLOY_PATH/apps/web
+pm2 delete $PM2_NAME 2>/dev/null || true
+pm2 start "pnpm start" --name $PM2_NAME --cwd $DEPLOY_PATH/apps/web
 pm2 save
 echo "   ✓ PM2 服务已重启"
 
