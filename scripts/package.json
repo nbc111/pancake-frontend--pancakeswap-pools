@@ -2,13 +2,18 @@
   "name": "scripts",
   "private": true,
   "version": "0.0.5",
+  "scripts": {
+    "reward-adjuster": "node dynamic-reward-adjuster.js"
+  },
   "devDependencies": {
     "@pancakeswap/aptos-swap-sdk": "workspace:*",
     "@pancakeswap/chains": "workspace:*",
     "@pancakeswap/farms": "workspace:*",
     "@types/lodash": "^4.14.168",
+    "axios": "^1.6.0",
     "bignumber.js": "^9.1.1",
     "dayjs": "^1.11.10",
+    "dotenv": "^16.3.1",
     "ethers": "^5.0.0",
     "graphql-request": "5.0.0",
     "lodash": "^4.17.21",
