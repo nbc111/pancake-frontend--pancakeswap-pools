@@ -12,7 +12,7 @@ const CONFIG = {
   PRICE_API_URL: 'https://api.coingecko.com/api/v3/simple/price',
 
   // 区块链配置
-  RPC_URL: process.env.RPC_URL || 'https://rpc.nbcchain.com',
+  RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
   PRIVATE_KEY: process.env.PRIVATE_KEY,
 
   // 合约地址
@@ -111,11 +111,15 @@ async function getNBCPrice() {
       },
     })
 
-    if (!response.data || response.data.buy === undefined) {
+    // API 返回格式: { status: "success", data: { buy: 0.08184, ... } }
+    const data = response.data.data || response.data
+    const buyPrice = data.buy
+
+    if (buyPrice === undefined || buyPrice === null) {
       throw new Error('Invalid API response: missing buy field')
     }
 
-    const price = parseFloat(response.data.buy)
+    const price = parseFloat(buyPrice)
     if (!price || price <= 0 || !isFinite(price)) {
       throw new Error(`Invalid price: ${response.data.buy}`)
     }
@@ -181,17 +185,22 @@ function calculateRewardRate(conversionRate, tokenDecimals) {
 
   // 年总奖励（NBC，wei 单位）
   const totalStakedNBC = ethers.BigNumber.from(CONFIG.TOTAL_STAKED_NBC)
-  // 使用更精确的计算方式：totalStakedNBC * aprDecimal
-  const aprMultiplier = Math.floor(aprDecimal * 10000) // 转换为整数（例如 100% = 10000）
+  const aprMultiplier = Math.floor(aprDecimal * 10000)
   const annualRewardNBCWei = totalStakedNBC.mul(aprMultiplier).div(10000)
 
   // 转换为奖励代币数量
-  // conversionRate 是浮点数，需要转换为 BigNumber（乘以 1e18）
-  const conversionRateScaled = ethers.BigNumber.from(Math.floor(conversionRate * 1e18).toString())
+  // 使用字符串操作避免科学计数法
+  const conversionRateStr = conversionRate.toFixed(18) // 转换为固定小数格式
+  const conversionRateParts = conversionRateStr.split('.')
+  const integerPart = conversionRateParts[0]
+  const decimalPart = (conversionRateParts[1] || '').padEnd(18, '0').substring(0, 18)
+
+  // 构建 BigNumber：integerPart + decimalPart（作为整数）
+  const conversionRateScaled = ethers.BigNumber.from(integerPart + decimalPart)
+
   const rewardTokenMultiplier = ethers.BigNumber.from(10).pow(tokenDecimals)
 
   // 年总奖励代币（wei 单位）
-  // 公式：annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
   const annualRewardToken = annualRewardNBCWei.mul(rewardTokenMultiplier).div(conversionRateScaled)
 
   // 每秒奖励率
