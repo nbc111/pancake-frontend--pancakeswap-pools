@@ -8,8 +8,11 @@ const CONFIG = {
   NBC_API_URL:
     'https://www.nbcex.com/v1/rest/api/market/ticker?symbol=nbcusdt&accessKey=3PswIE0Z9w26R9MC5XrGU8b6LD4bQIWWO1x3nwix1xI=',
 
-  // 主流币价格 API（使用 CoinGecko）
-  PRICE_API_URL: 'https://api.coingecko.com/api/v3/simple/price',
+  // 主流币价格 API（使用 Binance，备用 CoinGecko）
+  BINANCE_API_URL: 'https://api.binance.com/api/v3/ticker/price',
+  COINGECKO_API_URL: 'https://api.coingecko.com/api/v3/simple/price',
+  PRICE_API_TIMEOUT: 30000, // 30 秒
+  PRICE_API_RETRIES: 3, // 重试 3 次
 
   // 区块链配置
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
@@ -40,54 +43,63 @@ const TOKEN_CONFIG = {
     address: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
     decimals: 8,
     coingeckoId: 'bitcoin',
+    binanceSymbol: 'BTCUSDT',
   },
   ETH: {
     poolIndex: 2,
     address: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
     decimals: 18,
     coingeckoId: 'ethereum',
+    binanceSymbol: 'ETHUSDT',
   },
   SOL: {
     poolIndex: 3,
     address: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81',
     decimals: 18,
     coingeckoId: 'solana',
+    binanceSymbol: 'SOLUSDT',
   },
   BNB: {
     poolIndex: 4,
     address: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c',
     decimals: 18,
     coingeckoId: 'binancecoin',
+    binanceSymbol: 'BNBUSDT',
   },
   XRP: {
     poolIndex: 5,
     address: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093',
     decimals: 18,
     coingeckoId: 'ripple',
+    binanceSymbol: 'XRPUSDT',
   },
   LTC: {
     poolIndex: 6,
     address: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de',
     decimals: 18,
     coingeckoId: 'litecoin',
+    binanceSymbol: 'LTCUSDT',
   },
   DOGE: {
     poolIndex: 7,
     address: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89',
     decimals: 18,
     coingeckoId: 'dogecoin',
+    binanceSymbol: 'DOGEUSDT',
   },
   USDT: {
     poolIndex: 9,
     address: '0xfd1508502696d0E1910eD850c6236d965cc4db11',
     decimals: 6,
     coingeckoId: 'tether',
+    binanceSymbol: 'USDTUSDT', // USDT 价格固定为 1
   },
   SUI: {
     poolIndex: 10,
     address: '0x9011191E84Ad832100Ddc891E360f8402457F55E',
     decimals: 18,
     coingeckoId: 'sui',
+    binanceSymbol: 'SUIUSDT',
   },
 }
 
@@ -133,40 +145,139 @@ async function getNBCPrice() {
 }
 
 /**
- * 获取主流币价格（从 CoinGecko）
+ * 从 Binance API 获取代币价格（带重试机制）
+ */
+async function getTokenPriceFromBinance(symbol, binanceSymbol, retries = CONFIG.PRICE_API_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await axios.get(CONFIG.BINANCE_API_URL, {
+        params: { symbol: binanceSymbol },
+        timeout: CONFIG.PRICE_API_TIMEOUT,
+      })
+
+      if (response.data && response.data.price) {
+        return parseFloat(response.data.price)
+      }
+      throw new Error('Invalid response format')
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      console.warn(`   ⚠️  ${symbol}: 获取价格失败 (尝试 ${attempt}/${retries})，${error.message}，重试中...`)
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt)) // 递增延迟
+    }
+  }
+}
+
+/**
+ * 从 CoinGecko API 获取代币价格（备用，带重试机制）
+ */
+async function getTokenPricesFromCoinGecko(retries = CONFIG.PRICE_API_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const tokenIds = Object.values(TOKEN_CONFIG)
+        .map((config) => config.coingeckoId)
+        .join(',')
+
+      const response = await axios.get(CONFIG.COINGECKO_API_URL, {
+        params: {
+          ids: tokenIds,
+          vs_currencies: 'usd',
+        },
+        timeout: CONFIG.PRICE_API_TIMEOUT,
+      })
+
+      const prices = {}
+      for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
+        const price = response.data[config.coingeckoId]?.usd
+        if (price) {
+          prices[symbol] = price
+        }
+      }
+      return prices
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      console.warn(`   ⚠️  CoinGecko API 失败 (尝试 ${attempt}/${retries})，${error.message}，重试中...`)
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt))
+    }
+  }
+}
+
+/**
+ * 获取主流币价格（优先使用 Binance，备用 CoinGecko）
  */
 async function getTokenPrices() {
+  console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from Binance...`)
+
+  const prices = {}
+  let useCoinGecko = false
+
+  // 优先使用 Binance API（逐个获取）
   try {
-    console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from CoinGecko...`)
-
-    const tokenIds = Object.values(TOKEN_CONFIG)
-      .map((config) => config.coingeckoId)
-      .join(',')
-
-    const response = await axios.get(CONFIG.PRICE_API_URL, {
-      params: {
-        ids: tokenIds,
-        vs_currencies: 'usd',
-      },
-      timeout: 10000,
-    })
-
-    const prices = {}
     for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
-      const price = response.data[config.coingeckoId]?.usd
-      if (price) {
+      // USDT 价格固定为 1
+      if (symbol === 'USDT') {
+        prices[symbol] = 1.0
+        console.log(`   ✅ ${symbol}: $1.0000`)
+        continue
+      }
+
+      try {
+        const price = await getTokenPriceFromBinance(symbol, config.binanceSymbol)
         prices[symbol] = price
         console.log(`   ✅ ${symbol}: $${price.toFixed(4)}`)
-      } else {
-        console.warn(`   ⚠️  ${symbol}: Price not available`)
+      } catch (error) {
+        console.warn(`   ⚠️  ${symbol}: Binance API 失败，${error.message}`)
+        // 如果 Binance 失败，标记使用 CoinGecko
+        useCoinGecko = true
       }
     }
 
-    return prices
+    // 如果所有代币都成功获取，直接返回
+    if (Object.keys(prices).length === Object.keys(TOKEN_CONFIG).length) {
+      return prices
+    }
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] ❌ Error fetching token prices:`, error.message)
-    throw error
+    console.warn(`[${new Date().toISOString()}] ⚠️  Binance API 整体失败: ${error.message}`)
+    useCoinGecko = true
   }
+
+  // 如果 Binance 失败，尝试使用 CoinGecko（备用）
+  if (useCoinGecko || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
+    console.log(`[${new Date().toISOString()}] 📊 尝试使用 CoinGecko API 作为备用...`)
+    try {
+      const coinGeckoPrices = await getTokenPricesFromCoinGecko()
+      // 合并价格，优先使用 Binance 的价格
+      for (const [symbol, price] of Object.entries(coinGeckoPrices)) {
+        if (!prices[symbol]) {
+          prices[symbol] = price
+          console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 CoinGecko)`)
+        }
+      }
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] ❌ CoinGecko API 也失败: ${error.message}`)
+      // 如果 CoinGecko 也失败，至少返回已获取的价格
+      if (Object.keys(prices).length === 0) {
+        throw new Error('所有价格 API 都失败，无法获取代币价格')
+      }
+    }
+  }
+
+  // 检查是否有缺失的价格
+  const missingPrices = []
+  for (const [symbol] of Object.entries(TOKEN_CONFIG)) {
+    if (!prices[symbol]) {
+      missingPrices.push(symbol)
+    }
+  }
+
+  if (missingPrices.length > 0) {
+    console.warn(`[${new Date().toISOString()}] ⚠️  以下代币价格获取失败: ${missingPrices.join(', ')}`)
+  }
+
+  return prices
 }
 
 /**
