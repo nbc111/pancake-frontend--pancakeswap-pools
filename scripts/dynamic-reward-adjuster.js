@@ -289,12 +289,36 @@ async function updatePoolReward(symbol, config, tokenPriceUSD, nbcPriceUSD) {
     // 5. 检查奖励代币余额
     const rewardTokenABI = ['function balanceOf(address) external view returns (uint256)']
     const rewardToken = new ethers.Contract(config.address, rewardTokenABI, provider)
-    const balance = await rewardToken.balanceOf(wallet.address)
 
-    if (balance.lt(annualRewardBN)) {
-      console.error(`   ❌ Insufficient reward token balance!`)
-      console.error(`   Required: ${annualRewardBN.toString()}, Available: ${balance.toString()}`)
-      return { success: false, error: 'Insufficient balance', symbol }
+    // 检查合约地址的余额（因为代币已经转到合约地址了）
+    const contractBalance = await rewardToken.balanceOf(CONFIG.STAKING_CONTRACT_ADDRESS)
+    // 检查 owner 地址的余额（用于 transferFrom）
+    const ownerBalance = await rewardToken.balanceOf(wallet.address)
+
+    // 如果合约地址有足够的余额，说明代币已经准备好了
+    if (contractBalance.gte(annualRewardBN)) {
+      console.log(`   ✅ Contract has sufficient balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
+      // 注意：虽然合约地址有余额，但 transferFrom 仍需要 owner 地址有足够的代币
+      // 如果 owner 地址余额不足，transferFrom 会失败，但至少代币已经在合约里了
+      if (ownerBalance.lt(annualRewardBN)) {
+        console.warn(
+          `   ⚠️  Warning: Owner balance (${formatUnits(
+            ownerBalance,
+            config.decimals,
+          )} ${symbol}) is less than required.`,
+        )
+        console.warn(`   ⚠️  Contract has enough balance, but transferFrom may fail if owner doesn't have enough.`)
+      }
+    } else {
+      // 如果合约地址余额不足，检查 owner 地址
+      if (ownerBalance.lt(annualRewardBN)) {
+        console.error(`   ❌ Insufficient reward token balance!`)
+        console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
+        console.error(`   Owner balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
+        console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
+        return { success: false, error: 'Insufficient balance', symbol }
+      }
+      console.log(`   ✅ Owner has sufficient balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
     }
 
     // 6. 调用合约更新奖励
