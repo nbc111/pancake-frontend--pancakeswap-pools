@@ -8,7 +8,9 @@ const CONFIG = {
   NBC_API_URL:
     'https://www.nbcex.com/v1/rest/api/market/ticker?symbol=nbcusdt&accessKey=3PswIE0Z9w26R9MC5XrGU8b6LD4bQIWWO1x3nwix1xI=',
 
-  // 主流币价格 API（优先级：OKX -> Binance -> CoinGecko）
+  // 主流币价格 API（优先级：NBC交易所 -> OKX -> Binance -> CoinGecko）
+  NBCEX_API_BASE: 'https://www.nbcex.com/v1/rest/api/market/ticker',
+  NBCEX_ACCESS_KEY: '3PswIE0Z9w26R9MC5XrGU8b6LD4bQIWWO1x3nwix1xI=',
   OKX_API_URL: 'https://www.okx.com/api/v5/market/ticker',
   BINANCE_API_URL: 'https://api.binance.com/api/v3/ticker/price',
   COINGECKO_API_URL: 'https://api.coingecko.com/api/v3/simple/price',
@@ -44,6 +46,7 @@ const TOKEN_CONFIG = {
     address: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
     decimals: 8,
     coingeckoId: 'bitcoin',
+    nbcexSymbol: 'btcusdt',
     binanceSymbol: 'BTCUSDT',
     okxSymbol: 'BTC-USDT',
   },
@@ -52,6 +55,7 @@ const TOKEN_CONFIG = {
     address: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
     decimals: 18,
     coingeckoId: 'ethereum',
+    nbcexSymbol: 'ethusdt',
     binanceSymbol: 'ETHUSDT',
     okxSymbol: 'ETH-USDT',
   },
@@ -60,6 +64,7 @@ const TOKEN_CONFIG = {
     address: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81',
     decimals: 18,
     coingeckoId: 'solana',
+    nbcexSymbol: 'solusdt',
     binanceSymbol: 'SOLUSDT',
     okxSymbol: 'SOL-USDT',
   },
@@ -68,6 +73,7 @@ const TOKEN_CONFIG = {
     address: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c',
     decimals: 18,
     coingeckoId: 'binancecoin',
+    nbcexSymbol: 'bnbusdt',
     binanceSymbol: 'BNBUSDT',
     okxSymbol: 'BNB-USDT',
   },
@@ -76,6 +82,7 @@ const TOKEN_CONFIG = {
     address: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093',
     decimals: 18,
     coingeckoId: 'ripple',
+    nbcexSymbol: 'xrpusdt',
     binanceSymbol: 'XRPUSDT',
     okxSymbol: 'XRP-USDT',
   },
@@ -84,6 +91,7 @@ const TOKEN_CONFIG = {
     address: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de',
     decimals: 18,
     coingeckoId: 'litecoin',
+    nbcexSymbol: 'ltcusdt',
     binanceSymbol: 'LTCUSDT',
     okxSymbol: 'LTC-USDT',
   },
@@ -92,6 +100,7 @@ const TOKEN_CONFIG = {
     address: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89',
     decimals: 18,
     coingeckoId: 'dogecoin',
+    nbcexSymbol: 'dogeusdt',
     binanceSymbol: 'DOGEUSDT',
     okxSymbol: 'DOGE-USDT',
   },
@@ -100,6 +109,7 @@ const TOKEN_CONFIG = {
     address: '0xfd1508502696d0E1910eD850c6236d965cc4db11',
     decimals: 6,
     coingeckoId: 'tether',
+    nbcexSymbol: 'usdtusdt', // USDT 价格固定为 1
     binanceSymbol: 'USDTUSDT', // USDT 价格固定为 1
     okxSymbol: 'USDT-USDT', // USDT 价格固定为 1
   },
@@ -108,6 +118,7 @@ const TOKEN_CONFIG = {
     address: '0x9011191E84Ad832100Ddc891E360f8402457F55E',
     decimals: 18,
     coingeckoId: 'sui',
+    nbcexSymbol: 'suiusdt',
     binanceSymbol: 'SUIUSDT',
     okxSymbol: 'SUI-USDT',
   },
@@ -151,6 +162,46 @@ async function getNBCPrice() {
   } catch (error) {
     console.error(`[${new Date().toISOString()}] ❌ Error fetching NBC price:`, error.message)
     throw error
+  }
+}
+
+/**
+ * 从 NBC 交易所 API 获取代币价格（带重试机制）
+ */
+async function getTokenPriceFromNBCEX(symbol, nbcexSymbol, retries = CONFIG.PRICE_API_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const url = `${CONFIG.NBCEX_API_BASE}?symbol=${nbcexSymbol}&accessKey=${CONFIG.NBCEX_ACCESS_KEY}`
+      const response = await axios.get(url, {
+        timeout: CONFIG.PRICE_API_TIMEOUT,
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      // API 返回格式: { status: "success", data: { buy: 90634.30, ... } }
+      const data = response.data.data || response.data
+      const buyPrice = data.buy
+
+      if (buyPrice === undefined || buyPrice === null) {
+        throw new Error('Invalid API response: missing buy field')
+      }
+
+      const price = parseFloat(buyPrice)
+      if (!price || price <= 0 || !isFinite(price)) {
+        throw new Error(`Invalid price: ${buyPrice}`)
+      }
+
+      return price
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      console.warn(
+        `   ⚠️  ${symbol}: NBC交易所 API 获取价格失败 (尝试 ${attempt}/${retries})，${error.message}，重试中...`,
+      )
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt)) // 递增延迟
+    }
   }
 }
 
@@ -244,16 +295,17 @@ async function getTokenPricesFromCoinGecko(retries = CONFIG.PRICE_API_RETRIES) {
 }
 
 /**
- * 获取主流币价格（优先级：OKX -> Binance -> CoinGecko）
+ * 获取主流币价格（优先级：NBC交易所 -> OKX -> Binance -> CoinGecko）
  */
 async function getTokenPrices() {
-  console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from OKX...`)
+  console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from NBC Exchange...`)
 
   const prices = {}
+  let useOKX = false
   let useBinance = false
   let useCoinGecko = false
 
-  // 第一优先级：使用 OKX API（逐个获取）
+  // 第一优先级：使用 NBC 交易所 API（逐个获取）
   try {
     for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
       // USDT 价格固定为 1
@@ -264,13 +316,13 @@ async function getTokenPrices() {
       }
 
       try {
-        const price = await getTokenPriceFromOKX(symbol, config.okxSymbol)
+        const price = await getTokenPriceFromNBCEX(symbol, config.nbcexSymbol)
         prices[symbol] = price
-        console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 OKX)`)
+        console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 NBC交易所)`)
       } catch (error) {
-        console.warn(`   ⚠️  ${symbol}: OKX API 失败，${error.message}`)
-        // 如果 OKX 失败，标记使用 Binance
-        useBinance = true
+        console.warn(`   ⚠️  ${symbol}: NBC交易所 API 失败，${error.message}`)
+        // 如果 NBC 交易所失败，标记使用 OKX
+        useOKX = true
       }
     }
 
@@ -279,11 +331,41 @@ async function getTokenPrices() {
       return prices
     }
   } catch (error) {
-    console.warn(`[${new Date().toISOString()}] ⚠️  OKX API 整体失败: ${error.message}`)
-    useBinance = true
+    console.warn(`[${new Date().toISOString()}] ⚠️  NBC交易所 API 整体失败: ${error.message}`)
+    useOKX = true
   }
 
-  // 第二优先级：如果 OKX 失败，尝试使用 Binance（备用）
+  // 第二优先级：如果 NBC 交易所失败，尝试使用 OKX（备用）
+  if (useOKX || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
+    console.log(`[${new Date().toISOString()}] 📊 尝试使用 OKX API 作为备用...`)
+    try {
+      for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
+        // 跳过已获取的代币和 USDT
+        if (prices[symbol] || symbol === 'USDT') {
+          continue
+        }
+
+        try {
+          const price = await getTokenPriceFromOKX(symbol, config.okxSymbol)
+          prices[symbol] = price
+          console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 OKX)`)
+        } catch (error) {
+          console.warn(`   ⚠️  ${symbol}: OKX API 失败，${error.message}`)
+          useBinance = true
+        }
+      }
+
+      // 如果所有代币都成功获取，直接返回
+      if (Object.keys(prices).length === Object.keys(TOKEN_CONFIG).length) {
+        return prices
+      }
+    } catch (error) {
+      console.warn(`[${new Date().toISOString()}] ⚠️  OKX API 整体失败: ${error.message}`)
+      useBinance = true
+    }
+  }
+
+  // 第三优先级：如果 NBC 交易所和 OKX 都失败，尝试使用 Binance（备用）
   if (useBinance || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
     console.log(`[${new Date().toISOString()}] 📊 尝试使用 Binance API 作为备用...`)
     try {
@@ -313,7 +395,7 @@ async function getTokenPrices() {
     }
   }
 
-  // 第三优先级：如果 OKX 和 Binance 都失败，尝试使用 CoinGecko（最后备用）
+  // 第四优先级：如果 NBC 交易所、OKX 和 Binance 都失败，尝试使用 CoinGecko（最后备用）
   if (useCoinGecko || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
     console.log(`[${new Date().toISOString()}] 📊 尝试使用 CoinGecko API 作为最后备用...`)
     try {
