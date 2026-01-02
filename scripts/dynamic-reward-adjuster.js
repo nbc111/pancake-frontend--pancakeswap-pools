@@ -8,7 +8,8 @@ const CONFIG = {
   NBC_API_URL:
     'https://www.nbcex.com/v1/rest/api/market/ticker?symbol=nbcusdt&accessKey=3PswIE0Z9w26R9MC5XrGU8b6LD4bQIWWO1x3nwix1xI=',
 
-  // 主流币价格 API（使用 Binance，备用 CoinGecko）
+  // 主流币价格 API（优先级：OKX -> Binance -> CoinGecko）
+  OKX_API_URL: 'https://www.okx.com/api/v5/market/ticker',
   BINANCE_API_URL: 'https://api.binance.com/api/v3/ticker/price',
   COINGECKO_API_URL: 'https://api.coingecko.com/api/v3/simple/price',
   PRICE_API_TIMEOUT: 30000, // 30 秒
@@ -44,6 +45,7 @@ const TOKEN_CONFIG = {
     decimals: 8,
     coingeckoId: 'bitcoin',
     binanceSymbol: 'BTCUSDT',
+    okxSymbol: 'BTC-USDT',
   },
   ETH: {
     poolIndex: 2,
@@ -51,6 +53,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'ethereum',
     binanceSymbol: 'ETHUSDT',
+    okxSymbol: 'ETH-USDT',
   },
   SOL: {
     poolIndex: 3,
@@ -58,6 +61,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'solana',
     binanceSymbol: 'SOLUSDT',
+    okxSymbol: 'SOL-USDT',
   },
   BNB: {
     poolIndex: 4,
@@ -65,6 +69,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'binancecoin',
     binanceSymbol: 'BNBUSDT',
+    okxSymbol: 'BNB-USDT',
   },
   XRP: {
     poolIndex: 5,
@@ -72,6 +77,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'ripple',
     binanceSymbol: 'XRPUSDT',
+    okxSymbol: 'XRP-USDT',
   },
   LTC: {
     poolIndex: 6,
@@ -79,6 +85,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'litecoin',
     binanceSymbol: 'LTCUSDT',
+    okxSymbol: 'LTC-USDT',
   },
   DOGE: {
     poolIndex: 7,
@@ -86,6 +93,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'dogecoin',
     binanceSymbol: 'DOGEUSDT',
+    okxSymbol: 'DOGE-USDT',
   },
   USDT: {
     poolIndex: 9,
@@ -93,6 +101,7 @@ const TOKEN_CONFIG = {
     decimals: 6,
     coingeckoId: 'tether',
     binanceSymbol: 'USDTUSDT', // USDT 价格固定为 1
+    okxSymbol: 'USDT-USDT', // USDT 价格固定为 1
   },
   SUI: {
     poolIndex: 10,
@@ -100,6 +109,7 @@ const TOKEN_CONFIG = {
     decimals: 18,
     coingeckoId: 'sui',
     binanceSymbol: 'SUIUSDT',
+    okxSymbol: 'SUI-USDT',
   },
 }
 
@@ -141,6 +151,34 @@ async function getNBCPrice() {
   } catch (error) {
     console.error(`[${new Date().toISOString()}] ❌ Error fetching NBC price:`, error.message)
     throw error
+  }
+}
+
+/**
+ * 从 OKX API 获取代币价格（带重试机制）
+ */
+async function getTokenPriceFromOKX(symbol, okxSymbol, retries = CONFIG.PRICE_API_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await axios.get(CONFIG.OKX_API_URL, {
+        params: { instId: okxSymbol },
+        timeout: CONFIG.PRICE_API_TIMEOUT,
+      })
+
+      if (response.data && response.data.code === '0' && response.data.data && response.data.data.length > 0) {
+        const price = parseFloat(response.data.data[0].last)
+        if (price && price > 0) {
+          return price
+        }
+      }
+      throw new Error('Invalid response format')
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      console.warn(`   ⚠️  ${symbol}: OKX API 获取价格失败 (尝试 ${attempt}/${retries})，${error.message}，重试中...`)
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt)) // 递增延迟
+    }
   }
 }
 
@@ -206,15 +244,16 @@ async function getTokenPricesFromCoinGecko(retries = CONFIG.PRICE_API_RETRIES) {
 }
 
 /**
- * 获取主流币价格（优先使用 Binance，备用 CoinGecko）
+ * 获取主流币价格（优先级：OKX -> Binance -> CoinGecko）
  */
 async function getTokenPrices() {
-  console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from Binance...`)
+  console.log(`[${new Date().toISOString()}] 📊 Fetching token prices from OKX...`)
 
   const prices = {}
+  let useBinance = false
   let useCoinGecko = false
 
-  // 优先使用 Binance API（逐个获取）
+  // 第一优先级：使用 OKX API（逐个获取）
   try {
     for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
       // USDT 价格固定为 1
@@ -225,13 +264,13 @@ async function getTokenPrices() {
       }
 
       try {
-        const price = await getTokenPriceFromBinance(symbol, config.binanceSymbol)
+        const price = await getTokenPriceFromOKX(symbol, config.okxSymbol)
         prices[symbol] = price
-        console.log(`   ✅ ${symbol}: $${price.toFixed(4)}`)
+        console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 OKX)`)
       } catch (error) {
-        console.warn(`   ⚠️  ${symbol}: Binance API 失败，${error.message}`)
-        // 如果 Binance 失败，标记使用 CoinGecko
-        useCoinGecko = true
+        console.warn(`   ⚠️  ${symbol}: OKX API 失败，${error.message}`)
+        // 如果 OKX 失败，标记使用 Binance
+        useBinance = true
       }
     }
 
@@ -240,16 +279,46 @@ async function getTokenPrices() {
       return prices
     }
   } catch (error) {
-    console.warn(`[${new Date().toISOString()}] ⚠️  Binance API 整体失败: ${error.message}`)
-    useCoinGecko = true
+    console.warn(`[${new Date().toISOString()}] ⚠️  OKX API 整体失败: ${error.message}`)
+    useBinance = true
   }
 
-  // 如果 Binance 失败，尝试使用 CoinGecko（备用）
+  // 第二优先级：如果 OKX 失败，尝试使用 Binance（备用）
+  if (useBinance || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
+    console.log(`[${new Date().toISOString()}] 📊 尝试使用 Binance API 作为备用...`)
+    try {
+      for (const [symbol, config] of Object.entries(TOKEN_CONFIG)) {
+        // 跳过已获取的代币和 USDT
+        if (prices[symbol] || symbol === 'USDT') {
+          continue
+        }
+
+        try {
+          const price = await getTokenPriceFromBinance(symbol, config.binanceSymbol)
+          prices[symbol] = price
+          console.log(`   ✅ ${symbol}: $${price.toFixed(4)} (来自 Binance)`)
+        } catch (error) {
+          console.warn(`   ⚠️  ${symbol}: Binance API 失败，${error.message}`)
+          useCoinGecko = true
+        }
+      }
+
+      // 如果所有代币都成功获取，直接返回
+      if (Object.keys(prices).length === Object.keys(TOKEN_CONFIG).length) {
+        return prices
+      }
+    } catch (error) {
+      console.warn(`[${new Date().toISOString()}] ⚠️  Binance API 整体失败: ${error.message}`)
+      useCoinGecko = true
+    }
+  }
+
+  // 第三优先级：如果 OKX 和 Binance 都失败，尝试使用 CoinGecko（最后备用）
   if (useCoinGecko || Object.keys(prices).length < Object.keys(TOKEN_CONFIG).length) {
-    console.log(`[${new Date().toISOString()}] 📊 尝试使用 CoinGecko API 作为备用...`)
+    console.log(`[${new Date().toISOString()}] 📊 尝试使用 CoinGecko API 作为最后备用...`)
     try {
       const coinGeckoPrices = await getTokenPricesFromCoinGecko()
-      // 合并价格，优先使用 Binance 的价格
+      // 合并价格，优先使用已获取的价格
       for (const [symbol, price] of Object.entries(coinGeckoPrices)) {
         if (!prices[symbol]) {
           prices[symbol] = price
