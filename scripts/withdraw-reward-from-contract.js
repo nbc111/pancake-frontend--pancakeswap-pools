@@ -8,8 +8,44 @@ const CONFIG = {
   STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789',
 }
 
-// 代币配置
+// 代币配置（与 dynamic-reward-adjuster.js 保持一致）
 const TOKEN_CONFIGS = {
+  BTC: {
+    poolIndex: 1,
+    tokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
+    decimals: 8,
+    symbol: 'BTC',
+  },
+  ETH: {
+    poolIndex: 2,
+    tokenAddress: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
+    decimals: 18,
+    symbol: 'ETH',
+  },
+  SOL: {
+    poolIndex: 3,
+    tokenAddress: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81',
+    decimals: 18,
+    symbol: 'SOL',
+  },
+  BNB: {
+    poolIndex: 4,
+    tokenAddress: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c',
+    decimals: 18,
+    symbol: 'BNB',
+  },
+  XRP: {
+    poolIndex: 5,
+    tokenAddress: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093',
+    decimals: 18,
+    symbol: 'XRP',
+  },
+  LTC: {
+    poolIndex: 6,
+    tokenAddress: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de',
+    decimals: 18,
+    symbol: 'LTC',
+  },
   DOGE: {
     poolIndex: 7,
     tokenAddress: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89',
@@ -21,6 +57,12 @@ const TOKEN_CONFIGS = {
     tokenAddress: '0xfd1508502696d0E1910eD850c6236d965cc4db11',
     decimals: 6,
     symbol: 'USDT',
+  },
+  SUI: {
+    poolIndex: 10,
+    tokenAddress: '0x9011191E84Ad832100Ddc891E360f8402457F55E',
+    decimals: 18,
+    symbol: 'SUI',
   },
 }
 
