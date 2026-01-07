@@ -255,8 +255,10 @@ function calculateCorrectRewardRate(tokenPriceUSD, nbcPriceUSD, tokenDecimals) {
   // 年总奖励代币（wei 单位）
   const annualRewardToken = annualRewardNBCWei.mul(rewardTokenMultiplier).div(conversionRateScaled)
 
-  // 每秒奖励率
-  const rewardRate = annualRewardToken.div(CONFIG.SECONDS_PER_YEAR)
+  // 每秒奖励率（向上取整，确保不会因为向下取整导致 APR 不足）
+  // 方法：先加 (SECONDS_PER_YEAR - 1)，再除以 SECONDS_PER_YEAR，这样会向上取整
+  const secondsPerYearBN = ethers.BigNumber.from(CONFIG.SECONDS_PER_YEAR)
+  const rewardRate = annualRewardToken.add(secondsPerYearBN.sub(1)).div(secondsPerYearBN)
 
   return {
     rewardRate,
