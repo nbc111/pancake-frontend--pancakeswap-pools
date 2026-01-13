@@ -1,17 +1,15 @@
 import { useMemo } from 'react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
+import { useQuery } from '@tanstack/react-query'
 import { Pool } from '@pancakeswap/widgets-internal'
 import { Token, ERC20Token } from '@pancakeswap/sdk'
 import BigNumber from 'bignumber.js'
 import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
 import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp'
-import {
-  STAKING_POOL_CONFIGS,
-  type PoolConfig,
-  CONVERSION_RATES,
-  getConversionRate,
-  calculateAPRFromRewardRate,
-} from 'config/staking'
+import { useCakePrice } from 'hooks/useCakePrice'
+import { FAST_INTERVAL } from 'config/constants'
+import { STAKING_POOL_CONFIGS, type PoolConfig, calculateAPRFromRewardRate } from 'config/staking'
+import { getTokenPricesFromNbcApi } from 'config/staking/tokenPrices'
 
 const STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
 const CHAIN_ID = 1281
@@ -25,6 +23,22 @@ export const useNbcStakingPools = () => {
 
   const chainTimestamp = useCurrentBlockTimestamp()
   const currentChainTimestamp = chainTimestamp !== undefined ? Number(chainTimestamp) : undefined
+
+  // 获取 NBC 实时价格
+  const nbcPriceBN = useCakePrice()
+  // 只有当价格大于 0 时才使用，避免使用 BIG_ZERO（0）
+  const nbcPrice = nbcPriceBN && !nbcPriceBN.isZero() ? Number(nbcPriceBN.toString()) : null
+
+  // 获取所有代币的实时价格
+  const tokenSymbols = useMemo(() => POOL_CONFIGS.map((config) => config.rewardTokenSymbol), [])
+
+  const { data: tokenPrices } = useQuery<Record<string, number | null>>({
+    queryKey: ['nbcStakingTokenPrices', tokenSymbols],
+    queryFn: () => getTokenPricesFromNbcApi(tokenSymbols),
+    staleTime: FAST_INTERVAL * 6,
+    refetchInterval: FAST_INTERVAL * 6,
+    enabled: true,
+  })
 
   // 获取原生 NBC 余额
   const { data: nativeBalance } = useBalance({
@@ -431,34 +445,109 @@ export const useNbcStakingPools = () => {
           ? poolInfo[1] // poolInfo[1] 是 totalStakedAmount
           : totalStaked
 
+      // 将 totalStakedValue 转换为 BigInt，以便在条件块外使用
+      const totalStakedBigInt = totalStakedValue
+        ? typeof totalStakedValue === 'bigint'
+          ? totalStakedValue
+          : BigInt(totalStakedValue?.toString() || '0')
+        : 0n
+
       if (poolInfo && Array.isArray(poolInfo) && poolInfo.length >= 3) {
         // poolInfo 返回 [rewardToken, totalStakedAmount, rewardRate, periodFinish, active]
         const rewardRate = poolInfo[2] // rewardRate 是第三个元素（可能是 BigInt）
         const rewardRateBigInt = typeof rewardRate === 'bigint' ? rewardRate : BigInt(rewardRate?.toString() || '0')
-        const totalStakedBigInt = totalStakedValue
-          ? typeof totalStakedValue === 'bigint'
-            ? totalStakedValue
-            : BigInt(totalStakedValue?.toString() || '0')
-          : 0n
 
         if (rewardRateBigInt > 0n && totalStakedBigInt > 0n) {
-          // 使用配置的兑换比例和精度计算 APR
-          const conversionRate = getConversionRate(config.rewardTokenSymbol)
-          if (conversionRate > 0) {
-            apr = calculateAPRFromRewardRate(
-              rewardRateBigInt,
-              totalStakedBigInt,
-              conversionRate,
-              config.rewardTokenDecimals,
-            )
-          } else {
-            // 如果没有配置兑换比例，使用简化计算（仅适用于 NBC 奖励）
+          // 使用实时价格计算兑换比例
+          const tokenPrice = tokenPrices?.[config.rewardTokenSymbol]
+
+          // 调试日志（仅在开发环境）
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.log(`[${config.rewardTokenSymbol}] Price check:`, {
+              nbcPrice,
+              tokenPrice,
+              hasNbcPrice: !!nbcPrice && nbcPrice > 0,
+              hasTokenPrice: !!tokenPrice && tokenPrice > 0,
+              rewardRate: rewardRateBigInt.toString(),
+              totalStaked: totalStakedBigInt.toString(),
+            })
+          }
+
+          if (nbcPrice && nbcPrice > 0 && tokenPrice && tokenPrice > 0) {
+            // 计算实时兑换比例：1 奖励代币 = (tokenPrice / nbcPrice) NBC
+            const conversionRate = tokenPrice / nbcPrice
+
+            if (conversionRate > 0) {
+              apr = calculateAPRFromRewardRate(
+                rewardRateBigInt,
+                totalStakedBigInt,
+                conversionRate,
+                config.rewardTokenDecimals,
+              )
+
+              // 调试日志
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.log(`[${config.rewardTokenSymbol}] APR calculated:`, {
+                  apr,
+                  conversionRate,
+                  rewardRate: rewardRateBigInt.toString(),
+                  totalStaked: totalStakedBigInt.toString(),
+                })
+              }
+            } else {
+              apr = 0
+            }
+          } else if (config.rewardTokenSymbol === 'NBC') {
+            // 如果价格未加载，使用简化计算（仅适用于 NBC 奖励池）
             const annualReward = Number(rewardRateBigInt) * 365 * 24 * 60 * 60
             const totalStakedNum = Number(totalStakedBigInt)
             apr = (annualReward / totalStakedNum) * 100
+          } else {
+            // 价格未加载时，记录警告
+            if (process.env.NODE_ENV === 'development') {
+              // eslint-disable-next-line no-console
+              console.warn(`[${config.rewardTokenSymbol}] Price not loaded yet, APR set to 0`, {
+                nbcPrice,
+                tokenPrice,
+              })
+            }
+            apr = 0
           }
         } else {
           apr = 0
+        }
+      }
+
+      // 对异常高的 APR 进行限制和警告
+      // 当实际质押量过小时，APR 会被放大，需要特殊处理
+      const MAX_REASONABLE_APR = 1000 // 最大合理 APR（1000%）
+      const MIN_STAKED_FOR_ACCURATE_APR = 1000 // 最小质押量（NBC），低于此值 APR 可能不准确
+      const totalStakedNBCNum = Number(totalStakedBigInt) / 1e18
+
+      if (apr > MAX_REASONABLE_APR) {
+        // 如果 APR 异常高，且质押量很小，说明奖励率是基于预期质押量设置的
+        if (totalStakedNBCNum < MIN_STAKED_FOR_ACCURATE_APR) {
+          // 计算基于预期质押量（1,000,000 NBC）的预期 APR
+          const expectedTotalStaked = 1000000 // 预期质押量（NBC）
+          const expectedAPR = (apr * totalStakedNBCNum) / expectedTotalStaked
+
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[${config.rewardTokenSymbol}] APR 异常高，实际质押量过小`, {
+              实际APR: `${apr.toFixed(2)}%`,
+              实际质押量: `${totalStakedNBCNum.toFixed(2)} NBC`,
+              预期质押量: `${expectedTotalStaked} NBC`,
+              预期APR: `${expectedAPR.toFixed(2)}%`,
+              说明: '奖励率基于预期质押量设置，实际 APR 会随质押量变化',
+            })
+          }
+
+          // 限制显示的 APR 为预期 APR，但不超过最大合理值
+          apr = Math.min(expectedAPR, MAX_REASONABLE_APR)
+        } else {
+          // 如果质押量足够大但 APR 仍然异常高，限制为最大合理值
+          apr = MAX_REASONABLE_APR
         }
       }
 
@@ -511,8 +600,8 @@ export const useNbcStakingPools = () => {
         startTimestamp: 0, // 池开始时间戳（0 表示已开始）
         endTimestamp: endTimestamp > 0 ? endTimestamp : undefined, // 奖励期结束时间戳
         apr,
-        stakingTokenPrice: 1, // 暂时设置为 1，后续可以添加价格获取逻辑（从价格 API 获取 NBC 价格）
-        earningTokenPrice: 1, // 暂时设置为 1，后续可以添加价格获取逻辑（从价格 API 获取奖励代币价格）
+        stakingTokenPrice: nbcPrice ?? 1, // NBC 实时价格
+        earningTokenPrice: tokenPrices?.[config.rewardTokenSymbol] ?? 1, // 奖励代币实时价格
         userData: account
           ? {
               allowance: new BigNumber(0), // 原生代币不需要 allowance
@@ -577,6 +666,8 @@ export const useNbcStakingPools = () => {
     totalStaked10,
     poolInfo10,
     currentChainTimestamp,
+    nbcPrice,
+    tokenPrices,
   ])
 
   return {

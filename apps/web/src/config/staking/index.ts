@@ -3,3 +3,4 @@
  */
 export * from './rewardRates'
 export * from './poolConfig'
+export * from './tokenPrices'

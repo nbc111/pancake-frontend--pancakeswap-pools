@@ -633,8 +633,21 @@ async function updatePoolReward(symbol, config, tokenPriceUSD, nbcPriceUSD) {
     // 检查 owner 地址的余额（用于 transferFrom）
     const ownerBalance = await rewardToken.balanceOf(wallet.address)
 
+    // 计算总可用余额（合约 + owner）
+    const totalAvailableBalance = contractBalance.add(ownerBalance)
+
+    // 如果总可用余额不足，直接失败
+    if (totalAvailableBalance.lt(annualRewardBN)) {
+      console.error(`   ❌ Insufficient total reward token balance!`)
+      console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
+      console.error(`   Owner balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
+      console.error(`   Total available: ${formatUnits(totalAvailableBalance, config.decimals)} ${symbol}`)
+      console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
+      return { success: false, error: 'Insufficient total balance', symbol }
+    }
+
     // 如果合约地址有足够的余额，但 owner 地址余额不足，自动提取
-    if (contractBalance.gte(annualRewardBN) && ownerBalance.lt(annualRewardBN)) {
+    if (contractBalance.gt(0) && ownerBalance.lt(annualRewardBN)) {
       console.log(`   ✅ Contract has sufficient balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
       console.warn(
         `   ⚠️  Warning: Owner balance (${formatUnits(
@@ -645,41 +658,52 @@ async function updatePoolReward(symbol, config, tokenPriceUSD, nbcPriceUSD) {
       console.log(`   🔄 Auto-extracting tokens from contract to owner address...`)
 
       try {
-        // 提取足够的代币到 owner 地址（提取所需数量，但不超过合约余额）
-        const amountToWithdraw = annualRewardBN.gt(contractBalance) ? contractBalance : annualRewardBN
-        const withdrawTx = await stakingContract.emergencyWithdrawReward(config.poolIndex, amountToWithdraw)
-        console.log(`   🔗 Withdraw transaction hash: ${withdrawTx.hash}`)
-        console.log(`   ⏳ Waiting for withdrawal confirmation...`)
-        await withdrawTx.wait()
-        console.log(`   ✅ Tokens extracted successfully!`)
+        // 计算需要提取的数量：确保提取后 owner 余额 >= annualRewardBN
+        // 如果 owner 当前余额 + 合约可提取余额 < annualRewardBN，则提取全部合约余额
+        // 否则提取 (annualRewardBN - ownerBalance) 的数量
+        const ownerBalanceShortfall = annualRewardBN.sub(ownerBalance)
+        const amountToWithdraw = ownerBalanceShortfall.gt(contractBalance)
+          ? contractBalance // 如果缺口大于合约余额，提取全部
+          : ownerBalanceShortfall.gt(0)
+          ? ownerBalanceShortfall // 如果缺口小于等于合约余额，提取缺口数量
+          : ethers.BigNumber.from(0) // 如果不需要提取（理论上不应该到这里）
 
-        // 重新检查 owner 余额
-        const newOwnerBalance = await rewardToken.balanceOf(wallet.address)
-        console.log(`   📊 New owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
+        if (amountToWithdraw.lte(0)) {
+          console.warn(`   ⚠️  No need to extract (owner balance already sufficient)`)
+        } else {
+          console.log(
+            `   💡 Extracting ${formatUnits(amountToWithdraw, config.decimals)} ${symbol} (need ${formatUnits(
+              annualRewardBN,
+              config.decimals,
+            )} ${symbol}, owner has ${formatUnits(ownerBalance, config.decimals)} ${symbol})`,
+          )
+          const withdrawTx = await stakingContract.emergencyWithdrawReward(config.poolIndex, amountToWithdraw)
+          console.log(`   🔗 Withdraw transaction hash: ${withdrawTx.hash}`)
+          console.log(`   ⏳ Waiting for withdrawal confirmation...`)
+          await withdrawTx.wait()
+          console.log(`   ✅ Tokens extracted successfully!`)
 
-        if (newOwnerBalance.lt(annualRewardBN)) {
-          console.error(`   ❌ Still insufficient balance after extraction!`)
-          console.error(`   Owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
-          console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
-          return { success: false, error: 'Insufficient balance after extraction', symbol }
+          // 重新检查 owner 余额
+          const newOwnerBalance = await rewardToken.balanceOf(wallet.address)
+          console.log(`   📊 New owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
+
+          if (newOwnerBalance.lt(annualRewardBN)) {
+            console.error(`   ❌ Still insufficient balance after extraction!`)
+            console.error(`   Owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
+            console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
+            console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
+            console.error(
+              `   💡 Suggestion: Manually deposit more ${symbol} tokens to the owner address or contract address`,
+            )
+            return { success: false, error: 'Insufficient balance after extraction', symbol }
+          }
         }
       } catch (error) {
         console.error(`   ❌ Failed to extract tokens: ${error.message}`)
         return { success: false, error: `Extraction failed: ${error.message}`, symbol }
       }
-    } else if (contractBalance.lt(annualRewardBN) && ownerBalance.lt(annualRewardBN)) {
-      // 如果合约地址和 owner 地址余额都不足
-      console.error(`   ❌ Insufficient reward token balance!`)
-      console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
-      console.error(`   Owner balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
-      console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
-      return { success: false, error: 'Insufficient balance', symbol }
     } else if (ownerBalance.gte(annualRewardBN)) {
-      // Owner 地址有足够余额
-      console.log(`   ✅ Owner has sufficient balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
-    } else if (contractBalance.gte(annualRewardBN) && ownerBalance.gte(annualRewardBN)) {
-      // 合约地址有足够余额，owner 地址也有足够余额
-      console.log(`   ✅ Contract has sufficient balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
+      // Owner 地址有足够余额，不需要提取
       console.log(`   ✅ Owner has sufficient balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
     }
 

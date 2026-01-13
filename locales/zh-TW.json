@@ -564,6 +564,7 @@
   "Search Pools": "搜尋池",
   "Ends in": "剩餘時間",
   "Starts in": "開始時間",
+  "Staked for": "已質押時長",
   "Total amount of %symbol% staked in this pool": "此池中已質押的 %symbol% 總量",
   "Max. stake per user": "每位使用者的質押上限",
   "You have claimed your rewards!": "您已領取獎勵！",

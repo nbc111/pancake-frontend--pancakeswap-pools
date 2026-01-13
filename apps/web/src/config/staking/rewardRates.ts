@@ -96,9 +96,16 @@ export function calculateRewardRate(
 /**
  * 反向计算：根据奖励率计算 APR
  *
+ * 公式：APR = (年收益 × 币当前价值) / (质押资产总值) × 100%
+ *
+ * 其中：
+ * - 年收益 = rewardRate × SECONDS_PER_YEAR（奖励代币数量）
+ * - 币当前价值 = conversionRate（1 奖励代币 = X NBC）
+ * - 质押资产总值 = totalStakedNBC（质押的 NBC 数量）
+ *
  * @param rewardRate 每秒奖励率（wei 单位，考虑奖励代币精度）
  * @param totalStakedNBC 总质押量（NBC，wei 单位）
- * @param conversionRate 兑换比例（1 奖励代币 = X NBC）
+ * @param conversionRate 兑换比例（1 奖励代币 = X NBC），通常为 tokenPrice / nbcPrice
  * @param rewardTokenDecimals 奖励代币精度
  * @returns APR（年化收益率，%）
  */
@@ -109,6 +116,7 @@ export function calculateAPRFromRewardRate(
   rewardTokenDecimals: number,
 ): number {
   if (totalStakedNBC === 0n) return 0
+  if (rewardRate === 0n) return 0
 
   // 年总奖励（奖励代币，wei 单位）
   const annualRewardToken = rewardRate * BigInt(SECONDS_PER_YEAR)
@@ -117,14 +125,70 @@ export function calculateAPRFromRewardRate(
   // 公式：年总奖励 NBC = (年总奖励代币 (wei) * 兑换比例 * 10^18) / (10^rewardDecimals)
   const conversionRateScaled = BigInt(Math.floor(conversionRate * 1e18))
   const rewardTokenMultiplier = BigInt(10 ** rewardTokenDecimals)
-  const nbcDecimals = BigInt(10 ** 18)
 
   // annualRewardNBC = (annualRewardToken * conversionRateScaled) / (rewardTokenMultiplier * nbcDecimals)
-  // 简化：annualRewardNBC = (annualRewardToken * conversionRateScaled) / (rewardTokenMultiplier * nbcDecimals)
-  const annualRewardNBC = (annualRewardToken * conversionRateScaled) / (rewardTokenMultiplier * nbcDecimals)
+  // 注意：这里除以 nbcDecimals 是不对的，因为 conversionRateScaled 已经包含了 10^18
+  // 正确的公式应该是：annualRewardNBC = (annualRewardToken * conversionRateScaled) / rewardTokenMultiplier
+  // 但是，我们需要确保单位正确：
+  // - annualRewardToken 是奖励代币的 wei 单位
+  // - conversionRateScaled 是兑换比例（放大 10^18 倍）
+  // - 要转换为 NBC 的 wei 单位，需要：annualRewardNBC = (annualRewardToken * conversionRateScaled) / rewardTokenMultiplier
+  // 但是，conversionRateScaled 已经包含了 10^18，所以不需要再除以 nbcDecimals
+  // 修正后的公式：
+  const annualRewardNBC = (annualRewardToken * conversionRateScaled) / rewardTokenMultiplier
 
   // APR = (年总奖励 / 总质押量) * 100
   const apr = (Number(annualRewardNBC) / Number(totalStakedNBC)) * 100
+
+  // 调试日志（仅在开发环境）
+  if (process.env.NODE_ENV === 'development') {
+    // 格式化数值以便于阅读
+    const totalStakedNBCFormatted = Number(totalStakedNBC) / 1e18
+    const annualRewardNBCFormatted = Number(annualRewardNBC) / 1e18
+    const annualRewardTokenFormatted = Number(annualRewardToken) / 10 ** rewardTokenDecimals
+
+    // 使用多个 console.log 以便于在控制台中查看
+    // eslint-disable-next-line no-console
+    console.group(`[calculateAPRFromRewardRate]`)
+    // eslint-disable-next-line no-console
+    console.log('📊 输入参数:')
+    // eslint-disable-next-line no-console
+    console.log(
+      '  - rewardRate:',
+      rewardRate.toString(),
+      `(${Number(rewardRate) / 10 ** rewardTokenDecimals} tokens/s)`,
+    )
+    // eslint-disable-next-line no-console
+    console.log('  - totalStakedNBC:', totalStakedNBC.toString(), `(${totalStakedNBCFormatted.toFixed(2)} NBC)`)
+    // eslint-disable-next-line no-console
+    console.log('  - conversionRate:', conversionRate.toFixed(6), `(1 token = ${conversionRate.toFixed(6)} NBC)`)
+    // eslint-disable-next-line no-console
+    console.log('  - rewardTokenDecimals:', rewardTokenDecimals)
+    // eslint-disable-next-line no-console
+    console.log('')
+    // eslint-disable-next-line no-console
+    console.log('🔢 中间计算:')
+    // eslint-disable-next-line no-console
+    console.log(
+      '  - annualRewardToken:',
+      annualRewardToken.toString(),
+      `(${annualRewardTokenFormatted.toFixed(6)} tokens/年)`,
+    )
+    // eslint-disable-next-line no-console
+    console.log('  - conversionRateScaled:', conversionRateScaled.toString())
+    // eslint-disable-next-line no-console
+    console.log('  - rewardTokenMultiplier:', rewardTokenMultiplier.toString())
+    // eslint-disable-next-line no-console
+    console.log('')
+    // eslint-disable-next-line no-console
+    console.log('💰 最终结果:')
+    // eslint-disable-next-line no-console
+    console.log('  - annualRewardNBC:', annualRewardNBC.toString(), `(${annualRewardNBCFormatted.toFixed(2)} NBC/年)`)
+    // eslint-disable-next-line no-console
+    console.log('  - APR:', `${apr.toFixed(2)}%`, `(原始值: ${apr})`)
+    // eslint-disable-next-line no-console
+    console.groupEnd()
+  }
 
   return apr
 }
