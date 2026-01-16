@@ -293,15 +293,35 @@ async function getTokenPrice(symbol, config) {
  * 计算 rewardRate
  */
 function calculateRewardRate(targetAPR, expectedStakedNBC, conversionRate, rewardTokenDecimals) {
+  // 使用 BigInt 进行计算，避免精度丢失
   const aprDecimal = targetAPR / 100
-  const totalStakedNumber = Number(expectedStakedNBC)
-  const annualRewardNBCWei = BigInt(Math.floor(totalStakedNumber * aprDecimal))
+  
+  // 将 APR 转换为整数（使用 10000 作为精度，即 100.00% = 10000）
+  const aprMultiplier = Math.floor(aprDecimal * 10000)
+  
+  // 计算年总奖励 NBC（wei 单位）
+  // expectedStakedNBC 已经是 BigInt，直接使用
+  const expectedStakedNBCBigInt = typeof expectedStakedNBC === 'bigint' 
+    ? expectedStakedNBC 
+    : BigInt(expectedStakedNBC.toString())
+  
+  // annualRewardNBCWei = expectedStakedNBC * aprMultiplier / 10000
+  const annualRewardNBCWei = (expectedStakedNBCBigInt * BigInt(aprMultiplier)) / BigInt(10000)
 
   const conversionRateScaled = BigInt(Math.floor(conversionRate * 1e18))
   const rewardTokenMultiplier = BigInt(10 ** rewardTokenDecimals)
 
   const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
-  const rewardPerSecond = annualRewardToken / BigInt(CONFIG.SECONDS_PER_YEAR)
+  const secondsPerYear = BigInt(CONFIG.SECONDS_PER_YEAR)
+  
+  // 计算每秒奖励率
+  let rewardPerSecond = annualRewardToken / secondsPerYear
+  
+  // 如果计算出的 rewardRate 为 0（因为 annualRewardToken 太小），使用向上取整
+  // 但要注意：这会导致实际 APR 高于目标 APR
+  if (rewardPerSecond === 0n && annualRewardToken > 0n) {
+    rewardPerSecond = 1n // 设置为最小 1 wei/s
+  }
 
   return {
     rewardPerSecond,
@@ -407,6 +427,19 @@ async function resetPoolRewardRate(symbol, config) {
     console.log(`   ✅ 预期质押量: ${formatUnits(expectedStakedNBC, 18)} NBC`)
     console.log(`   ✅ 新 rewardRate: ${formatUnits(newRewardRateBN, config.decimals)} ${symbol}/s`)
     console.log(`   ✅ 年总奖励: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
+    
+    // 如果 rewardRate 为 0 或非常小，警告用户
+    if (newRewardRateBN.eq(0)) {
+      console.log('')
+      console.log('   ⚠️  警告: 计算出的 rewardRate 为 0，这可能是因为:')
+      console.log('      1. 预期质押量太小')
+      console.log('      2. 兑换比例太大（代币价格相对于 NBC 太高）')
+      console.log('      3. 目标 APR 太低')
+      console.log('')
+      console.log('   💡 建议:')
+      console.log('      - 使用更大的预期质押量（例如 1000 NBC）')
+      console.log('      - 或者接受实际 APR 可能高于目标 APR（如果设置了最小 rewardRate）')
+    }
     console.log('')
 
     // 4. 验证计算（使用预期质押量）
