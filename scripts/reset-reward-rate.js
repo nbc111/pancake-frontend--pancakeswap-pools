@@ -314,14 +314,9 @@ function calculateRewardRate(targetAPR, expectedStakedNBC, conversionRate, rewar
   const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
   const secondsPerYear = BigInt(CONFIG.SECONDS_PER_YEAR)
   
-  // 计算每秒奖励率
-  let rewardPerSecond = annualRewardToken / secondsPerYear
-  
-  // 如果计算出的 rewardRate 为 0（因为 annualRewardToken 太小），使用向上取整
-  // 但要注意：这会导致实际 APR 高于目标 APR
-  if (rewardPerSecond === 0n && annualRewardToken > 0n) {
-    rewardPerSecond = 1n // 设置为最小 1 wei/s
-  }
+  // 计算每秒奖励率（使用向上取整，确保不会因为向下取整导致 APR 不足）
+  // 方法：先加 (secondsPerYear - 1)，再除以 secondsPerYear，这样会向上取整
+  const rewardPerSecond = (annualRewardToken + secondsPerYear - 1n) / secondsPerYear
 
   return {
     rewardPerSecond,
