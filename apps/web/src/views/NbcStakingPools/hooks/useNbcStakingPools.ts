@@ -520,35 +520,21 @@ export const useNbcStakingPools = () => {
         }
       }
 
-      // 对异常高的 APR 进行限制和警告
-      // 当实际质押量过小时，APR 会被放大，需要特殊处理
-      const MAX_REASONABLE_APR = 1000 // 最大合理 APR（1000%）
-      const MIN_STAKED_FOR_ACCURATE_APR = 1000 // 最小质押量（NBC），低于此值 APR 可能不准确
+      // 显示实际 APR（不设上限）
+      // 在 DeFi 中，APR 超过 100% 是常见现象，特别是在新项目启动期或低流动性池中
+      // 高 APR 通常伴随高风险，用户需要自行评估
       const totalStakedNBCNum = Number(totalStakedBigInt) / 1e18
 
-      if (apr > MAX_REASONABLE_APR) {
-        // 如果 APR 异常高，且质押量很小，说明奖励率是基于预期质押量设置的
-        if (totalStakedNBCNum < MIN_STAKED_FOR_ACCURATE_APR) {
-          // 计算基于预期质押量（1,000,000 NBC）的预期 APR
-          const expectedTotalStaked = 1000000 // 预期质押量（NBC）
-          const expectedAPR = (apr * totalStakedNBCNum) / expectedTotalStaked
-
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`[${config.rewardTokenSymbol}] APR 异常高，实际质押量过小`, {
-              实际APR: `${apr.toFixed(2)}%`,
-              实际质押量: `${totalStakedNBCNum.toFixed(2)} NBC`,
-              预期质押量: `${expectedTotalStaked} NBC`,
-              预期APR: `${expectedAPR.toFixed(2)}%`,
-              说明: '奖励率基于预期质押量设置，实际 APR 会随质押量变化',
-            })
-          }
-
-          // 限制显示的 APR 为预期 APR，但不超过最大合理值
-          apr = Math.min(expectedAPR, MAX_REASONABLE_APR)
-        } else {
-          // 如果质押量足够大但 APR 仍然异常高，限制为最大合理值
-          apr = MAX_REASONABLE_APR
-        }
+      // 开发环境日志：记录 APR 和质押量信息，帮助调试
+      if (process.env.NODE_ENV === 'development' && apr > 0) {
+        // eslint-disable-next-line no-console
+        console.log(`[${config.rewardTokenSymbol}] APR 信息:`, {
+          实际APR: `${apr.toFixed(2)}%`,
+          实际质押量: `${totalStakedNBCNum.toFixed(2)} NBC`,
+          说明: apr > 1000 
+            ? 'APR 较高，可能因为质押量较小或处于项目启动期。高 APR 通常伴随高风险，请谨慎评估。'
+            : 'APR 在正常范围内',
+        })
       }
 
       // 判断池是否已结束

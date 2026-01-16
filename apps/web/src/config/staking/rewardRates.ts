@@ -80,12 +80,15 @@ export function calculateRewardRate(
   // 为了保持精度，我们使用高精度计算
   const conversionRateScaled = BigInt(Math.floor(conversionRate * 1e18)) // 兑换比例放大 10^18
   const rewardTokenMultiplier = BigInt(10 ** rewardTokenDecimals) // 奖励代币精度倍数
-  const nbcDecimals = BigInt(10 ** 18) // NBC 精度倍数
 
   // 年总奖励代币（wei 单位，考虑奖励代币精度）
-  // annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / (conversionRateScaled / nbcDecimals)
-  // 简化：annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier * nbcDecimals) / conversionRateScaled
-  const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier * nbcDecimals) / conversionRateScaled
+  // 推导过程：
+  // 1. annualRewardNBC (NBC数量) = annualRewardNBCWei / 10^18
+  // 2. annualRewardToken (代币数量) = annualRewardNBC / conversionRate
+  // 3. annualRewardToken (wei) = annualRewardToken × 10^tokenDecimals
+  // 合并：annualRewardToken = (annualRewardNBCWei × 10^tokenDecimals) / (conversionRate × 10^18)
+  // 因为 conversionRateScaled = conversionRate × 10^18，所以：
+  const annualRewardToken = (annualRewardNBCWei * rewardTokenMultiplier) / conversionRateScaled
 
   // 每秒奖励 = 年总奖励 / 一年秒数
   const rewardPerSecond = annualRewardToken / BigInt(SECONDS_PER_YEAR)
