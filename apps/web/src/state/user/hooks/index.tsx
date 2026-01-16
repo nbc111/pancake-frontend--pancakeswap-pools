@@ -50,7 +50,7 @@ export function useSubgraphHealthIndicatorManager() {
   const isSubgraphHealthIndicatorDisplayed = useSelector<
     AppState,
     AppState['user']['isSubgraphHealthIndicatorDisplayed']
-  >((state) => state.user.isSubgraphHealthIndicatorDisplayed)
+  >((state) => (state?.user?.isSubgraphHealthIndicatorDisplayed ?? false))
 
   const setSubgraphHealthIndicatorDisplayedPreference = useCallback(
     (newIsDisplayed: boolean) => {
@@ -65,7 +65,7 @@ export function useSubgraphHealthIndicatorManager() {
 export function useUserFarmStakedOnly(isActive: boolean): [boolean, (stakedOnly: boolean) => void, () => void] {
   const dispatch = useAppDispatch()
   const userFarmStakedOnly = useSelector<AppState, AppState['user']['userFarmStakedOnly']>((state) => {
-    return state.user.userFarmStakedOnly
+    return (state?.user?.userFarmStakedOnly ?? FarmStakedOnly.ON_FINISHED)
   })
 
   const setUserFarmStakedOnly = useCallback(
@@ -90,7 +90,8 @@ export function useUserFarmStakedOnly(isActive: boolean): [boolean, (stakedOnly:
 export function useUserPoolStakedOnly(): [boolean, (stakedOnly: boolean) => void] {
   const dispatch = useAppDispatch()
   const userPoolStakedOnly = useSelector<AppState, AppState['user']['userPoolStakedOnly']>((state) => {
-    return state.user.userPoolStakedOnly
+    if (!state || !state.user) return false
+    return (state.user.userPoolStakedOnly ?? false)
   })
 
   const setUserPoolStakedOnly = useCallback(
@@ -106,7 +107,8 @@ export function useUserPoolStakedOnly(): [boolean, (stakedOnly: boolean) => void
 export function useUserPoolsViewMode(): [ViewMode, (viewMode: ViewMode) => void] {
   const dispatch = useAppDispatch()
   const userPoolsViewMode = useSelector<AppState, AppState['user']['userPoolsViewMode']>((state) => {
-    return state.user.userPoolsViewMode
+    if (!state || !state.user) return ViewMode.TABLE
+    return (state.user.userPoolsViewMode ?? ViewMode.TABLE)
   })
 
   const setUserPoolsViewMode = useCallback(
@@ -122,7 +124,8 @@ export function useUserPoolsViewMode(): [ViewMode, (viewMode: ViewMode) => void]
 export function useUserFarmsViewMode(): [ViewMode, (viewMode: ViewMode) => void] {
   const dispatch = useAppDispatch()
   const userFarmsViewMode = useSelector<AppState, AppState['user']['userFarmsViewMode']>((state) => {
-    return state.user.userFarmsViewMode
+    if (!state || !state.user) return ViewMode.TABLE
+    return (state.user.userFarmsViewMode ?? ViewMode.TABLE)
   })
   useFeatureFlagEvaluation('farms-view-mode', userFarmsViewMode)
 
@@ -139,7 +142,8 @@ export function useUserFarmsViewMode(): [ViewMode, (viewMode: ViewMode) => void]
 export function useUserPredictionAcceptedRisk(): [boolean, (acceptedRisk: boolean) => void] {
   const dispatch = useAppDispatch()
   const userPredictionAcceptedRisk = useSelector<AppState, AppState['user']['userPredictionAcceptedRisk']>((state) => {
-    return state.user.userPredictionAcceptedRisk
+    if (!state || !state.user) return false
+    return (state.user.userPredictionAcceptedRisk ?? false)
   })
 
   const setUserPredictionAcceptedRisk = useCallback(
@@ -156,7 +160,8 @@ export function useUserLimitOrderAcceptedWarning(): [boolean, (acceptedRisk: boo
   const dispatch = useAppDispatch()
   const userLimitOrderAcceptedWarning = useSelector<AppState, AppState['user']['userLimitOrderAcceptedWarning']>(
     (state) => {
-      return state.user.userLimitOrderAcceptedWarning
+      if (!state || !state.user) return false
+      return (state.user.userLimitOrderAcceptedWarning ?? false)
     },
   )
 
@@ -176,7 +181,8 @@ export function useUserPredictionChartDisclaimerShow(): [boolean, (showDisclaime
     AppState,
     AppState['user']['userPredictionChartDisclaimerShow']
   >((state) => {
-    return state.user.userPredictionChartDisclaimerShow
+    if (!state || !state.user) return true
+    return (state.user.userPredictionChartDisclaimerShow ?? true)
   })
 
   const setPredictionUserChartDisclaimerShow = useCallback(
@@ -199,7 +205,8 @@ export function useUserPredictionChainlinkChartDisclaimerShow(): [boolean, (show
     AppState,
     AppState['user']['userPredictionChainlinkChartDisclaimerShow']
   >((state) => {
-    return state.user.userPredictionChainlinkChartDisclaimerShow
+    if (!state || !state.user) return true
+    return (state.user.userPredictionChainlinkChartDisclaimerShow ?? true)
   })
 
   const setPredictionUserChainlinkChartDisclaimerShow = useCallback(
@@ -219,7 +226,8 @@ export function useUserPredictionChainlinkChartDisclaimerShow(): [boolean, (show
 export function useUserUsernameVisibility(): [boolean, (usernameVisibility: boolean) => void] {
   const dispatch = useAppDispatch()
   const userUsernameVisibility = useSelector<AppState, AppState['user']['userUsernameVisibility']>((state) => {
-    return state.user.userUsernameVisibility
+    if (!state || !state.user) return false
+    return (state.user.userUsernameVisibility ?? false)
   })
 
   const setUserUsernameVisibility = useCallback(
@@ -325,7 +333,10 @@ export function useDefaultGasPrice(chainIdOverride?: number, enabled = true): bi
 export function useGasPrice(chainIdOverride?: number): bigint | undefined {
   const { chainId: chainId_ } = useActiveChainId()
   const chainId = chainIdOverride ?? chainId_
-  const userGas = useSelector<AppState, AppState['user']['gasPrice']>((state) => state.user.gasPrice)
+  const userGas = useSelector<AppState, AppState['user']['gasPrice']>((state) => {
+    if (!state || !state.user) return GAS_PRICE_GWEI.rpcDefault
+    return (state.user.gasPrice ?? GAS_PRICE_GWEI.rpcDefault)
+  })
   const bscProviderGasPrice = useDefaultGasPrice(chainIdOverride, userGas === GAS_PRICE_GWEI.rpcDefault)
   if (chainId === ChainId.BSC) {
     return userGas === GAS_PRICE_GWEI.rpcDefault ? bscProviderGasPrice : BigInt(userGas ?? GAS_PRICE_GWEI.default)
@@ -338,7 +349,10 @@ export function useGasPrice(chainIdOverride?: number): bigint | undefined {
 
 export function useGasPriceManager(): [string, (userGasPrice: string) => void] {
   const dispatch = useAppDispatch()
-  const userGasPrice = useSelector<AppState, AppState['user']['gasPrice']>((state) => state.user.gasPrice)
+  const userGasPrice = useSelector<AppState, AppState['user']['gasPrice']>((state) => {
+    if (!state || !state.user) return GAS_PRICE_GWEI.rpcDefault
+    return (state.user.gasPrice ?? GAS_PRICE_GWEI.rpcDefault)
+  })
 
   const setGasPrice = useCallback(
     (gasPrice: string) => {
@@ -433,7 +447,10 @@ export function useTrackedTokenPairs(): [ERC20Token, ERC20Token][] {
   )
 
   // pairs saved by users
-  const savedSerializedPairs = useSelector<AppState, AppState['user']['pairs']>(({ user: { pairs } }) => pairs)
+  const savedSerializedPairs = useSelector<AppState, AppState['user']['pairs']>((state) => {
+    if (!state || !state.user) return {}
+    return (state.user.pairs ?? {})
+  })
 
   const userPairs: [ERC20Token, ERC20Token][] = useMemo(() => {
     if (!chainId || !savedSerializedPairs) return []
@@ -473,7 +490,10 @@ export function useTrackedTokenPairs(): [ERC20Token, ERC20Token][] {
  */
 export const useWatchlistTokens = (): [string[], (address: string) => void] => {
   const dispatch = useAppDispatch()
-  const savedTokensFromSelector = useSelector((state: AppState) => state.user.watchlistTokens)
+  const savedTokensFromSelector = useSelector((state: AppState) => {
+    if (!state || !state.user) return []
+    return (state.user.watchlistTokens ?? [])
+  })
   const updatedSavedTokens = useCallback(
     (address: string) => {
       dispatch(addWatchlistToken({ address }))
@@ -491,7 +511,10 @@ export const useWatchlistTokens = (): [string[], (address: string) => void] => {
  */
 export const useWatchlistPools = (): [string[], (address: string) => void] => {
   const dispatch = useAppDispatch()
-  const savedPoolsFromSelector = useSelector((state: AppState) => state.user.watchlistPools)
+  const savedPoolsFromSelector = useSelector((state: AppState) => {
+    if (!state || !state.user) return []
+    return (state.user.watchlistPools ?? [])
+  })
   const updateSavedPools = useCallback(
     (address: string) => {
       dispatch(addWatchlistPool({ address }))

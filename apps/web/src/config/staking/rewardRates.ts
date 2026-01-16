@@ -159,6 +159,9 @@ export function calculateAPRFromRewardRate(
     const totalStakedNBCFormatted = Number(totalStakedNBC) / 1e18
     const annualRewardNBCFormatted = Number(annualRewardNBC) / 1e18
     const annualRewardTokenFormatted = Number(annualRewardToken) / 10 ** rewardTokenDecimals
+    const durationFormatted = Number(duration)
+    const durationYears = durationFormatted / (365 * 24 * 60 * 60)
+    const totalRewardTokenFormatted = Number(totalRewardToken) / 10 ** rewardTokenDecimals
 
     // 使用多个 console.log 以便于在控制台中查看
     // eslint-disable-next-line no-console
@@ -178,9 +181,13 @@ export function calculateAPRFromRewardRate(
     // eslint-disable-next-line no-console
     console.log('  - rewardTokenDecimals:', rewardTokenDecimals)
     // eslint-disable-next-line no-console
+    console.log('  - rewardsDuration:', duration.toString(), `(${durationFormatted} 秒 = ${durationYears.toFixed(2)} 年)`)
+    // eslint-disable-next-line no-console
     console.log('')
     // eslint-disable-next-line no-console
     console.log('🔢 中间计算:')
+    // eslint-disable-next-line no-console
+    console.log('  - 总奖励 (rewardRate × rewardsDuration):', totalRewardToken.toString(), `(${totalRewardTokenFormatted.toFixed(8)} tokens)`)
     // eslint-disable-next-line no-console
     console.log(
       '  - annualRewardToken:',

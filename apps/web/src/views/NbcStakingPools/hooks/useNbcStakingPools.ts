@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useAccount, useReadContract, useBalance } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { Pool } from '@pancakeswap/widgets-internal'
@@ -399,85 +399,196 @@ export const useNbcStakingPools = () => {
   })
 
   // 获取所有池的 rewardsDuration
-  const { data: pool0Details } = useReadContract({
+  const { data: pool0Details, error: pool0DetailsError, isLoading: pool0DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [0],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool1Details } = useReadContract({
+  const { data: pool1Details, error: pool1DetailsError, isLoading: pool1DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [1],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool2Details } = useReadContract({
+  const { data: pool2Details, error: pool2DetailsError, isLoading: pool2DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [2],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool3Details } = useReadContract({
+  const { data: pool3Details, error: pool3DetailsError, isLoading: pool3DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [3],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool4Details } = useReadContract({
+  const { data: pool4Details, error: pool4DetailsError, isLoading: pool4DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [4],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool5Details } = useReadContract({
+  const { data: pool5Details, error: pool5DetailsError, isLoading: pool5DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [5],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool6Details } = useReadContract({
+  const { data: pool6Details, error: pool6DetailsError, isLoading: pool6DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [6],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool7Details } = useReadContract({
+  const { data: pool7Details, error: pool7DetailsError, isLoading: pool7DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [7],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool8Details } = useReadContract({
+  const { data: pool8Details, error: pool8DetailsError, isLoading: pool8DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [8],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool9Details } = useReadContract({
+  const { data: pool9Details, error: pool9DetailsError, isLoading: pool9DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [9],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
-  const { data: pool10Details } = useReadContract({
+  const { data: pool10Details, error: pool10DetailsError, isLoading: pool10DetailsLoading } = useReadContract({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
     functionName: 'pools',
     args: [10],
     chainId: CHAIN_ID,
+    query: {
+      enabled: true,
+      retry: 3,
+    },
   })
 
+  // 开发环境：记录 poolDetails 查询状态（使用 useEffect 确保在数据变化时记录）
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const poolDetailsStatus = [
+        { pool: 0, data: pool0Details, error: pool0DetailsError, loading: pool0DetailsLoading },
+        { pool: 1, data: pool1Details, error: pool1DetailsError, loading: pool1DetailsLoading },
+        { pool: 2, data: pool2Details, error: pool2DetailsError, loading: pool2DetailsLoading },
+        { pool: 3, data: pool3Details, error: pool3DetailsError, loading: pool3DetailsLoading },
+        { pool: 4, data: pool4Details, error: pool4DetailsError, loading: pool4DetailsLoading },
+        { pool: 5, data: pool5Details, error: pool5DetailsError, loading: pool5DetailsLoading },
+        { pool: 6, data: pool6Details, error: pool6DetailsError, loading: pool6DetailsLoading },
+        { pool: 7, data: pool7Details, error: pool7DetailsError, loading: pool7DetailsLoading },
+        { pool: 8, data: pool8Details, error: pool8DetailsError, loading: pool8DetailsLoading },
+        { pool: 9, data: pool9Details, error: pool9DetailsError, loading: pool9DetailsLoading },
+        { pool: 10, data: pool10Details, error: pool10DetailsError, loading: pool10DetailsLoading },
+      ]
+      
+      poolDetailsStatus.forEach(({ pool, data, error, loading }) => {
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error(`[Pool ${pool}] poolDetails 查询错误:`, {
+            错误信息: error.message,
+            错误详情: error,
+            链ID: CHAIN_ID,
+            合约地址: STAKING_CONTRACT_ADDRESS,
+          })
+        } else if (loading) {
+          // eslint-disable-next-line no-console
+          console.log(`[Pool ${pool}] poolDetails 正在加载...`)
+        } else if (data === undefined) {
+          // eslint-disable-next-line no-console
+          console.warn(`[Pool ${pool}] poolDetails 查询返回 undefined`, {
+            链ID: CHAIN_ID,
+            合约地址: STAKING_CONTRACT_ADDRESS,
+            函数名: 'pools',
+            参数: [pool],
+          })
+        } else if (data && Array.isArray(data) && data.length >= 5) {
+          const rewardsDuration = data[4]
+          if (rewardsDuration !== undefined) {
+            // eslint-disable-next-line no-console
+            console.log(`[Pool ${pool}] poolDetails 查询成功，rewardsDuration:`, rewardsDuration.toString())
+          }
+        }
+      })
+    }
+  }, [
+    pool0Details, pool1Details, pool2Details, pool3Details, pool4Details, pool5Details,
+    pool6Details, pool7Details, pool8Details, pool9Details, pool10Details,
+    pool0DetailsError, pool1DetailsError, pool2DetailsError, pool3DetailsError, pool4DetailsError, pool5DetailsError,
+    pool6DetailsError, pool7DetailsError, pool8DetailsError, pool9DetailsError, pool10DetailsError,
+    pool0DetailsLoading, pool1DetailsLoading, pool2DetailsLoading, pool3DetailsLoading, pool4DetailsLoading, pool5DetailsLoading,
+    pool6DetailsLoading, pool7DetailsLoading, pool8DetailsLoading, pool9DetailsLoading, pool10DetailsLoading,
+  ])
+
   const pools = useMemo(() => {
+    // 开发环境：记录 tokenPrices 状态
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('[useNbcStakingPools] useMemo 执行，tokenPrices 状态:', {
+        tokenPrices存在: !!tokenPrices,
+        tokenPrices类型: typeof tokenPrices,
+        tokenPrices键: tokenPrices ? Object.keys(tokenPrices) : [],
+        tokenPrices值: tokenPrices ? Object.entries(tokenPrices).map(([k, v]) => `${k}: ${v ? v.toFixed(4) : 'null'}`).join(', ') : 'null',
+        nbcPrice: nbcPrice ? nbcPrice.toFixed(6) : 'null',
+      })
+    }
+
     // 将数据组织成数组
     const poolDataQueries = [
       { staked: staked0, earned: earned0, totalStaked: totalStaked0, poolInfo: poolInfo0, poolDetails: pool0Details },
@@ -500,9 +611,58 @@ export const useNbcStakingPools = () => {
       
       // 从 poolDetails 中提取 rewardsDuration
       // pools 函数返回: [rewardToken, totalStaked, rewardRate, periodFinish, rewardsDuration, lastUpdateTime, rewardPerTokenStored, active]
-      const rewardsDuration = poolDetails && Array.isArray(poolDetails) && poolDetails.length >= 5
-        ? (typeof poolDetails[4] === 'bigint' ? poolDetails[4] : BigInt(poolDetails[4]?.toString() || '0'))
-        : undefined
+      // rewardsDuration 在索引 4
+      let rewardsDuration: bigint | undefined = undefined
+      
+      if (poolDetails && Array.isArray(poolDetails) && poolDetails.length >= 5) {
+        // rewardsDuration 在索引 4
+        const durationValue = poolDetails[4]
+        if (durationValue !== undefined && durationValue !== null) {
+          try {
+            const durationBigInt = typeof durationValue === 'bigint' 
+              ? durationValue 
+              : BigInt(durationValue?.toString() || '0')
+            // 只有当值大于 0 且合理（小于 10 年）时才使用
+            // 如果 rewardsDuration 异常大（如 56 年），仍然使用它，但会在日志中警告
+            if (durationBigInt > 0n) {
+              rewardsDuration = durationBigInt
+            }
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error(`[${config.rewardTokenSymbol}] Error parsing rewardsDuration:`, error)
+          }
+        }
+      }
+      
+      // 开发环境日志：记录 rewardsDuration 信息
+      if (process.env.NODE_ENV === 'development') {
+        if (rewardsDuration && rewardsDuration > 0n) {
+          const durationYears = Number(rewardsDuration) / (365 * 24 * 60 * 60)
+          const isAbnormal = durationYears > 10 // 超过 10 年视为异常
+          // eslint-disable-next-line no-console
+          console.log(`[${config.rewardTokenSymbol}] rewardsDuration:`, {
+            秒数: rewardsDuration.toString(),
+            年数: durationYears.toFixed(2),
+            来源: '从合约读取',
+            是否异常: isAbnormal ? '⚠️ 是（超过10年）' : '✅ 正常',
+            poolDetails长度: poolDetails?.length || 0,
+            poolDetails索引4: poolDetails?.[4]?.toString()?.substring(0, 20) || 'N/A',
+          })
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn(`[${config.rewardTokenSymbol}] rewardsDuration: 未读取到，将使用默认值 (1年)`, {
+            poolDetails存在: !!poolDetails,
+            poolDetails类型: Array.isArray(poolDetails) ? 'array' : typeof poolDetails,
+            poolDetails长度: poolDetails && Array.isArray(poolDetails) ? poolDetails.length : 'N/A',
+            poolDetails索引4: poolDetails && Array.isArray(poolDetails) && poolDetails.length > 4 
+              ? poolDetails[4]?.toString()?.substring(0, 30) || 'null/undefined'
+              : '索引不存在',
+            poolDetails完整内容: poolDetails ? JSON.stringify(poolDetails, (key, value) =>
+              typeof value === 'bigint' ? value.toString() : value,
+            ).substring(0, 300) : 'null',
+          })
+        }
+      }
 
       const stakingToken = new ERC20Token(
         CHAIN_ID,
@@ -550,12 +710,13 @@ export const useNbcStakingPools = () => {
           if (process.env.NODE_ENV === 'development') {
             // eslint-disable-next-line no-console
             console.log(`[${config.rewardTokenSymbol}] Price check:`, {
-              nbcPrice,
-              tokenPrice,
+              nbcPrice: nbcPrice ? nbcPrice.toFixed(6) : 'null/0',
+              tokenPrice: tokenPrice ? tokenPrice.toFixed(6) : 'null/0',
               hasNbcPrice: !!nbcPrice && nbcPrice > 0,
               hasTokenPrice: !!tokenPrice && tokenPrice > 0,
               rewardRate: rewardRateBigInt.toString(),
               totalStaked: totalStakedBigInt.toString(),
+              tokenPrices对象: tokenPrices ? Object.keys(tokenPrices).length + ' 个代币' : 'null',
             })
           }
 
@@ -563,7 +724,7 @@ export const useNbcStakingPools = () => {
             // 计算实时兑换比例：1 奖励代币 = (tokenPrice / nbcPrice) NBC
             const conversionRate = tokenPrice / nbcPrice
 
-            if (conversionRate > 0) {
+            if (conversionRate > 0 && Number.isFinite(conversionRate)) {
               apr = calculateAPRFromRewardRate(
                 rewardRateBigInt,
                 totalStakedBigInt,
@@ -575,14 +736,19 @@ export const useNbcStakingPools = () => {
               // 调试日志
               if (process.env.NODE_ENV === 'development') {
                 // eslint-disable-next-line no-console
-                console.log(`[${config.rewardTokenSymbol}] APR calculated:`, {
-                  apr,
-                  conversionRate,
+                console.log(`[${config.rewardTokenSymbol}] ✅ APR calculated:`, {
+                  apr: apr.toFixed(2) + '%',
+                  conversionRate: conversionRate.toFixed(6),
                   rewardRate: rewardRateBigInt.toString(),
                   totalStaked: totalStakedBigInt.toString(),
+                  rewardsDuration: rewardsDuration ? rewardsDuration.toString() : '使用默认值',
                 })
               }
             } else {
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.warn(`[${config.rewardTokenSymbol}] ⚠️ Invalid conversionRate:`, conversionRate)
+              }
               apr = 0
             }
           } else if (config.rewardTokenSymbol === 'NBC') {
@@ -590,13 +756,23 @@ export const useNbcStakingPools = () => {
             const annualReward = Number(rewardRateBigInt) * 365 * 24 * 60 * 60
             const totalStakedNum = Number(totalStakedBigInt)
             apr = (annualReward / totalStakedNum) * 100
-          } else {
-            // 价格未加载时，记录警告
             if (process.env.NODE_ENV === 'development') {
               // eslint-disable-next-line no-console
-              console.warn(`[${config.rewardTokenSymbol}] Price not loaded yet, APR set to 0`, {
-                nbcPrice,
-                tokenPrice,
+              console.log(`[${config.rewardTokenSymbol}] APR calculated (NBC池，简化计算):`, apr.toFixed(2) + '%')
+            }
+          } else {
+            // 价格未加载时，记录详细警告
+            if (process.env.NODE_ENV === 'development') {
+              // eslint-disable-next-line no-console
+              console.warn(`[${config.rewardTokenSymbol}] ⚠️ Price not loaded yet, APR set to 0`, {
+                nbcPrice: nbcPrice ? nbcPrice.toFixed(6) : 'null/0',
+                tokenPrice: tokenPrice ? tokenPrice.toFixed(6) : 'null/0',
+                可能原因: !nbcPrice || nbcPrice <= 0 
+                  ? 'NBC价格未加载' 
+                  : !tokenPrice || tokenPrice <= 0 
+                    ? '代币价格未加载（可能API失败）' 
+                    : '未知原因',
+                tokenPrices对象: tokenPrices ? JSON.stringify(Object.keys(tokenPrices)) : 'null',
               })
             }
             apr = 0
@@ -697,46 +873,57 @@ export const useNbcStakingPools = () => {
     earned0,
     totalStaked0,
     poolInfo0,
+    pool0Details,
     staked1,
     earned1,
     totalStaked1,
     poolInfo1,
+    pool1Details,
     staked2,
     earned2,
     totalStaked2,
     poolInfo2,
+    pool2Details,
     staked3,
     earned3,
     totalStaked3,
     poolInfo3,
+    pool3Details,
     staked4,
     earned4,
     totalStaked4,
     poolInfo4,
+    pool4Details,
     staked5,
     earned5,
     totalStaked5,
     poolInfo5,
+    pool5Details,
     staked6,
     earned6,
     totalStaked6,
     poolInfo6,
+    pool6Details,
     staked7,
     earned7,
     totalStaked7,
     poolInfo7,
+    pool7Details,
     staked8,
     earned8,
     totalStaked8,
     poolInfo8,
+    pool8Details,
     staked9,
     earned9,
     totalStaked9,
     poolInfo9,
+    pool9Details,
     staked10,
     earned10,
     totalStaked10,
     poolInfo10,
+    pool10Details,
     currentChainTimestamp,
     nbcPrice,
     tokenPrices,
