@@ -37,7 +37,7 @@ const CHAIN_QUERY_NAME_TO_ID = Object.entries(CHAIN_QUERY_NAME).reduce((acc, [ch
 }, {} as Record<string, ChainId>)
 
 // Add NBC Chain (1281) mapping for URL query parameter
-CHAIN_QUERY_NAME_TO_ID['nbc'] = 1281 as ChainId
+CHAIN_QUERY_NAME_TO_ID.nbc = 1281 as ChainId
 
 export const getChainId = memoize((chainName: string) => {
   if (!chainName) return undefined
