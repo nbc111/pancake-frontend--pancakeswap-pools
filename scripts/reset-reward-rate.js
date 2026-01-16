@@ -159,6 +159,7 @@ const TOKEN_CONFIG = {
 
 const STAKING_ABI = [
   'function getPoolInfo(uint256) view returns (address rewardToken, uint256 totalStakedAmount, uint256 rewardRate, uint256 periodFinish, bool active)',
+  'function pools(uint256) view returns (address rewardToken, uint256 totalStakedAmount, uint256 rewardRate, uint256 periodFinish, uint256 lastUpdateTime, uint256 rewardsDuration, bool active)',
   'function notifyRewardAmount(uint256 poolIndex, uint256 reward)',
   'function owner() view returns (address)',
 ]
@@ -391,11 +392,44 @@ async function resetPoolRewardRate(symbol, config) {
     const stakingContract = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider)
 
     // 获取完整的池信息（包括 rewardsDuration）
-    const poolData = await stakingContract.pools(config.poolIndex)
-    const currentTotalStaked = poolData.totalStakedAmount || poolData[1]
-    const currentRewardRate = poolData.rewardRate || poolData[2]
-    const rewardsDuration = poolData.rewardsDuration || poolData[5]
-    const active = poolData.active !== undefined ? poolData.active : poolData[6]
+    // 先尝试使用 pools 函数，如果失败则使用 getPoolInfo
+    let poolData
+    let currentTotalStaked
+    let currentRewardRate
+    let rewardsDuration
+    let active
+    
+    try {
+      // 尝试使用 pools 函数（返回完整信息包括 rewardsDuration）
+      poolData = await stakingContract.pools(config.poolIndex)
+      // pools 函数返回数组: [rewardToken, totalStakedAmount, rewardRate, periodFinish, lastUpdateTime, rewardsDuration, active]
+      // ethers.js 可能返回对象或数组，需要兼容两种方式
+      currentTotalStaked = poolData[1] || poolData.totalStakedAmount
+      currentRewardRate = poolData[2] || poolData.rewardRate
+      rewardsDuration = poolData[5] || poolData.rewardsDuration
+      active = poolData[6] !== undefined ? poolData[6] : (poolData.active !== undefined ? poolData.active : true)
+    } catch (error) {
+      // 如果 pools 函数不存在，使用 getPoolInfo 并尝试其他方式获取 rewardsDuration
+      console.log('   ⚠️  pools 函数不可用，使用 getPoolInfo')
+      const poolInfo = await stakingContract.getPoolInfo(config.poolIndex)
+      currentTotalStaked = poolInfo.totalStakedAmount
+      currentRewardRate = poolInfo.rewardRate
+      active = poolInfo.active
+      
+      // 尝试直接调用 pools 函数（使用 callStatic）
+      try {
+        const poolsResult = await provider.call({
+          to: CONFIG.STAKING_CONTRACT_ADDRESS,
+          data: stakingContract.interface.encodeFunctionData('pools', [config.poolIndex]),
+        })
+        const decoded = stakingContract.interface.decodeFunctionResult('pools', poolsResult)
+        rewardsDuration = decoded[5]
+      } catch (e) {
+        // 如果还是失败，使用默认值 1 年
+        console.log('   ⚠️  无法获取 rewardsDuration，使用默认值 1 年 (31536000 秒)')
+        rewardsDuration = ethers.BigNumber.from(CONFIG.SECONDS_PER_YEAR)
+      }
+    }
 
     if (!active) {
       console.log(`   ⚠️  池未激活，跳过`)
