@@ -398,26 +398,111 @@ export const useNbcStakingPools = () => {
     chainId: CHAIN_ID,
   })
 
+  // 获取所有池的 rewardsDuration
+  const { data: pool0Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [0],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool1Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [1],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool2Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [2],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool3Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool4Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool5Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [5],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool6Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [6],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool7Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [7],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool8Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [8],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool9Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [9],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool10Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [10],
+    chainId: CHAIN_ID,
+  })
+
   const pools = useMemo(() => {
     // 将数据组织成数组
     const poolDataQueries = [
-      { staked: staked0, earned: earned0, totalStaked: totalStaked0, poolInfo: poolInfo0 },
-      { staked: staked1, earned: earned1, totalStaked: totalStaked1, poolInfo: poolInfo1 },
-      { staked: staked2, earned: earned2, totalStaked: totalStaked2, poolInfo: poolInfo2 },
-      { staked: staked3, earned: earned3, totalStaked: totalStaked3, poolInfo: poolInfo3 },
-      { staked: staked4, earned: earned4, totalStaked: totalStaked4, poolInfo: poolInfo4 },
-      { staked: staked5, earned: earned5, totalStaked: totalStaked5, poolInfo: poolInfo5 },
-      { staked: staked6, earned: earned6, totalStaked: totalStaked6, poolInfo: poolInfo6 },
-      { staked: staked7, earned: earned7, totalStaked: totalStaked7, poolInfo: poolInfo7 },
-      { staked: staked8, earned: earned8, totalStaked: totalStaked8, poolInfo: poolInfo8 },
-      { staked: staked9, earned: earned9, totalStaked: totalStaked9, poolInfo: poolInfo9 },
-      { staked: staked10, earned: earned10, totalStaked: totalStaked10, poolInfo: poolInfo10 },
+      { staked: staked0, earned: earned0, totalStaked: totalStaked0, poolInfo: poolInfo0, poolDetails: pool0Details },
+      { staked: staked1, earned: earned1, totalStaked: totalStaked1, poolInfo: poolInfo1, poolDetails: pool1Details },
+      { staked: staked2, earned: earned2, totalStaked: totalStaked2, poolInfo: poolInfo2, poolDetails: pool2Details },
+      { staked: staked3, earned: earned3, totalStaked: totalStaked3, poolInfo: poolInfo3, poolDetails: pool3Details },
+      { staked: staked4, earned: earned4, totalStaked: totalStaked4, poolInfo: poolInfo4, poolDetails: pool4Details },
+      { staked: staked5, earned: earned5, totalStaked: totalStaked5, poolInfo: poolInfo5, poolDetails: pool5Details },
+      { staked: staked6, earned: earned6, totalStaked: totalStaked6, poolInfo: poolInfo6, poolDetails: pool6Details },
+      { staked: staked7, earned: earned7, totalStaked: totalStaked7, poolInfo: poolInfo7, poolDetails: pool7Details },
+      { staked: staked8, earned: earned8, totalStaked: totalStaked8, poolInfo: poolInfo8, poolDetails: pool8Details },
+      { staked: staked9, earned: earned9, totalStaked: totalStaked9, poolInfo: poolInfo9, poolDetails: pool9Details },
+      { staked: staked10, earned: earned10, totalStaked: totalStaked10, poolInfo: poolInfo10, poolDetails: pool10Details },
     ]
 
     const stakingLogoURI = '/images/custom-tokens/nbc.png'
 
     const result = POOL_CONFIGS.map((config, index) => {
-      const { staked, earned, totalStaked, poolInfo } = poolDataQueries[index]
+      const { staked, earned, totalStaked, poolInfo, poolDetails } = poolDataQueries[index]
+      
+      // 从 poolDetails 中提取 rewardsDuration
+      // pools 函数返回: [rewardToken, totalStaked, rewardRate, periodFinish, rewardsDuration, lastUpdateTime, rewardPerTokenStored, active]
+      const rewardsDuration = poolDetails && Array.isArray(poolDetails) && poolDetails.length >= 5
+        ? (typeof poolDetails[4] === 'bigint' ? poolDetails[4] : BigInt(poolDetails[4]?.toString() || '0'))
+        : undefined
 
       const stakingToken = new ERC20Token(
         CHAIN_ID,
@@ -484,6 +569,7 @@ export const useNbcStakingPools = () => {
                 totalStakedBigInt,
                 conversionRate,
                 config.rewardTokenDecimals,
+                rewardsDuration,
               )
 
               // 调试日志

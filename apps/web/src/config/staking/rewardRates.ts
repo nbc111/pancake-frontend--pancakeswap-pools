@@ -102,7 +102,7 @@ export function calculateRewardRate(
  * 公式：APR = (年收益 × 币当前价值) / (质押资产总值) × 100%
  *
  * 其中：
- * - 年收益 = rewardRate × SECONDS_PER_YEAR（奖励代币数量）
+ * - 年收益 = rewardRate × rewardsDuration（奖励代币数量，使用合约的实际 rewardsDuration）
  * - 币当前价值 = conversionRate（1 奖励代币 = X NBC）
  * - 质押资产总值 = totalStakedNBC（质押的 NBC 数量）
  *
@@ -110,6 +110,7 @@ export function calculateRewardRate(
  * @param totalStakedNBC 总质押量（NBC，wei 单位）
  * @param conversionRate 兑换比例（1 奖励代币 = X NBC），通常为 tokenPrice / nbcPrice
  * @param rewardTokenDecimals 奖励代币精度
+ * @param rewardsDuration 奖励周期时长（秒），如果未提供则使用默认的 SECONDS_PER_YEAR
  * @returns APR（年化收益率，%）
  */
 export function calculateAPRFromRewardRate(
@@ -117,12 +118,21 @@ export function calculateAPRFromRewardRate(
   totalStakedNBC: bigint,
   conversionRate: number,
   rewardTokenDecimals: number,
+  rewardsDuration?: bigint,
 ): number {
   if (totalStakedNBC === 0n) return 0
   if (rewardRate === 0n) return 0
 
-  // 年总奖励（奖励代币，wei 单位）
-  const annualRewardToken = rewardRate * BigInt(SECONDS_PER_YEAR)
+  // 使用合约的实际 rewardsDuration，如果未提供则使用默认的 SECONDS_PER_YEAR
+  const duration = rewardsDuration || BigInt(SECONDS_PER_YEAR)
+  
+  // 总奖励（奖励代币，wei 单位）= rewardRate × rewardsDuration
+  const totalRewardToken = rewardRate * duration
+  
+  // 转换为年化 APR：需要将 rewardsDuration 转换为年化比例
+  // 如果 rewardsDuration 不是 1 年，需要按比例调整
+  // APR = (总奖励 × 1年 / rewardsDuration × 币当前价值) / (质押资产总值) × 100%
+  const annualRewardToken = (totalRewardToken * BigInt(SECONDS_PER_YEAR)) / duration
 
   // 转换为 NBC（wei 单位）
   // 公式：年总奖励 NBC = (年总奖励代币 (wei) * 兑换比例 * 10^18) / (10^rewardDecimals)
