@@ -390,19 +390,25 @@ async function resetPoolRewardRate(symbol, config) {
     
     const stakingContract = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider)
 
-    const poolInfo = await stakingContract.getPoolInfo(config.poolIndex)
-    const currentTotalStaked = poolInfo.totalStakedAmount
-    const currentRewardRate = poolInfo.rewardRate
-    const active = poolInfo.active
+    // 获取完整的池信息（包括 rewardsDuration）
+    const poolData = await stakingContract.pools(config.poolIndex)
+    const currentTotalStaked = poolData.totalStakedAmount || poolData[1]
+    const currentRewardRate = poolData.rewardRate || poolData[2]
+    const rewardsDuration = poolData.rewardsDuration || poolData[5]
+    const active = poolData.active !== undefined ? poolData.active : poolData[6]
 
     if (!active) {
       console.log(`   ⚠️  池未激活，跳过`)
       return { success: false, symbol, error: 'Pool not active' }
     }
 
+    const rewardsDurationSeconds = Number(rewardsDuration.toString())
+    const rewardsDurationYears = rewardsDurationSeconds / 31536000
+
     console.log(`   ✅ 池状态: 激活`)
     console.log(`   ✅ 当前质押量: ${formatUnits(currentTotalStaked, 18)} NBC`)
     console.log(`   ✅ 当前 rewardRate: ${formatUnits(currentRewardRate, config.decimals)} ${symbol}/s`)
+    console.log(`   ✅ rewardsDuration: ${rewardsDurationSeconds} 秒 (${rewardsDurationYears.toFixed(2)} 年)`)
     console.log('')
 
     // 3. 计算新的 rewardRate
@@ -416,12 +422,24 @@ async function resetPoolRewardRate(symbol, config) {
     )
 
     const newRewardRateBN = ethers.BigNumber.from(newRewardRate.rewardPerSecond.toString())
+    
+    // 重要：合约使用 rewardsDuration 来计算 rewardRate
+    // rewardRate = totalReward / rewardsDuration
+    // 所以我们需要发送 totalReward = rewardRate * rewardsDuration
+    // 但是，我们计算的是年总奖励，所以需要转换为 rewardsDuration 期间的总奖励
     const annualRewardBN = ethers.BigNumber.from(newRewardRate.annualRewardToken.toString())
+    const rewardsDurationBN = ethers.BigNumber.from(rewardsDurationSeconds.toString())
+    
+    // 计算 rewardsDuration 期间的总奖励
+    // 如果 rewardsDuration 是 1 年，totalReward = annualReward
+    // 如果 rewardsDuration 是 56 年，totalReward = annualReward * 56
+    const totalRewardForDuration = (annualRewardBN.mul(rewardsDurationBN)).div(ethers.BigNumber.from(CONFIG.SECONDS_PER_YEAR.toString()))
 
     console.log(`   ✅ 目标 APR: ${CONFIG.TARGET_APR}%`)
     console.log(`   ✅ 预期质押量: ${formatUnits(expectedStakedNBC, 18)} NBC`)
     console.log(`   ✅ 新 rewardRate: ${formatUnits(newRewardRateBN, config.decimals)} ${symbol}/s`)
     console.log(`   ✅ 年总奖励: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
+    console.log(`   ✅ rewardsDuration 期间总奖励: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol}`)
     
     // 如果 rewardRate 为 0 或非常小，警告用户
     if (newRewardRateBN.eq(0)) {
@@ -495,17 +513,18 @@ async function resetPoolRewardRate(symbol, config) {
       throw new Error(`钱包地址 ${wallet.address} 不是合约所有者 ${owner}`)
     }
 
-    // 9. 检查代币余额
+    // 9. 检查代币余额（使用 rewardsDuration 期间的总奖励）
     const tokenContract = new ethers.Contract(config.address, ['function balanceOf(address) view returns (uint256)'], provider)
     const ownerBalance = await tokenContract.balanceOf(owner)
     
-    if (ownerBalance.lt(annualRewardBN)) {
+    if (ownerBalance.lt(totalRewardForDuration)) {
       throw new Error(
-        `所有者余额不足: ${formatUnits(ownerBalance, config.decimals)} ${symbol} < ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`,
+        `所有者余额不足: ${formatUnits(ownerBalance, config.decimals)} ${symbol} < ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (rewardsDuration 期间所需)`,
       )
     }
 
     console.log(`   ✅ 所有者余额充足: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
+    console.log(`   ✅ 需要发送: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (rewardsDuration 期间总奖励)`)
     console.log('')
 
     // 10. 确认执行
@@ -519,10 +538,12 @@ async function resetPoolRewardRate(symbol, config) {
       }
     }
 
-    // 11. 执行交易
+    // 11. 执行交易（使用 rewardsDuration 期间的总奖励）
     console.log('📤 发送交易...')
+    console.log(`   💡 注意: 合约使用 rewardsDuration (${rewardsDurationYears.toFixed(2)} 年) 来计算 rewardRate`)
+    console.log(`   💡 发送的总奖励: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol}`)
     const stakingContractWithSigner = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, wallet)
-    const tx = await stakingContractWithSigner.notifyRewardAmount(config.poolIndex, annualRewardBN)
+    const tx = await stakingContractWithSigner.notifyRewardAmount(config.poolIndex, totalRewardForDuration)
     console.log(`   🔗 交易哈希: ${tx.hash}`)
 
     console.log('⏳ 等待确认...')
