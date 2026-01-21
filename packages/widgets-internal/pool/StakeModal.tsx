@@ -121,16 +121,103 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
     ? userDataStakedBalance.lt(fullDecimalStakeAmount)
     : userDataStakingTokenBalance.lt(fullDecimalStakeAmount);
 
-  const usdValueStaked = new BigNumber(stakeAmount).times(stakingTokenPrice);
-  const formattedUsdValueStaked = !usdValueStaked.isNaN() && formatNumber(usdValueStaked.toNumber());
+  // 验证输入参数，确保它们是有效数字
+  const validApr = typeof apr === 'number' && Number.isFinite(apr) && apr >= 0 ? apr : 0;
+  const validEarningTokenPrice = typeof earningTokenPrice === 'number' && Number.isFinite(earningTokenPrice) && earningTokenPrice > 0 ? earningTokenPrice : 1;
+  const validStakingTokenPrice = typeof stakingTokenPrice === 'number' && Number.isFinite(stakingTokenPrice) && stakingTokenPrice >= 0 ? stakingTokenPrice : 0;
 
-  const interestBreakdown = getInterestBreakdown({
-    principalInUSD: !usdValueStaked.isNaN() ? usdValueStaked.toNumber() : 0,
-    apr,
-    earningTokenPrice,
-  });
-  const annualRoi = interestBreakdown[3] * earningTokenPrice;
+  // 处理 stakeAmount 为空字符串或无效值的情况
+  const stakeAmountNum = stakeAmount && !isNaN(Number(stakeAmount)) && Number(stakeAmount) >= 0 ? Number(stakeAmount) : 0;
+  const usdValueStaked = new BigNumber(stakeAmountNum).times(validStakingTokenPrice);
+  const formattedUsdValueStaked = !usdValueStaked.isNaN() && usdValueStaked.isFinite() ? formatNumber(usdValueStaked.toNumber()) : '0';
+  const validPrincipalInUSD = !usdValueStaked.isNaN() && usdValueStaked.isFinite() && usdValueStaked.gte(0) ? usdValueStaked.toNumber() : 0;
+
+  // 计算 ROI：如果 stakeAmount 为空或为 0，直接返回 0
+  let interestBreakdown: number[] = [0, 0, 0, 0, 0]
+  let interestEarned: number = 0
+  let annualRoi: number = 0
+  
+  if (stakeAmountNum > 0 && validPrincipalInUSD > 0 && validApr > 0 && validEarningTokenPrice > 0) {
+    // 检查 APR 是否过高，可能导致计算溢出
+    const isExtremelyHighApr = validApr > 1000000; // APR > 1,000,000%
+    
+    if (isExtremelyHighApr) {
+      // 对于极高的 APR，使用简化计算避免溢出
+      // 简化公式：annualRoi = principalInUSD * (apr / 100)
+      try {
+        interestEarned = validPrincipalInUSD / validEarningTokenPrice * (validApr / 100)
+        annualRoi = interestEarned * validEarningTokenPrice
+        interestBreakdown = [0, 0, 0, interestEarned, 0] // 只计算1年的值
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('[StakeModal] 极高 APR 计算错误:', error)
+        interestEarned = 0
+        annualRoi = 0
+      }
+    } else {
+      try {
+        interestBreakdown = getInterestBreakdown({
+          principalInUSD: validPrincipalInUSD,
+          apr: validApr,
+          earningTokenPrice: validEarningTokenPrice,
+        })
+        
+        // 确保 interestBreakdown[3] 是有效数字
+        interestEarned = typeof interestBreakdown[3] === 'number' && Number.isFinite(interestBreakdown[3]) && interestBreakdown[3] >= 0 ? interestBreakdown[3] : 0
+        annualRoi = interestEarned * validEarningTokenPrice
+        
+        // 检查 annualRoi 是否超出合理范围（> 1e15 可能表示溢出）
+        if (!Number.isFinite(annualRoi) || annualRoi < 0 || annualRoi > 1e15) {
+          // 如果溢出，使用简化计算
+          interestEarned = validPrincipalInUSD / validEarningTokenPrice * (validApr / 100)
+          annualRoi = interestEarned * validEarningTokenPrice
+          // 再次检查简化计算的结果
+          if (!Number.isFinite(annualRoi) || annualRoi < 0) {
+            interestEarned = 0
+            annualRoi = 0
+          }
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('[StakeModal] ROI 计算错误:', error)
+        interestEarned = 0
+        annualRoi = 0
+      }
+    }
+  }
+  
+  // 确保 annualRoi 始终是有效数字（>= 0 且有限）
+  if (!Number.isFinite(annualRoi) || annualRoi < 0) {
+    annualRoi = 0
+  }
+  
   const formattedAnnualRoi = formatNumber(annualRoi, annualRoi > 10000 ? 0 : 2, annualRoi > 10000 ? 0 : 2);
+
+  // 开发环境调试日志：验证 ROI 计算
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log('[StakeModal] ROI 计算调试:', {
+      stakeAmount: stakeAmount || '(空)',
+      stakeAmountNum,
+      validPrincipalInUSD: `$${validPrincipalInUSD.toFixed(2)}`,
+      validApr: `${validApr.toFixed(2)}%`,
+      validEarningTokenPrice: `$${validEarningTokenPrice.toFixed(2)}`,
+      validStakingTokenPrice: `$${validStakingTokenPrice.toFixed(6)}`,
+      interestBreakdown: {
+        '1天': interestBreakdown[0],
+        '7天': interestBreakdown[1],
+        '30天': interestBreakdown[2],
+        '1年': interestBreakdown[3],
+        '5年': interestBreakdown[4],
+      },
+      interestEarned: `${interestEarned.toFixed(6)} tokens`,
+      annualRoi: `$${annualRoi.toFixed(2)}`,
+      annualRoi原始值: annualRoi,
+      annualRoi是否有效: Number.isFinite(annualRoi) && annualRoi >= 0,
+      formattedAnnualRoi: `$${formattedAnnualRoi}`,
+      最终显示值: `$${formattedAnnualRoi}`,
+    })
+  }
 
   const getTokenLink = stakingTokenAddress ? `/swap?outputCurrency=${stakingTokenAddress}` : "/swap";
 
@@ -183,10 +270,10 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
     return (
       <RoiCalculatorModal
         account={account}
-        earningTokenPrice={earningTokenPrice}
-        stakingTokenPrice={stakingTokenPrice}
+        earningTokenPrice={validEarningTokenPrice}
+        stakingTokenPrice={validStakingTokenPrice}
         stakingTokenDecimals={stakingTokenDecimals}
-        apr={apr}
+        apr={validApr}
         linkLabel={t("Get %symbol%", { symbol: stakingTokenSymbol })}
         linkHref={getTokenLink}
         stakingTokenBalance={userDataStakedBalance.plus(stakingTokenBalance)}
@@ -284,21 +371,17 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
             <Text mr="8px" color="textSubtle">
               {t("Annual ROI at current rates")}:
             </Text>
-            {Number.isFinite(annualRoi) ? (
-              <AnnualRoiContainer
-                alignItems="center"
-                onClick={() => {
-                  setShowRoiCalculator(true);
-                }}
-              >
-                <AnnualRoiDisplay>${formattedAnnualRoi}</AnnualRoiDisplay>
-                <IconButton variant="text" scale="sm">
-                  <CalculateIcon color="textSubtle" width="18px" />
-                </IconButton>
-              </AnnualRoiContainer>
-            ) : (
-              <Skeleton width={60} />
-            )}
+            <AnnualRoiContainer
+              alignItems="center"
+              onClick={() => {
+                setShowRoiCalculator(true);
+              }}
+            >
+              <AnnualRoiDisplay>${formattedAnnualRoi}</AnnualRoiDisplay>
+              <IconButton variant="text" scale="sm">
+                <CalculateIcon color="textSubtle" width="18px" />
+              </IconButton>
+            </AnnualRoiContainer>
           </Flex>
         )}
         {isRemovingStake && enableEmergencyWithdraw && (

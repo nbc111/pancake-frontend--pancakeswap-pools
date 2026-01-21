@@ -35,9 +35,11 @@ export const useNbcStakingPools = () => {
   const { data: tokenPrices } = useQuery<Record<string, number | null>>({
     queryKey: ['nbcStakingTokenPrices', tokenSymbols],
     queryFn: () => getTokenPricesFromNbcApi(tokenSymbols),
-    staleTime: FAST_INTERVAL * 6,
-    refetchInterval: FAST_INTERVAL * 6,
+    staleTime: FAST_INTERVAL * 12, // 增加到 2 分钟，减少 API 调用
+    refetchInterval: FAST_INTERVAL * 12, // 2 分钟刷新一次（配合缓存使用）
     enabled: true,
+    retry: 2, // 失败时重试 2 次
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 指数退避
   })
 
   // 获取原生 NBC 余额
@@ -791,8 +793,8 @@ export const useNbcStakingPools = () => {
       if (process.env.NODE_ENV === 'development' && apr > 0) {
         // eslint-disable-next-line no-console
         console.log(`[${config.rewardTokenSymbol}] APR 信息:`, {
-          实际APR: `${apr.toFixed(2)}%`,
-          实际质押量: `${totalStakedNBCNum.toFixed(2)} NBC`,
+              实际APR: `${apr.toFixed(2)}%`,
+              实际质押量: `${totalStakedNBCNum.toFixed(2)} NBC`,
           说明: apr > 1000 
             ? 'APR 较高，可能因为质押量较小或处于项目启动期。高 APR 通常伴随高风险，请谨慎评估。'
             : 'APR 在正常范围内',
@@ -848,8 +850,11 @@ export const useNbcStakingPools = () => {
         startTimestamp: 0, // 池开始时间戳（0 表示已开始）
         endTimestamp: endTimestamp > 0 ? endTimestamp : undefined, // 奖励期结束时间戳
         apr,
-        stakingTokenPrice: nbcPrice ?? 1, // NBC 实时价格
-        earningTokenPrice: tokenPrices?.[config.rewardTokenSymbol] ?? 1, // 奖励代币实时价格
+        stakingTokenPrice: typeof nbcPrice === 'number' && Number.isFinite(nbcPrice) && nbcPrice > 0 ? nbcPrice : 1, // NBC 实时价格
+        earningTokenPrice: (() => {
+          const price = tokenPrices?.[config.rewardTokenSymbol]
+          return typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : 1
+        })(), // 奖励代币实时价格，确保始终是有效正数
         userData: account
           ? {
               allowance: new BigNumber(0), // 原生代币不需要 allowance
