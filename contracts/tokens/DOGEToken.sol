@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title DOGEToken
  * @notice Dogecoin Token - Wrapped DOGE on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89
+ * @notice 已部署实例地址（仅供参考）: 0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89
+ * @notice 此合约可用于部署新的 DOGE 代币实例，每次部署会生成新的合约地址
  */
 contract DOGEToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

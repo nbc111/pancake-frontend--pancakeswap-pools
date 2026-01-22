@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title SOLToken
  * @notice Solana Token - Wrapped Solana on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81
+ * @notice 已部署实例地址（仅供参考）: 0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81
+ * @notice 此合约可用于部署新的 SOL 代币实例，每次部署会生成新的合约地址
  */
 contract SOLToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

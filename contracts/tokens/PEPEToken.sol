@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title PEPEToken
  * @notice Pepe Token - Meme token on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0xd365877026A43107Efd9825bc3ABFe1d7A450F82
+ * @notice 已部署实例地址（仅供参考）: 0xd365877026A43107Efd9825bc3ABFe1d7A450F82
+ * @notice 此合约可用于部署新的 PEPE 代币实例，每次部署会生成新的合约地址
  */
 contract PEPEToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

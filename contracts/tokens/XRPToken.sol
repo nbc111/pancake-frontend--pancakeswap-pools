@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title XRPToken
  * @notice Ripple Token - Wrapped XRP on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093
+ * @notice 已部署实例地址（仅供参考）: 0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093
+ * @notice 此合约可用于部署新的 XRP 代币实例，每次部署会生成新的合约地址
  */
 contract XRPToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

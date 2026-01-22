@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title BNBToken
  * @notice Binance Coin Token - Wrapped BNB on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c
+ * @notice 已部署实例地址（仅供参考）: 0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c
+ * @notice 此合约可用于部署新的 BNB 代币实例，每次部署会生成新的合约地址
  */
 contract BNBToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

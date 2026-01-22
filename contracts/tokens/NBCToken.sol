@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title NBCToken
  * @notice NBC Token - Native token for NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6
+ * @notice 已部署实例地址（仅供参考）: 0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6
+ * @notice 此合约可用于部署新的 NBC 代币实例，每次部署会生成新的合约地址
  */
 contract NBCToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

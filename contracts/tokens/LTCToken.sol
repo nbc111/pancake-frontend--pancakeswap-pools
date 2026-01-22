@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title LTCToken
  * @notice Litecoin Token - Wrapped Litecoin on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0x8d22041C22d696fdfF0703852a706a40Ff65a7de
+ * @notice 已部署实例地址（仅供参考）: 0x8d22041C22d696fdfF0703852a706a40Ff65a7de
+ * @notice 此合约可用于部署新的 LTC 代币实例，每次部署会生成新的合约地址
  */
 contract LTCToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;

@@ -8,7 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title SUIToken
  * @notice Sui Token - Wrapped SUI on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice Contract Address: 0x9011191E84Ad832100Ddc891E360f8402457F55E
+ * @notice 已部署实例地址（仅供参考）: 0x9011191E84Ad832100Ddc891E360f8402457F55E
+ * @notice 此合约可用于部署新的 SUI 代币实例，每次部署会生成新的合约地址
  */
 contract SUIToken is ERC20, Ownable {
     uint8 private constant _decimals = 18;
