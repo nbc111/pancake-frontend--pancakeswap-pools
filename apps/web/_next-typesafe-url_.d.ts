@@ -87,6 +87,7 @@ declare module "@@@next-typesafe-url" {
     "/migration": StaticRoute;
     "/nbc-staking/history": StaticRoute;
     "/nbc-staking": StaticRoute;
+    "/nbc-staking-admin": StaticRoute;
     "/nfts/activity": StaticRoute;
     "/nfts/collections/[collectionAddress]/[tokenId]": StaticRoute;
     "/nfts/collections/[collectionAddress]": StaticRoute;

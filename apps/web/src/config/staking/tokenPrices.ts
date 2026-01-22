@@ -101,10 +101,6 @@ function getCachedPrice(tokenSymbol: string): number | null {
       const cache: PriceCache = JSON.parse(cached)
       const now = Date.now()
       if (now - cache.timestamp < CACHE_DURATION) {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.log(`[${tokenSymbol}] 💾 Using cached price: $${cache.price.toFixed(8)}`)
-        }
         return cache.price
       }
     }
@@ -145,19 +141,11 @@ async function getTokenPriceFromCoinGecko(
 
   const coinId = COINGECKO_ID_MAP[tokenSymbol]
   if (!coinId) {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(`[${tokenSymbol}] ⚠️ No CoinGecko ID mapping found`)
-    }
     return null
   }
 
   try {
     const url = `${COINGECKO_API_URL}?ids=${coinId}&vs_currencies=usd`
-    if (process.env.NODE_ENV === 'development' && retryCount === 0) {
-      // eslint-disable-next-line no-console
-      console.log(`[${tokenSymbol}] 🔄 Trying CoinGecko API: ${coinId}`)
-    }
     
     const response = await fetch(url, {
       signal: AbortSignal.timeout(10000), // 10秒超时
@@ -167,26 +155,13 @@ async function getTokenPriceFromCoinGecko(
     if (response.status === 429) {
       if (retryCount < MAX_RETRIES) {
         const delayMs = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.warn(`[${tokenSymbol}] ⚠️ CoinGecko rate limited (429), retrying in ${delayMs}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`)
-        }
         await delay(delayMs)
         return getTokenPriceFromCoinGecko(tokenSymbol, retryCount + 1)
-      } else {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.warn(`[${tokenSymbol}] ❌ CoinGecko rate limited, max retries reached`)
-        }
-        return null
       }
+      return null
     }
 
     if (!response.ok) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ❌ CoinGecko HTTP error! status: ${response.status}, statusText: ${response.statusText}`)
-      }
       return null
     }
 
@@ -196,23 +171,9 @@ async function getTokenPriceFromCoinGecko(
     if (result && result[coinId] && result[coinId].usd) {
       const price = result[coinId].usd
       if (price && price > 0 && Number.isFinite(price)) {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.log(`[${tokenSymbol}] ✅ Price from CoinGecko: $${price.toFixed(8)}`)
-        }
         // 保存到缓存
         setCachedPrice(tokenSymbol, price)
         return price
-      } else {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.warn(`[${tokenSymbol}] ⚠️ CoinGecko returned invalid price:`, price)
-        }
-      }
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ CoinGecko API returned invalid response format`)
       }
     }
 
@@ -221,20 +182,10 @@ async function getTokenPriceFromCoinGecko(
     // 网络错误或其他错误，尝试重试
     if (retryCount < MAX_RETRIES && error instanceof Error && !error.name.includes('AbortError')) {
       const delayMs = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ CoinGecko API error, retrying in ${delayMs}ms... (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error.message)
-      }
       await delay(delayMs)
       return getTokenPriceFromCoinGecko(tokenSymbol, retryCount + 1)
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(`[${tokenSymbol}] ❌ CoinGecko API failed:`, {
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
     return null
   }
 }
@@ -269,79 +220,34 @@ export async function getTokenPriceFromNbcApi(tokenSymbol: string): Promise<numb
   // 首先尝试 NBC Exchange API
   try {
     const url = `${NBCEX_API_BASE}?symbol=${symbol}&accessKey=${NBCEX_ACCESS_KEY}`
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[${tokenSymbol}] 🔄 Trying NBC Exchange API: ${symbol}`)
-    }
     
     const response = await fetch(url, {
       signal: AbortSignal.timeout(10000), // 10秒超时
     })
 
     if (!response.ok) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ❌ NBC Exchange HTTP error! status: ${response.status}`)
-      }
       // 尝试备用 API
       return getTokenPriceFromCoinGecko(tokenSymbol)
     }
 
     const result: NbcPriceResponse = await response.json()
 
-    // 添加详细的日志以便调试
-    if (result.status !== 'success') {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ NBC Exchange API returned non-success status:`, result.status, result.message)
-      }
-      // 尝试备用 API
-      return getTokenPriceFromCoinGecko(tokenSymbol)
-    }
-
-    if (!result.data) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ NBC Exchange API response missing data field`)
-      }
-      // 尝试备用 API
-      return getTokenPriceFromCoinGecko(tokenSymbol)
-    }
-
-    if (result.data.buy === undefined || result.data.buy === null) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ NBC Exchange API response missing buy field`)
-      }
+    if (result.status !== 'success' || !result.data || result.data.buy === undefined || result.data.buy === null) {
       // 尝试备用 API
       return getTokenPriceFromCoinGecko(tokenSymbol)
     }
 
     const price = Number(result.data.buy)
     if (Number.isNaN(price) || price <= 0) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[${tokenSymbol}] ⚠️ NBC Exchange API invalid price value:`, result.data.buy)
-      }
       // 尝试备用 API
       return getTokenPriceFromCoinGecko(tokenSymbol)
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[${tokenSymbol}] ✅ Price from NBC Exchange: $${price.toFixed(8)}`)
-    }
     // 保存到缓存
     setCachedPrice(tokenSymbol, price)
     return price
   } catch (error) {
     // NBC Exchange API 失败，尝试备用 API
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(`[${tokenSymbol}] ❌ NBC Exchange API failed, trying CoinGecko:`, {
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
     return getTokenPriceFromCoinGecko(tokenSymbol)
   }
 }
@@ -378,11 +284,6 @@ async function getTokenPricesFromCoinGeckoBatch(
     // 批量请求：一次获取所有代币价格
     const idsParam = coinIds.map((item) => item.coinId).join(',')
     const url = `${COINGECKO_API_URL}?ids=${idsParam}&vs_currencies=usd`
-    
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[CoinGecko Batch] 🔄 Fetching ${coinIds.length} tokens in one request`)
-    }
 
     const response = await fetch(url, {
       signal: AbortSignal.timeout(15000), // 15秒超时（批量请求可能需要更长时间）
@@ -390,11 +291,6 @@ async function getTokenPricesFromCoinGeckoBatch(
 
     if (response.status === 429) {
       // 限流，回退到单个请求
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[CoinGecko Batch] ⚠️ Rate limited, falling back to individual requests`)
-      }
-      // 回退到单个请求（带延迟）
       for (const symbol of symbolsToFetch) {
         const price = await getTokenPriceFromCoinGecko(symbol)
         prices[symbol] = price
@@ -407,10 +303,6 @@ async function getTokenPricesFromCoinGeckoBatch(
     }
 
     if (!response.ok) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`[CoinGecko Batch] ❌ HTTP error! status: ${response.status}`)
-      }
       // 回退到单个请求
       for (const symbol of symbolsToFetch) {
         const price = await getTokenPriceFromCoinGecko(symbol)
@@ -431,10 +323,6 @@ async function getTokenPricesFromCoinGeckoBatch(
         if (price && price > 0 && Number.isFinite(price)) {
           prices[symbol] = price
           setCachedPrice(symbol, price)
-          if (process.env.NODE_ENV === 'development') {
-            // eslint-disable-next-line no-console
-            console.log(`[${symbol}] ✅ Price from CoinGecko (batch): $${price.toFixed(8)}`)
-          }
         } else {
           prices[symbol] = null
         }
@@ -442,16 +330,7 @@ async function getTokenPricesFromCoinGeckoBatch(
         prices[symbol] = null
       }
     })
-
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[CoinGecko Batch] ✅ Fetched ${Object.values(prices).filter((p) => p !== null).length}/${coinIds.length} prices`)
-    }
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(`[CoinGecko Batch] ❌ Failed, falling back to individual requests:`, error instanceof Error ? error.message : error)
-    }
     // 回退到单个请求
     for (const symbol of symbolsToFetch) {
       const price = await getTokenPriceFromCoinGecko(symbol)
@@ -488,16 +367,7 @@ export async function getTokenPricesFromNbcApi(tokenSymbols: string[]): Promise<
     })
 
     if (symbolsToFetch.length === 0) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log(`[getTokenPricesFromNbcApi] ✅ All prices from cache`)
-      }
       return prices
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[getTokenPricesFromNbcApi] 🔄 Fetching ${symbolsToFetch.length} prices (${tokenSymbols.length - symbolsToFetch.length} from cache)`)
     }
 
     // 首先尝试 NBC Exchange API（带延迟）
@@ -505,17 +375,13 @@ export async function getTokenPricesFromNbcApi(tokenSymbols: string[]): Promise<
     for (let i = 0; i < symbolsToFetch.length; i++) {
       const symbol = symbolsToFetch[i]
       try {
-        const price = await getTokenPriceFromNbcApi(symbol)
+      const price = await getTokenPriceFromNbcApi(symbol)
         nbcPrices[symbol] = price
         // 添加延迟，避免并发过多
         if (i < symbolsToFetch.length - 1) {
           await delay(REQUEST_DELAY)
         }
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.warn(`[${symbol}] Price fetch failed:`, error instanceof Error ? error.message : error)
-        }
         nbcPrices[symbol] = null
       }
     }
@@ -526,10 +392,6 @@ export async function getTokenPricesFromNbcApi(tokenSymbols: string[]): Promise<
     // 对于 NBC Exchange 失败的代币，尝试 CoinGecko 批量请求
     const failedSymbols = symbolsToFetch.filter((symbol) => !prices[symbol] || prices[symbol] === null)
     if (failedSymbols.length > 0) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log(`[getTokenPricesFromNbcApi] 🔄 Trying CoinGecko for ${failedSymbols.length} failed tokens`)
-      }
       const coinGeckoPrices = await getTokenPricesFromCoinGeckoBatch(failedSymbols)
       Object.assign(prices, coinGeckoPrices)
     }
@@ -549,10 +411,6 @@ export async function getTokenPricesFromNbcApi(tokenSymbols: string[]): Promise<
             if (cached) {
               const cache: PriceCache = JSON.parse(cached)
               prices[symbol] = cache.price // 使用过期缓存作为降级方案
-              if (process.env.NODE_ENV === 'development') {
-                // eslint-disable-next-line no-console
-                console.log(`[${symbol}] ⚠️ Using expired cache as fallback: $${cache.price.toFixed(8)}`)
-              }
             }
           } catch {
             // 忽略缓存错误
@@ -561,24 +419,8 @@ export async function getTokenPricesFromNbcApi(tokenSymbols: string[]): Promise<
       }
     })
 
-    // 开发环境日志：汇总价格获取结果
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[getTokenPricesFromNbcApi] 价格获取汇总:`, {
-        成功: successCount,
-        失败: failCount,
-        总计: tokenSymbols.length,
-        价格详情: Object.entries(prices)
-          .map(([symbol, price]) => `${symbol}: ${price ? `$${price.toFixed(4)}` : 'null'}`)
-          .join(', '),
-      })
-    }
   } catch (error) {
     // 确保最外层错误也被捕获
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.error('[getTokenPricesFromNbcApi] 整体错误:', error)
-    }
     // 返回部分结果，而不是抛出错误
     tokenSymbols.forEach((symbol) => {
       if (!(symbol in prices)) {

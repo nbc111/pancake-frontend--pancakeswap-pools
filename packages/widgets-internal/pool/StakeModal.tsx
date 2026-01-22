@@ -371,17 +371,17 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
             <Text mr="8px" color="textSubtle">
               {t("Annual ROI at current rates")}:
             </Text>
-            <AnnualRoiContainer
-              alignItems="center"
-              onClick={() => {
-                setShowRoiCalculator(true);
-              }}
-            >
-              <AnnualRoiDisplay>${formattedAnnualRoi}</AnnualRoiDisplay>
-              <IconButton variant="text" scale="sm">
-                <CalculateIcon color="textSubtle" width="18px" />
-              </IconButton>
-            </AnnualRoiContainer>
+              <AnnualRoiContainer
+                alignItems="center"
+                onClick={() => {
+                  setShowRoiCalculator(true);
+                }}
+              >
+                <AnnualRoiDisplay>${formattedAnnualRoi}</AnnualRoiDisplay>
+                <IconButton variant="text" scale="sm">
+                  <CalculateIcon color="textSubtle" width="18px" />
+                </IconButton>
+              </AnnualRoiContainer>
           </Flex>
         )}
         {isRemovingStake && enableEmergencyWithdraw && (

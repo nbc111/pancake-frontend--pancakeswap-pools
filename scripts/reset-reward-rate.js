@@ -52,6 +52,7 @@ const CONFIG = {
   DRY_RUN: hasFlag('dry-run'), // 预览模式，不实际执行
   EXECUTE: hasFlag('execute'), // 执行模式，需要确认
   POOL: getArg('pool', 'all'), // 要更新的池 (BTC, ETH, SOL, ... 或 all)
+  USE_ONE_YEAR_REWARD: hasFlag('use-one-year'), // 只发送 1 年奖励，而不是整个 rewardsDuration 期间的奖励（用于 rewardsDuration 异常大的情况）
 
   // 价格 API
   NBCEX_API_BASE: 'https://www.nbcex.com/v1/rest/api/market/ticker',
@@ -127,7 +128,7 @@ const TOKEN_CONFIG = {
   },
   DOGE: {
     poolIndex: 7,
-    address: '0x8C1B0B0F3e0F0F0F0F0F0F0F0F0F0F0F0F0F0F0',
+    address: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89',
     decimals: 18,
     coingeckoId: 'dogecoin',
     nbcexSymbol: 'dogeusdt',
@@ -147,7 +148,7 @@ const TOKEN_CONFIG = {
   },
   SUI: {
     poolIndex: 10,
-    address: '0x8C1B0B0F3e0F0F0F0F0F0F0F0F0F0F0F0F0F0F0',
+    address: '0x9011191E84Ad832100Ddc891E360f8402457F55E',
     decimals: 18,
     coingeckoId: 'sui',
     nbcexSymbol: 'suiusdt',
@@ -467,13 +468,21 @@ async function resetPoolRewardRate(symbol, config) {
     // 计算 rewardsDuration 期间的总奖励
     // 如果 rewardsDuration 是 1 年，totalReward = annualReward
     // 如果 rewardsDuration 是 56 年，totalReward = annualReward * 56
-    const totalRewardForDuration = (annualRewardBN.mul(rewardsDurationBN)).div(ethers.BigNumber.from(CONFIG.SECONDS_PER_YEAR.toString()))
+    let totalRewardForDuration
+    if (CONFIG.USE_ONE_YEAR_REWARD) {
+      // 如果使用 --use-one-year 选项，只发送 1 年的奖励
+      // 这适用于 rewardsDuration 异常大的情况（如 56 年）
+      totalRewardForDuration = annualRewardBN
+      console.log(`   ⚠️  使用 --use-one-year 选项：只发送 1 年奖励（而不是整个 rewardsDuration 期间）`)
+    } else {
+      totalRewardForDuration = (annualRewardBN.mul(rewardsDurationBN)).div(ethers.BigNumber.from(CONFIG.SECONDS_PER_YEAR.toString()))
+    }
 
     console.log(`   ✅ 目标 APR: ${CONFIG.TARGET_APR}%`)
     console.log(`   ✅ 预期质押量: ${formatUnits(expectedStakedNBC, 18)} NBC`)
     console.log(`   ✅ 新 rewardRate: ${formatUnits(newRewardRateBN, config.decimals)} ${symbol}/s`)
     console.log(`   ✅ 年总奖励: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
-    console.log(`   ✅ rewardsDuration 期间总奖励: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol}`)
+    console.log(`   ✅ ${CONFIG.USE_ONE_YEAR_REWARD ? '将发送' : 'rewardsDuration 期间总奖励'}: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol}`)
     
     // 如果 rewardRate 为 0 或非常小，警告用户
     if (newRewardRateBN.eq(0)) {
@@ -552,13 +561,15 @@ async function resetPoolRewardRate(symbol, config) {
     const ownerBalance = await tokenContract.balanceOf(owner)
     
     if (ownerBalance.lt(totalRewardForDuration)) {
+      const requiredLabel = CONFIG.USE_ONE_YEAR_REWARD ? '1 年奖励' : 'rewardsDuration 期间总奖励'
       throw new Error(
-        `所有者余额不足: ${formatUnits(ownerBalance, config.decimals)} ${symbol} < ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (rewardsDuration 期间所需)`,
+        `所有者余额不足: ${formatUnits(ownerBalance, config.decimals)} ${symbol} < ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (${requiredLabel})`,
       )
     }
 
     console.log(`   ✅ 所有者余额充足: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
-    console.log(`   ✅ 需要发送: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (rewardsDuration 期间总奖励)`)
+    const requiredLabel = CONFIG.USE_ONE_YEAR_REWARD ? '1 年奖励' : 'rewardsDuration 期间总奖励'
+    console.log(`   ✅ 需要发送: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol} (${requiredLabel})`)
     console.log('')
 
     // 10. 确认执行
@@ -572,9 +583,14 @@ async function resetPoolRewardRate(symbol, config) {
       }
     }
 
-    // 11. 执行交易（使用 rewardsDuration 期间的总奖励）
+    // 11. 执行交易
     console.log('📤 发送交易...')
-    console.log(`   💡 注意: 合约使用 rewardsDuration (${rewardsDurationYears.toFixed(2)} 年) 来计算 rewardRate`)
+    if (CONFIG.USE_ONE_YEAR_REWARD) {
+      console.log(`   💡 注意: 使用 --use-one-year 选项，只发送 1 年奖励`)
+      console.log(`   💡 合约会将剩余奖励加上新奖励，然后除以 rewardsDuration (${rewardsDurationYears.toFixed(2)} 年) 来计算新的 rewardRate`)
+    } else {
+      console.log(`   💡 注意: 合约使用 rewardsDuration (${rewardsDurationYears.toFixed(2)} 年) 来计算 rewardRate`)
+    }
     console.log(`   💡 发送的总奖励: ${formatUnits(totalRewardForDuration, config.decimals)} ${symbol}`)
     const stakingContractWithSigner = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, wallet)
     const tx = await stakingContractWithSigner.notifyRewardAmount(config.poolIndex, totalRewardForDuration)

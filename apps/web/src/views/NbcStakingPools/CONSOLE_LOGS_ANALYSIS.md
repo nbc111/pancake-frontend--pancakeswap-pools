@@ -1,5 +1,23 @@
 # 控制台日志分析报告
 
+> **最后更新**: 修复构建错误后的状态分析
+
+## 当前状态总结
+
+### ✅ 已解决的问题
+
+1. **构建错误已修复** ✅
+   - 错误：`x Expected ',', got 'const'` 在 `useNbcStakingPools.ts:772`
+   - 原因：多余的 `apr = 0` 代码块导致语法错误
+   - 状态：已修复，项目可以正常构建和运行
+
+2. **代币价格获取机制已优化** ✅
+   - 已实现重试机制（指数退避，最多3次）
+   - 已添加本地缓存（5分钟有效期）
+   - 已实现批量请求优化
+   - 已添加请求延迟（300ms）
+   - 状态：价格获取逻辑已改进，日志显示价格数据正常
+
 ## 主要问题总结
 
 ### 1. 代币价格获取失败 ⚠️ 严重
@@ -120,6 +138,90 @@
    - 添加备用价格源
    - 改进 UI 反馈
    - 监控 API 使用情况
+
+## 最新发现的问题（非关键）
+
+### 1. poolDetails 数据未成功获取 ⚠️ 中等（有降级方案）
+
+**现象：**
+- 所有池的 `rewardsDuration` 显示：`未读取到，将使用默认值 (1年)`
+- 日志显示：`poolDetails存在: false, poolDetails类型: 'undefined'`
+- 所有池（NBC, BTC, ETH, SOL, BNB, XRP, LTC, DOGE, PEPE, USDT, SUI）都出现此问题
+
+**根本原因：**
+- `useReadContract` 调用 `pools` 函数返回 `undefined`
+- 可能原因：
+  1. 合约调用仍在加载中（首次加载）
+  2. 合约函数不存在或返回格式不匹配
+  3. 网络连接问题
+  4. 链 ID 或合约地址配置错误
+
+**影响：**
+- ⚠️ **非关键**：代码已有降级方案，使用默认值 1 年作为 `rewardsDuration`
+- APR 计算仍然可以正常工作（使用默认值）
+- 如果合约中的实际 `rewardsDuration` 与默认值不同，APR 计算可能不准确
+
+**建议：**
+1. 检查合约中 `pools` 函数是否存在且可访问
+2. 验证链 ID (1281) 和合约地址是否正确
+3. 检查网络连接和 RPC 节点状态
+4. 如果合约确实没有 `rewardsDuration` 字段，可以考虑从其他来源获取或使用默认值
+
+### 2. Next.js HMR (Hot Module Replacement) 错误 ⚠️ 轻微
+
+**现象：**
+- `[HMR] Invalid message: {"action":"isrManifest",...}`
+- `TypeError: Cannot read properties of undefined (reading 'components')` 在 `hot-reloader-client.js`
+
+**影响：**
+- ⚠️ **轻微**：这是 Next.js 开发服务器的内部问题
+- 通常不影响应用功能，只是热更新可能不稳定
+- 可以通过重启开发服务器解决
+
+**建议：**
+- 如果频繁出现，可以重启开发服务器
+- 这是 Next.js 内部问题，通常不需要代码修复
+
+### 3. Styled-components 多实例警告 ⚠️ 轻微
+
+**现象：**
+- `It looks like there are several instances of 'styled-components' initialized in this application.`
+
+**影响：**
+- ⚠️ **轻微**：可能导致样式不渲染、主题丢失等问题
+- 但通常不会完全破坏功能
+
+**建议：**
+- 检查 `package.json` 中是否有多个版本的 `styled-components`
+- 使用 `pnpm dedupe` 或 `pnpm why styled-components` 检查依赖树
+- 确保所有包使用相同版本的 `styled-components`
+
+### 4. 开发环境配置警告 ⚠️ 轻微（可忽略）
+
+以下警告在开发环境中是正常的，可以忽略：
+
+1. **Datadog SDK 配置警告**
+   - `Client Token is not configured`
+   - `Application ID is not configured`
+   - 原因：本地开发环境未配置 Datadog
+   - 影响：无，仅监控功能不可用
+
+2. **WalletConnect 元数据 URL 不匹配**
+   - `The configured WalletConnect 'metadata.url':https://staking.nbblocks.cc/nbc-staking?chain=nbc differs from the actual page url:http://localhost:5000`
+   - 原因：开发环境运行在 localhost，但配置指向生产环境
+   - 影响：无，仅警告
+
+3. **React DOM 属性警告**
+   - `React does not recognize the \`marginLeft\` prop on a DOM element`
+   - `styled-components: it looks like an unknown prop "position" is being sent through to the DOM`
+   - 原因：某些样式属性被直接传递给 DOM 元素
+   - 影响：轻微，建议使用 transient props (`$` 前缀)
+
+4. **其他第三方警告**
+   - Lit dev mode 警告
+   - Solflare 钱包适配器警告
+   - Manifest 图标尺寸警告
+   - 这些都不影响核心功能
 
 ## 技术细节
 
