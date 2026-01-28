@@ -6,7 +6,7 @@ require('dotenv').config()
 const CONFIG = {
   // 区块链配置
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
-  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789',
+  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1',
 
   // 质押配置
   TOTAL_STAKED_NBC: process.env.TOTAL_STAKED_NBC || '1000000000000000000000000', // 预期总质押量
@@ -24,7 +24,7 @@ const CONFIG = {
 const TOKEN_CONFIG = {
   BTC: {
     poolIndex: 1,
-    address: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
+    address: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C',
     decimals: 8,
     nbcexSymbol: 'btcusdt',
   },

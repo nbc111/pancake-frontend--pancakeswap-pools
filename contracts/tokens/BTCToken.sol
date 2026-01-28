@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title BTCToken
  * @notice Bitcoin Token - Wrapped Bitcoin on NBC Chain
  * @dev ERC20 token with 8 decimals (matching Bitcoin's native precision)
- * @notice 已部署实例地址（仅供参考）: 0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+ * @notice 已部署实例地址（仅供参考）: 0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
  * @notice 此合约可用于部署新的 BTC 代币实例，每次部署会生成新的合约地址
  */
 contract BTCToken is ERC20, Ownable {

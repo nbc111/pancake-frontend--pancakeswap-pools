@@ -8,7 +8,7 @@ import BigNumber from 'bignumber.js'
 
 import Apr from '../../Apr'
 
-const NBC_STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
+const NBC_STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
 
 interface AprCellProps {
   pool: Pool.DeserializedPool<Token>

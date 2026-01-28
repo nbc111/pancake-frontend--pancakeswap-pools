@@ -27,7 +27,7 @@
 2. **查看返回结果**：
    ```
    返回格式：
-   0: rewardToken: 0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+   0: rewardToken: 0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
    1: totalStakedAmount: 0
    2: rewardRate: 3941332303819498915
    3: periodFinish: 1763759893
@@ -42,7 +42,7 @@
 
 | 池索引 | 代币 | 代币地址 |
 |--------|------|----------|
-| 1 | BTC | `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac` |
+| 1 | BTC | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` |
 | 2 | ETH | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` |
 | 3 | SOL | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` |
 | 4 | BNB | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` |
@@ -87,7 +87,7 @@ const STAKING_CONTRACT = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789';
 
 // 池配置
 const POOLS = [
-  { index: 1, token: 'BTC', address: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac' },
+  { index: 1, token: 'BTC', address: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C' },
   { index: 2, token: 'ETH', address: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3' },
   { index: 3, token: 'SOL', address: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81' },
   { index: 4, token: 'BNB', address: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c' },

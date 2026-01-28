@@ -38,6 +38,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         uint256 amount;
         uint256 rewardPerTokenPaid;
         uint256 rewards;
+        uint256 stakedAt;  // 首次质押时间戳（全部提取后会重置）
     }
     
     mapping(uint256 => RewardPool) public pools;
@@ -123,6 +124,30 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         return userStakes[poolIndex][account].amount;
     }
     
+    /**
+     * @notice 获取用户的质押开始时间戳
+     * @param poolIndex 池索引
+     * @param account 用户地址
+     * @return 质押开始时间戳（0 表示未质押）
+     */
+    function getStakedAt(uint256 poolIndex, address account) external view returns (uint256) {
+        return userStakes[poolIndex][account].stakedAt;
+    }
+    
+    /**
+     * @notice 获取用户已质押的时长（秒）
+     * @param poolIndex 池索引
+     * @param account 用户地址
+     * @return 已质押时长（秒），如果未质押返回 0
+     */
+    function getStakedDuration(uint256 poolIndex, address account) external view returns (uint256) {
+        uint256 stakedAt = userStakes[poolIndex][account].stakedAt;
+        if (stakedAt == 0) {
+            return 0;
+        }
+        return block.timestamp - stakedAt;
+    }
+    
     function totalStaked(uint256 poolIndex) external view returns (uint256) {
         return pools[poolIndex].totalStaked;
     }
@@ -177,6 +202,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
      * @return stakedAmounts 质押量数组
      * @return rewards 待领取奖励数组
      * @return earnedRewards 已赚取奖励数组（包括待领取）
+     * @return stakedAtTimes 质押开始时间数组
      */
     function getUserPoolsInfo(address user, uint256[] calldata poolIndices)
         external
@@ -184,12 +210,14 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         returns (
             uint256[] memory stakedAmounts,
             uint256[] memory rewards,
-            uint256[] memory earnedRewards
+            uint256[] memory earnedRewards,
+            uint256[] memory stakedAtTimes
         )
     {
         stakedAmounts = new uint256[](poolIndices.length);
         rewards = new uint256[](poolIndices.length);
         earnedRewards = new uint256[](poolIndices.length);
+        stakedAtTimes = new uint256[](poolIndices.length);
         
         for (uint256 i = 0; i < poolIndices.length; i++) {
             uint256 poolIndex = poolIndices[i];
@@ -197,6 +225,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
             stakedAmounts[i] = userStakes[poolIndex][user].amount;
             rewards[i] = userStakes[poolIndex][user].rewards;
             earnedRewards[i] = earned(poolIndex, user);
+            stakedAtTimes[i] = userStakes[poolIndex][user].stakedAt;
         }
     }
     
@@ -234,6 +263,12 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         }
         
         pools[poolIndex].totalStaked += msg.value;
+        
+        // 只在首次质押（或全部提取后重新质押）时记录时间
+        if (userStakes[poolIndex][msg.sender].stakedAt == 0) {
+            userStakes[poolIndex][msg.sender].stakedAt = block.timestamp;
+        }
+        
         userStakes[poolIndex][msg.sender].amount += msg.value;
         emit Staked(poolIndex, msg.sender, msg.value);
     }
@@ -250,6 +285,11 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         
         pools[poolIndex].totalStaked -= amount;
         userStakes[poolIndex][msg.sender].amount -= amount;
+        
+        // 如果全部提取，清零质押时间
+        if (userStakes[poolIndex][msg.sender].amount == 0) {
+            userStakes[poolIndex][msg.sender].stakedAt = 0;
+        }
         
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");
@@ -316,6 +356,11 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         pools[poolIndex].totalStaked -= amount;
         userStakes[poolIndex][msg.sender].amount -= amount;
         
+        // 如果全部提取，清零质押时间
+        if (userStakes[poolIndex][msg.sender].amount == 0) {
+            userStakes[poolIndex][msg.sender].stakedAt = 0;
+        }
+        
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");
         emit Withdrawn(poolIndex, msg.sender, amount);
@@ -344,6 +389,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         
         pools[poolIndex].totalStaked -= amount;
         userStakes[poolIndex][msg.sender].amount = 0;
+        userStakes[poolIndex][msg.sender].stakedAt = 0;  // 全部提取，清零质押时间
         
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");
@@ -530,6 +576,11 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         userStakes[poolIndex][user].amount -= amount;
         // 清除奖励，防止滥用
         userStakes[poolIndex][user].rewards = 0;
+        
+        // 如果全部提取，清零质押时间
+        if (userStakes[poolIndex][user].amount == 0) {
+            userStakes[poolIndex][user].stakedAt = 0;
+        }
         
         (bool success, ) = payable(owner()).call{value: amount}("");
         require(success, "Transfer failed");

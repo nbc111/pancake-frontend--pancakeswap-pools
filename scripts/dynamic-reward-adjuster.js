@@ -44,7 +44,7 @@ const CONFIG = {
 const TOKEN_CONFIG = {
   BTC: {
     poolIndex: 1,
-    address: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
+    address: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C',
     decimals: 8,
     coingeckoId: 'bitcoin',
     nbcexSymbol: 'btcusdt',

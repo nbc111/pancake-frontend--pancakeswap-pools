@@ -148,7 +148,7 @@ console.log('USDT rewardRate:', calculateRewardRate('USDT').toString());
 1. 在 Remix 中，找到质押合约（地址：`0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`）
 2. 找到 **`addPool`** 函数
 3. 填写参数：
-   - **rewardToken**: `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac` (BTC 代币地址)
+   - **rewardToken**: `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` (BTC 代币地址)
    - **rewardRate**: 计算出的 rewardRate（例如：`39400000` wei/秒）
    - **rewardsDuration**: `31536000` (一年期秒数)
 4. 点击 **"transact"** 并确认交易
@@ -159,7 +159,7 @@ console.log('USDT rewardRate:', calculateRewardRate('USDT').toString());
 
 | 代币 | 地址 | 池索引 (sousId) |
 |------|------|----------------|
-| BTC  | `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac` | 1 |
+| BTC  | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` | 1 |
 | ETH  | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` | 2 |
 | SOL  | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` | 3 |
 | BNB  | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` | 4 |
@@ -210,7 +210,7 @@ console.log('BTC annualReward:', (rewardRate * BigInt(31536000)).toString()); //
 
 **Remix 操作**：
 1. `addPool`:
-   - rewardToken: `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`
+   - rewardToken: `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`
    - rewardRate: `39400000` (示例值，需根据实际计算)
    - rewardsDuration: `31536000`
 

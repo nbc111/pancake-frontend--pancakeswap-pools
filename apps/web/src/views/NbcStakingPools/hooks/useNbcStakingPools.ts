@@ -11,7 +11,7 @@ import { FAST_INTERVAL } from 'config/constants'
 import { STAKING_POOL_CONFIGS, type PoolConfig, calculateAPRFromRewardRate } from 'config/staking'
 import { getTokenPricesFromNbcApi } from 'config/staking/tokenPrices'
 
-const STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
+const STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
 const CHAIN_ID = 1281
 
 const POOL_CONFIGS: PoolConfig[] = STAKING_POOL_CONFIGS
@@ -1271,7 +1271,7 @@ export const useNbcStakingPools = () => {
       return pool
     })
 
-    return result.filter((pool) => pool.sousId !== 0)
+    return result
   }, [
     account,
     nativeBalance,

@@ -11,7 +11,7 @@ async function testPoolsCall() {
     const { publicClient } = await import('/src/utils/wagmi.ts')
     // 或者使用全局的 wagmi 实例
     
-    const contractAddress = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789'
+    const contractAddress = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1'
     const chainId = 1281
     
     // 使用 viem 编码函数调用

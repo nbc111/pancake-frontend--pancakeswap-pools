@@ -15,7 +15,7 @@ const CONFIG = {
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
   PRIVATE_KEY: process.env.PRIVATE_KEY,
   DOGE_TOKEN_ADDRESS: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89',
-  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789',
+  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1',
   TARGET_APR: parseFloat(process.argv.find(arg => arg.startsWith('--target-apr'))?.split('=')[1] || '50'),
   EXPECTED_STAKED: parseFloat(process.argv.find(arg => arg.startsWith('--expected-staked'))?.split('=')[1] || '1000000'),
   EXECUTE: process.argv.includes('--execute'),

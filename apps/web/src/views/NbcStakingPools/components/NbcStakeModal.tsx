@@ -9,9 +9,9 @@ import { useWriteContract, useAccount } from 'wagmi'
 import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
 import { ToastDescriptionWithTx } from 'components/Toast'
 import { checkStakeThreshold } from 'config/staking/minStakeThreshold'
-import { STAKING_POOL_CONFIGS } from 'config/staking'
+import { STAKING_POOL_CONFIGS, calculateAPRFromRewardRate } from 'config/staking'
 
-const STAKING_CONTRACT_ADDRESS = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789' as `0x${string}`
+const STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
 const CHAIN_ID = 1281
 const TARGET_APR = 30 // 目标 APR 30%
 
@@ -40,6 +40,52 @@ const NbcStakeModal: React.FC<NbcStakeModalProps> = ({ pool, stakingTokenBalance
   const poolConfig = useMemo(() => {
     return STAKING_POOL_CONFIGS.find((config) => config.sousId === poolIndex)
   }, [poolIndex])
+
+  // 动态计算 APR 的回调函数
+  // 当用户输入质押数量时，计算"预期 APR"（基于用户质押后的 totalStaked）
+  const calculateDynamicApr = useCallback((stakeAmountStr: string) => {
+    try {
+      const stakeAmountNum = parseFloat(stakeAmountStr)
+      if (!stakeAmountNum || stakeAmountNum <= 0) return pool.apr || 0
+      
+      // 将质押数量转换为 wei（18 位精度）
+      const stakeAmountWei = BigInt(Math.floor(stakeAmountNum * 1e18))
+      
+      // 获取当前 totalStaked
+      const currentTotalStaked = pool.totalStaked?.toString() || '0'
+      const currentTotalStakedBigInt = BigInt(currentTotalStaked)
+      
+      // 计算质押后的新 totalStaked
+      const newTotalStaked = currentTotalStakedBigInt + stakeAmountWei
+      
+      // 获取 rewardRate
+      const rewardRateStr = pool.tokenPerBlock?.toString() || '0'
+      const rewardRate = BigInt(rewardRateStr)
+      
+      // 如果 rewardRate 为 0，返回当前 APR
+      if (rewardRate <= 0n || newTotalStaked <= 0n) return pool.apr || 0
+      
+      // 获取价格信息
+      const nbcPrice = pool.stakingTokenPrice || 1
+      const tokenPrice = pool.earningTokenPrice || 1
+      const conversionRate = tokenPrice / nbcPrice
+      const rewardTokenDecimals = poolConfig?.rewardTokenDecimals || 18
+      
+      // 计算预期 APR
+      const expectedApr = calculateAPRFromRewardRate(
+        rewardRate,
+        newTotalStaked,
+        conversionRate,
+        rewardTokenDecimals,
+        undefined, // 使用默认 rewardsDuration
+      )
+      
+      return expectedApr
+    } catch (error) {
+      console.error('[NbcStakeModal] calculateDynamicApr error:', error)
+      return pool.apr || 0
+    }
+  }, [pool, poolConfig])
 
   const handleConfirmClick = useCallback(
     async (stakeAmount: string) => {
@@ -139,6 +185,7 @@ const NbcStakeModal: React.FC<NbcStakeModalProps> = ({ pool, stakingTokenBalance
       imageUrl=""
       stakingTokenLogoURI={tokenWithLogo.logoURI}
       warning={undefined}
+      calculateDynamicApr={calculateDynamicApr}
     />
   )
 }

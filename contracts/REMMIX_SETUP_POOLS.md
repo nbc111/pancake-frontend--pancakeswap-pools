@@ -29,14 +29,14 @@
 ```
 函数：addPool
 参数：
-  - rewardToken: 0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+  - rewardToken: 0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
   - rewardRate: 3941332303819498915
   - rewardsDuration: 31536000
 ```
 
 #### 步骤 2：批准代币（approve）
 
-在 BTC 代币合约（地址：`0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`）中：
+在 BTC 代币合约（地址：`0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`）中：
 
 ```
 函数：approve

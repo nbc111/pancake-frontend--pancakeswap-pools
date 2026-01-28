@@ -31,7 +31,7 @@ interface IERC20 {
 ```
 在 Remix 中：
 1. 打开 "At Address" 输入框
-2. 输入 BTC 代币合约地址：0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+2. 输入 BTC 代币合约地址：0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
 3. 点击 "At Address"
 ```
 
@@ -79,7 +79,7 @@ approve(质押合约地址, 数量)
 
 ```
 1. 加载 BTC 代币合约
-   地址：0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+   地址：0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
 
 2. 调用 approve
    spender: 0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789

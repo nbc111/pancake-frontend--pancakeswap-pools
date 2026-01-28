@@ -28,7 +28,7 @@ const hasFlag = (name) => args.includes(`--${name}`)
 const CONFIG = {
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
   PRIVATE_KEY: process.env.PRIVATE_KEY,
-  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789',
+  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1',
   REWARDS_DURATION: 31536000, // 1 年（秒）
   EXECUTE: hasFlag('execute'),
 }

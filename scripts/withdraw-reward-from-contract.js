@@ -5,14 +5,14 @@ require('dotenv').config()
 const CONFIG = {
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
   PRIVATE_KEY: process.env.PRIVATE_KEY,
-  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789',
+  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1',
 }
 
 // 代币配置（与 dynamic-reward-adjuster.js 保持一致）
 const TOKEN_CONFIGS = {
   BTC: {
     poolIndex: 1,
-    tokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
+    tokenAddress: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C',
     decimals: 8,
     symbol: 'BTC',
   },

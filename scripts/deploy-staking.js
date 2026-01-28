@@ -14,8 +14,8 @@ const hre = require("hardhat");
 // 代币配置
 const TOKEN_CONFIGS = {
   BTC: {
-    tokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
-    rewardTokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac', // 奖励代币（通常与质押代币相同）
+    tokenAddress: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C',
+    rewardTokenAddress: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C', // 奖励代币（通常与质押代币相同）
     rewardsDuration: 7 * 24 * 60 * 60, // 7天（秒）
   },
   ETH: {

@@ -49,6 +49,66 @@ const NbcStakingAdmin: React.FC = () => {
   const [approveTokenAddress, setApproveTokenAddress] = useState<string>('')
   const [approveAmount, setApproveAmount] = useState<string>('')
   const [tokenDecimals, setTokenDecimals] = useState<string>('18')
+  
+  // APR 计算器相关状态
+  const [expectedStakeAmount, setExpectedStakeAmount] = useState<string>('1000000') // 预期质押量 NBC
+  const [nbcPrice, setNbcPrice] = useState<string>('0.06') // NBC 价格
+  const [rewardTokenPrice, setRewardTokenPrice] = useState<string>('89000') // 奖励代币价格
+  const [targetAPR, setTargetAPR] = useState<string>('30') // 目标 APR
+  
+  // 根据目标 APR 计算建议的奖励率
+  const calculateSuggestedRewardRate = () => {
+    try {
+      const stakeAmount = parseFloat(expectedStakeAmount) || 0
+      const nbcPriceNum = parseFloat(nbcPrice) || 0
+      const rewardPriceNum = parseFloat(rewardTokenPrice) || 0
+      const targetAPRNum = parseFloat(targetAPR) || 0
+      
+      if (stakeAmount <= 0 || nbcPriceNum <= 0 || rewardPriceNum <= 0 || targetAPRNum <= 0) return null
+      
+      // 年奖励价值 = 质押价值 × APR%
+      const yearlyRewardValue = stakeAmount * nbcPriceNum * (targetAPRNum / 100)
+      // 年奖励代币数量 = 年奖励价值 / 奖励代币价格
+      const yearlyRewardTokens = yearlyRewardValue / rewardPriceNum
+      // 每秒奖励 = 年奖励代币数量 / 一年秒数
+      const rewardRatePerSecond = yearlyRewardTokens / 31536000
+      
+      return rewardRatePerSecond
+    } catch {
+      return null
+    }
+  }
+  
+  const suggestedRewardRate = calculateSuggestedRewardRate()
+  
+  // 计算预估 APR（根据输入的奖励率）
+  const calculateEstimatedAPR = () => {
+    try {
+      const stakeAmount = parseFloat(expectedStakeAmount) || 0
+      const nbcPriceNum = parseFloat(nbcPrice) || 0
+      const rewardPriceNum = parseFloat(rewardTokenPrice) || 0
+      
+      if (stakeAmount <= 0 || nbcPriceNum <= 0 || rewardPriceNum <= 0) return null
+      
+      // 人类可读模式：已经是代币数量/秒
+      const rewardRatePerSecond = parseFloat(newPoolRewardRate)
+      
+      if (isNaN(rewardRatePerSecond) || rewardRatePerSecond <= 0) return null
+      
+      // 年奖励价值 = 每秒奖励 × 一年秒数 × 奖励代币价格
+      const yearlyRewardValue = rewardRatePerSecond * 31536000 * rewardPriceNum
+      // 质押价值 = 质押量 × NBC价格
+      const stakeValue = stakeAmount * nbcPriceNum
+      // APR = 年奖励价值 / 质押价值 × 100
+      const apr = (yearlyRewardValue / stakeValue) * 100
+      
+      return apr
+    } catch {
+      return null
+    }
+  }
+  
+  const estimatedAPR = calculateEstimatedAPR()
 
   // 查询池数量
   const { data: poolLength } = useReadContract({
@@ -235,19 +295,19 @@ const NbcStakingAdmin: React.FC = () => {
           variant={activeTab === 'pools' ? 'primary' : 'subtle'}
           onClick={() => setActiveTab('pools')}
         >
-          {t('Manage Pools')}
+          {t('管理现有池')}
         </Button>
         <Button
           variant={activeTab === 'add' ? 'primary' : 'subtle'}
           onClick={() => setActiveTab('add')}
         >
-          {t('Add New Pool')}
+          {t('添加新池')}
         </Button>
         <Button
           variant={activeTab === 'settings' ? 'primary' : 'subtle'}
           onClick={() => setActiveTab('settings')}
         >
-          {t('Settings')}
+          {t('设置')}
         </Button>
       </Flex>
 
@@ -288,73 +348,73 @@ const NbcStakingAdmin: React.FC = () => {
           {/* 使用说明 */}
           <Box mb="24px" p="16px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px' }}>
             <Text bold mb="12px" fontSize="16px">
-              {t('📖 How to Use - Manage Pools')}
+              {t('📖 使用说明 - 管理池')}
             </Text>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('This page allows you to manage existing staking pools. You can:')}
+              {t('此页面用于管理现有的质押池。你可以：')}
             </Text>
             <Box as="ul" pl="20px" mb="16px">
               <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('1. Set Reward Rate: Update the reward rate for a pool by sending reward tokens')}
+                {t('1. 设置奖励率：发送奖励代币并更新池的奖励率')}
               </Text>
               <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('2. Set Rewards Duration: Change the reward period (only after current period ends)')}
+                {t('2. 设置奖励周期：修改奖励周期（仅在当前周期结束后可用）')}
               </Text>
               <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('3. Set Pool Active Status: Enable or disable a pool')}
+                {t('3. 设置池状态：启用或禁用池')}
               </Text>
               <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('4. Emergency Withdraw: Extract excess reward tokens from the contract')}
+                {t('4. 紧急提取：从合约中提取多余的奖励代币')}
               </Text>
             </Box>
             <Message variant="warning" mb="8px">
               <MessageText fontSize="12px">
-                {t('⚠️ Important: Before setting reward rate, you must:')}
+                {t('⚠️ 重要：设置奖励率之前，必须先：')}
               </MessageText>
               <MessageText fontSize="12px">
-                {t('1. Approve the reward token to the staking contract (use "Approve Token" section below)')}
+                {t('1. 批准奖励代币给质押合约（使用下方的「批准代币」功能）')}
               </MessageText>
               <MessageText fontSize="12px">
-                {t('2. Make sure you have enough tokens in your wallet')}
+                {t('2. 确保钱包中有足够的代币')}
               </MessageText>
             </Message>
           </Box>
 
           {/* 代币授权 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('Approve Token (Required Before Setting Reward Rate)')}</Text>
+            <Text bold mb="8px" fontSize="18px">{t('批准代币（设置奖励率之前必须执行）')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
-              {t('Before calling notifyRewardAmount, you must approve the reward token to the staking contract.')}
+              {t('在调用 notifyRewardAmount 之前，必须先批准奖励代币给质押合约。')}
             </Text>
             
             {/* 批准数量说明 */}
             <Box mb="16px" p="12px" style={{ background: 'rgba(255, 193, 7, 0.1)', borderRadius: '8px', border: '1px solid rgba(255, 193, 7, 0.3)' }}>
               <Text bold mb="8px" fontSize="15px" color="warning">
-                {t('📌 About Approval Amount:')}
+                {t('📌 关于批准数量：')}
               </Text>
               <Box as="ul" pl="20px" mb="8px">
                 <Text as="li" fontSize="13px" color="textSubtle" mb="4px">
-                  <strong>{t('Minimum Requirement:')}</strong> {t('Approval amount must be >= the reward amount you plan to send in notifyRewardAmount')}
+                  <strong>{t('最小要求：')}</strong> {t('批准数量必须 >= 你计划发送的奖励数量')}
                 </Text>
                 <Text as="li" fontSize="13px" color="textSubtle" mb="4px">
-                  <strong>{t('Recommended:')}</strong> {t('Approve a larger amount (e.g., 10x your planned reward) to avoid frequent re-approvals')}
+                  <strong>{t('建议：')}</strong> {t('批准较大数量（如 10 倍），避免频繁重新批准')}
                 </Text>
                 <Text as="li" fontSize="13px" color="textSubtle" mb="4px">
-                  <strong>{t('Maximum:')}</strong> {t('You can approve the maximum value (115792089237316195423570985008687907853269984665640564039457) to never need re-approval')}
+                  <strong>{t('最大值：')}</strong> {t('可批准最大值以永不需要重新批准')}
                 </Text>
                 <Text as="li" fontSize="13px" color="textSubtle">
-                  <strong>{t('Safety:')}</strong> {t('Approval only allows the contract to transfer up to the approved amount. You can revoke approval anytime by approving 0')}
+                  <strong>{t('安全性：')}</strong> {t('批准只允许合约转移最多批准的数量。可随时批准 0 来撤销授权')}
                 </Text>
               </Box>
               <Message variant="warning" mb="0">
                 <MessageText fontSize="12px">
-                  {t('⚠️ Important: If approval amount < reward amount, notifyRewardAmount will fail with "Transfer failed" error')}
+                  {t('⚠️ 重要：如果批准数量 < 奖励数量，notifyRewardAmount 将失败并显示 "Transfer failed" 错误')}
                 </MessageText>
               </Message>
             </Box>
 
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Token Address:')}
+              {t('代币地址：')}
             </Text>
             <Input
               type="text"
@@ -364,7 +424,7 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Token Decimals (8 for BTC, 6 for USDT, 18 for most others):')}
+              {t('代币精度（BTC=8，USDT=6，其他大多数=18）：')}
             </Text>
             <Input
               type="number"
@@ -374,16 +434,16 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Amount to Approve:')}
+              {t('批准数量：')}
             </Text>
-            <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
-              {t('Example: For 267,425.28 tokens with 18 decimals, enter "267425.28" (system will convert to wei)')}
+            <Text fontSize="12px" color="primary" mb="4px">
+              {t('直接输入代币数量，无需手动换算。如 BTC 输入 "1" 表示 1 个 BTC')}
             </Text>
             <Input
               type="text"
               value={approveAmount}
               onChange={(e) => setApproveAmount(e.target.value)}
-              placeholder="1000000"
+              placeholder="1"
               mb="16px"
             />
             <Button
@@ -391,32 +451,32 @@ const NbcStakingAdmin: React.FC = () => {
               disabled={isPending || !approveTokenAddress || !approveAmount}
               variant="secondary"
             >
-              {t('Approve Token')}
+              {t('批准代币')}
             </Button>
           </Box>
 
           {/* 设置奖励率 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('1. Set Reward Rate (notifyRewardAmount)')}</Text>
+            <Text bold mb="8px" fontSize="18px">{t('1. 设置奖励率 (notifyRewardAmount)')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
-              {t('This function updates the reward rate by sending reward tokens to the contract.')}
+              {t('此函数通过发送奖励代币到合约来更新奖励率，并启动奖励周期。')}
             </Text>
             <Box mb="16px" p="12px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px' }}>
               <Text fontSize="13px" color="textSubtle" mb="4px">
-                <strong>{t('How it works:')}</strong>
+                <strong>{t('工作原理：')}</strong>
               </Text>
               <Text fontSize="13px" color="textSubtle" mb="2px">
-                {t('• If period is finished: new rewardRate = reward / rewardsDuration')}
+                {t('• 如果周期已结束：新奖励率 = 奖励 / 奖励周期')}
               </Text>
               <Text fontSize="13px" color="textSubtle" mb="2px">
-                {t('• If period is not finished: new rewardRate = (reward + leftover) / rewardsDuration')}
+                {t('• 如果周期未结束：新奖励率 = (奖励 + 剩余) / 奖励周期')}
               </Text>
               <Text fontSize="13px" color="textSubtle">
-                {t('• leftover = remaining time × current rewardRate')}
+                {t('• 剩余 = 剩余时间 × 当前奖励率')}
               </Text>
             </Box>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Pool Index (0-10):')}
+              {t('池索引（从 0 开始）：')}
             </Text>
             <Input
               type="number"
@@ -425,40 +485,80 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="0"
               mb="16px"
             />
-            <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('Reward Amount (DOGE, with 18 decimals):')}
+            <Text fontSize="14px" color="textSubtle" mb="8px">
+              {t('代币精度（BTC=8，USDT=6，其他大多数=18）：')}
+            </Text>
+            <Input
+              type="number"
+              value={tokenDecimals}
+              onChange={(e) => setTokenDecimals(e.target.value)}
+              placeholder="18"
+              mb="16px"
+            />
+            
+            {/* 奖励数量详细说明 */}
+            <Text fontSize="14px" color="textSubtle" mb="8px" bold>
+              {t('奖励数量（整个周期内分发的总奖励）：')}
+            </Text>
+            <Box mb="12px" p="12px" style={{ background: 'rgba(49, 208, 170, 0.1)', borderRadius: '8px', border: '1px solid rgba(49, 208, 170, 0.3)' }}>
+              <Text fontSize="13px" color="textSubtle" mb="8px">
+                <strong>{t('📌 什么是奖励数量？')}</strong>
+              </Text>
+              <Text fontSize="13px" color="textSubtle" mb="8px">
+                {t('这是你要在整个「奖励周期」内分发给所有质押者的奖励代币总量。')}
+              </Text>
+              <Text fontSize="13px" color="textSubtle" mb="8px">
+                {t('系统会自动计算每秒分发多少：每秒奖励 = 奖励数量 ÷ 奖励周期（秒）')}
+              </Text>
+              <Box p="8px" style={{ background: 'rgba(0, 0, 0, 0.2)', borderRadius: '4px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">
+                  <strong>{t('举例（奖励周期 = 1年 = 31,536,000 秒）：')}</strong>
+                </Text>
+                <Text fontSize="12px" color="textSubtle" mb="2px">
+                  {t('• 输入 0.22 BTC → 一年总共分发 0.22 BTC → 每秒约 0.000000007 BTC')}
+                </Text>
+                <Text fontSize="12px" color="textSubtle" mb="2px">
+                  {t('• 输入 1 BTC → 一年总共分发 1 BTC → 每秒约 0.0000000317 BTC')}
+                </Text>
+                <Text fontSize="12px" color="textSubtle">
+                  {t('• 输入 100 USDT → 一年总共分发 100 USDT → 每秒约 0.00000317 USDT')}
+                </Text>
+              </Box>
+            </Box>
+            <Text fontSize="12px" color="primary" mb="8px">
+              {t('直接输入代币数量，无需手动换算精度。如 BTC 输入 "0.22" 表示 0.22 个 BTC')}
             </Text>
             <Input
               type="text"
               value={rewardAmount}
               onChange={(e) => setRewardAmount(e.target.value)}
-              placeholder="267425.28"
+              placeholder="0.22"
               mb="16px"
             />
             <Button
               onClick={handleNotifyReward}
               disabled={isPending || !rewardAmount || !poolIndex}
             >
-              {t('Notify Reward Amount')}
+              {t('发送奖励')}
             </Button>
           </Box>
 
           {/* 设置奖励周期 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('2. Set Rewards Duration')}</Text>
+            <Text bold mb="8px" fontSize="18px">{t('2. 设置奖励周期')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
-              {t('Change the reward period duration for a pool.')}
+              {t('修改池的奖励周期时长。')}
             </Text>
             <Message variant="warning" mb="12px">
               <MessageText fontSize="12px">
-                {t('⚠️ Important: This can only be called after the current period finishes (block.timestamp > periodFinish)')}
+                {t('⚠️ 重要：只有在当前周期结束后才能调用此函数')}
               </MessageText>
               <MessageText fontSize="12px">
-                {t('If the period is not finished, you need to wait or use notifyRewardAmount to reset the period first')}
+                {t('如果周期未结束，需要等待或使用 notifyRewardAmount 重置周期')}
               </MessageText>
             </Message>
             <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('Pool Index:')}
+              {t('池索引：')}
             </Text>
             <Input
               type="number"
@@ -468,7 +568,7 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
             <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('Rewards Duration (seconds, 31536000 = 1 year):')}
+              {t('奖励周期（秒，1天=86400，1年=31536000）：')}
             </Text>
             <Input
               type="text"
@@ -481,18 +581,18 @@ const NbcStakingAdmin: React.FC = () => {
               onClick={handleSetRewardsDuration}
               disabled={isPending || !rewardsDuration || !poolIndex}
             >
-              {t('Set Rewards Duration')}
+              {t('设置奖励周期')}
             </Button>
           </Box>
 
           {/* 激活/停用池 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('3. Set Pool Active Status')}</Text>
+            <Text bold mb="8px" fontSize="18px">{t('3. 设置池状态')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
-              {t('Enable or disable a staking pool. When disabled, users cannot stake or withdraw.')}
+              {t('启用或禁用质押池。禁用后，用户无法质押或提取。')}
             </Text>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Pool Index:')}
+              {t('池索引：')}
             </Text>
             <Input
               type="number"
@@ -508,32 +608,32 @@ const NbcStakingAdmin: React.FC = () => {
                 onChange={(e) => setPoolActive(e.target.checked)}
                 style={{ marginRight: '8px' }}
               />
-              <Text>{t('Active')}</Text>
+              <Text>{t('启用')}</Text>
             </Flex>
             <Button
               onClick={handleSetPoolActive}
               disabled={isPending || poolIndex === ''}
             >
-              {t('Set Pool Active')}
+              {t('设置池状态')}
             </Button>
           </Box>
 
           {/* 紧急提取奖励 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(255, 77, 77, 0.3)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('4. Emergency Withdraw Reward')}</Text>
+            <Text bold mb="8px" fontSize="18px">{t('4. 紧急提取奖励')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
-              {t('Extract reward tokens from the contract. Use this when there are excess tokens in the contract.')}
+              {t('从合约中提取奖励代币。当合约中有多余代币时使用。')}
             </Text>
             <Message variant="danger" mb="12px">
               <MessageText fontSize="12px">
-                {t('⚠️ Warning: This will withdraw reward tokens from the contract to the owner address')}
+                {t('⚠️ 警告：这将从合约中提取奖励代币到 Owner 地址')}
               </MessageText>
               <MessageText fontSize="12px">
-                {t('Use this carefully - withdrawing too much may affect pool rewards')}
+                {t('请谨慎使用 - 提取过多可能影响池的奖励发放')}
               </MessageText>
             </Message>
             <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('Pool Index:')}
+              {t('池索引：')}
             </Text>
             <Input
               type="number"
@@ -543,7 +643,7 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('Token Decimals (8 for BTC, 6 for USDT, 18 for most others):')}
+              {t('代币精度（BTC=8，USDT=6，其他大多数=18）：')}
             </Text>
             <Input
               type="number"
@@ -552,14 +652,17 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="18"
               mb="16px"
             />
-            <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('Amount (with token decimals):')}
+            <Text fontSize="14px" color="textSubtle" mb="8px">
+              {t('提取数量：')}
+            </Text>
+            <Text fontSize="12px" color="primary" mb="8px">
+              {t('直接输入代币数量，无需手动换算')}
             </Text>
             <Input
               type="text"
               value={withdrawAmount}
               onChange={(e) => setWithdrawAmount(e.target.value)}
-              placeholder="1000000"
+              placeholder="0.001"
               mb="16px"
             />
             <Button
@@ -567,7 +670,7 @@ const NbcStakingAdmin: React.FC = () => {
               disabled={isPending || !withdrawAmount || !poolIndex}
               variant="danger"
             >
-              {t('Emergency Withdraw')}
+              {t('紧急提取')}
             </Button>
           </Box>
         </Card>
@@ -577,123 +680,123 @@ const NbcStakingAdmin: React.FC = () => {
       {activeTab === 'add' && (
         <Card p="24px" mb="24px">
           <Heading scale="lg" mb="24px">
-            {t('Add New Reward Pool')}
+            {t('添加新奖励池')}
           </Heading>
           
           {/* 详细使用说明 */}
           <Box mb="24px" p="20px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
             <Text bold mb="16px" fontSize="18px">
-              {t('📖 Complete Step-by-Step Guide')}
+              {t('📖 完整操作指南')}
             </Text>
             
             {/* 步骤 1: 部署代币 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="8px" fontSize="16px" color="primary">
-                {t('Step 1: Deploy Token Contract')}
+                {t('第一步：部署代币合约')}
               </Text>
               <Text fontSize="14px" color="textSubtle" mb="8px">
-                {t('1.1 Select the token contract file from contracts/tokens/ directory:')}
+                {t('1.1 从 contracts/tokens/ 目录选择代币合约文件：')}
               </Text>
               <Box as="ul" pl="20px" mb="12px">
                 <Text as="li" fontSize="13px" color="textSubtle" mb="2px">
-                  {t('• NBCToken.sol, ETHToken.sol, SOLToken.sol, etc. (18 decimals)')}
+                  {t('• NBCToken.sol, ETHToken.sol, SOLToken.sol 等（18 位精度）')}
                 </Text>
                 <Text as="li" fontSize="13px" color="textSubtle" mb="2px">
-                  {t('• BTCToken.sol (8 decimals)')}
+                  {t('• BTCToken.sol（8 位精度）')}
                 </Text>
                 <Text as="li" fontSize="13px" color="textSubtle">
-                  {t('• USDTToken.sol (6 decimals)')}
+                  {t('• USDTToken.sol（6 位精度）')}
                 </Text>
               </Box>
               <Text fontSize="14px" color="textSubtle" mb="8px">
-                {t('1.2 Deploy using Remix or other tools with constructor parameters:')}
+                {t('1.2 使用 Remix 或其他工具部署，构造函数参数：')}
               </Text>
               <Box p="12px" mb="8px" style={{ background: 'rgba(0, 0, 0, 0.2)', borderRadius: '4px', fontFamily: 'monospace' }}>
                 <Text fontSize="12px" color="textSubtle" mb="4px">
-                  {t('For 18 decimals (NBC, ETH, SOL, etc.):')}
+                  {t('18 位精度（NBC, ETH, SOL 等）：')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
-                  {t('initialSupply: 1000000 * 10^18  // 1,000,000 tokens')}
+                  {t('initialSupply: 1000000 * 10^18  // 100万代币')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
-                  {t('owner: 0xYourOwnerAddress')}
+                  {t('owner: 0x你的Owner地址')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" mt="8px">
-                  {t('For 8 decimals (BTC):')}
+                  {t('8 位精度（BTC）：')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
                   {t('initialSupply: 500 * 10^8  // 500 BTC')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
-                  {t('owner: 0xYourOwnerAddress')}
+                  {t('owner: 0x你的Owner地址')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" mt="8px">
-                  {t('For 6 decimals (USDT):')}
+                  {t('6 位精度（USDT）：')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" mb="4px" style={{ fontStyle: 'italic' }}>
                   {t('initialSupply: 7000 * 10^6  // 7,000 USDT')}
                 </Text>
                 <Text fontSize="12px" color="textSubtle" style={{ fontStyle: 'italic' }}>
-                  {t('owner: 0xYourOwnerAddress')}
+                  {t('owner: 0x你的Owner地址')}
                 </Text>
               </Box>
               <Text fontSize="14px" color="textSubtle">
-                <strong>{t('1.3 Record the deployed token contract address (e.g., 0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89)')}</strong>
+                <strong>{t('1.3 记录部署后的代币合约地址（如 0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89）')}</strong>
               </Text>
             </Box>
 
             {/* 步骤 2: 添加池 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="8px" fontSize="16px" color="primary">
-                {t('Step 2: Add Pool (Current Page)')}
+                {t('第二步：添加池（当前页面）')}
               </Text>
               <Text fontSize="14px" color="textSubtle" mb="8px">
-                {t('Fill in the form below with:')}
+                {t('在下方表单中填写：')}
               </Text>
               <Box as="ol" pl="20px" mb="8px">
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Token Address: The deployed token contract address from Step 1')}
+                  {t('代币地址：第一步中部署的代币合约地址')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Token Decimals: 8 for BTC, 6 for USDT, 18 for others')}
+                  {t('代币精度：BTC=8，USDT=6，其他=18')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Initial Reward Rate: Tokens per second (e.g., 0.00848)')}
+                  {t('初始奖励率：使用下方 APR 计算器计算')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle">
-                  {t('Rewards Duration: 31536000 (1 year) recommended')}
+                  {t('奖励周期：建议 31536000（1年）')}
                 </Text>
               </Box>
               <Text fontSize="14px" color="textSubtle">
-                {t('Then click "Add Pool" button')}
+                {t('然后点击「添加池」按钮')}
               </Text>
             </Box>
 
             {/* 步骤 3: 批准代币 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="8px" fontSize="16px" color="primary">
-                {t('Step 3: Approve Token (Go to "Manage Pools" Tab)')}
+                {t('第三步：批准代币（切换到「管理现有池」标签）')}
               </Text>
               <Text fontSize="14px" color="textSubtle" mb="8px">
-                {t('After adding the pool, switch to "Manage Pools" tab and:')}
+                {t('添加池后，切换到「管理现有池」标签：')}
               </Text>
               <Box as="ol" pl="20px" mb="8px">
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Find "Approve Token" section')}
+                  {t('找到「批准代币」区域')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Enter token address (same as Step 2)')}
+                  {t('输入代币地址（与第二步相同）')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Enter token decimals (same as Step 2)')}
+                  {t('输入代币精度（与第二步相同）')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle">
-                  {t('Enter approval amount (must be >= reward amount you plan to send)')}
+                  {t('输入批准数量（必须 >= 你计划发送的奖励数量）')}
                 </Text>
               </Box>
               <Message variant="warning" mb="0">
                 <MessageText fontSize="12px">
-                  {t('⚠️ Important: Approval is required before setting reward rate!')}
+                  {t('⚠️ 重要：设置奖励率之前必须先批准代币！')}
                 </MessageText>
               </Message>
             </Box>
@@ -701,56 +804,39 @@ const NbcStakingAdmin: React.FC = () => {
             {/* 步骤 4: 设置奖励率 */}
             <Box mb="0" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="8px" fontSize="16px" color="primary">
-                {t('Step 4: Set Initial Reward Rate (In "Manage Pools" Tab)')}
+                {t('第四步：设置初始奖励率（在「管理现有池」标签）')}
               </Text>
               <Text fontSize="14px" color="textSubtle" mb="8px">
-                {t('In "Manage Pools" tab, find "Set Reward Rate" section and:')}
+                {t('在「管理现有池」标签中，找到「设置奖励率」区域：')}
               </Text>
               <Box as="ol" pl="20px" mb="8px">
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Enter Pool Index (0-based, e.g., 10 for the 11th pool)')}
+                  {t('输入池索引（从 0 开始，如第 11 个池索引为 10）')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Enter reward amount (e.g., 267425.28 tokens)')}
+                  {t('输入奖励数量（如 0.001 BTC）')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle">
-                  {t('Click "Notify Reward Amount" button')}
+                  {t('点击「发送奖励」按钮')}
                 </Text>
               </Box>
               <Text fontSize="13px" color="textSubtle" style={{ fontStyle: 'italic' }}>
-                {t('Note: The system will automatically calculate new rewardRate based on rewardsDuration')}
-              </Text>
-            </Box>
-            <Box mb="12px" p="12px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px' }}>
-              <Text fontSize="13px" color="textSubtle" mb="4px">
-                <strong>{t('Example Calculation:')}</strong>
-              </Text>
-              <Text fontSize="13px" color="textSubtle" mb="2px">
-                {t('Target APR: 50%, Expected Staked: 1,000,000 NBC')}
-              </Text>
-              <Text fontSize="13px" color="textSubtle" mb="2px">
-                {t('Token Price: $0.127, NBC Price: $0.068')}
-              </Text>
-              <Text fontSize="13px" color="textSubtle" mb="2px">
-                {t('Conversion Rate: 1 Token = 1.869 NBC')}
-              </Text>
-              <Text fontSize="13px" color="textSubtle">
-                {t('Initial Reward Rate: 0.00848 tokens/second')}
+                {t('注意：系统会根据奖励周期自动计算新的奖励率')}
               </Text>
             </Box>
             <Message variant="primary" mb="8px">
               <MessageText fontSize="12px">
-                {t('💡 Tip: After adding a pool, use "Set Reward Rate" to adjust the reward rate based on actual staked amount')}
+                {t('💡 提示：添加池后，可在「管理现有池」中使用「设置奖励率」根据实际质押量调整')}
               </MessageText>
             </Message>
           </Box>
 
           <Box mb="24px">
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
-              {t('Step 1: Reward Token Address')}
+              {t('步骤 1: 奖励代币地址')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="8px">
-              {t('Enter the ERC20 token contract address that will be used as reward token')}
+              {t('输入作为奖励的 ERC20 代币合约地址')}
             </Text>
             <Input
               type="text"
@@ -763,10 +849,10 @@ const NbcStakingAdmin: React.FC = () => {
 
           <Box mb="24px">
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
-              {t('Step 2: Token Decimals')}
+              {t('步骤 2: 代币精度')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="8px">
-              {t('Enter the token decimals (8 for BTC, 6 for USDT, 18 for most others)')}
+              {t('输入代币精度（BTC=8，USDT=6，其他大多数=18）')}
             </Text>
             <Input
               type="number"
@@ -775,30 +861,28 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="18"
               mb="16px"
             />
+            
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
-              {t('Step 3: Initial Reward Rate')}
+              {t('步骤 3: 初始奖励率')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="8px">
-              {t('Enter the reward rate in tokens per second. The system will use the decimals specified above.')}
-            </Text>
-            <Text fontSize="13px" color="textSubtle" mb="8px" style={{ fontStyle: 'italic' }}>
-              {t('Example: For 0.00848 tokens/second with 18 decimals, enter "0.00848"')}
+              {t('请使用下方的「APR 计算器」计算奖励率，点击「填入」按钮自动填入此处。')}
             </Text>
             <Input
               type="text"
               value={newPoolRewardRate}
               onChange={(e) => setNewPoolRewardRate(e.target.value)}
-              placeholder="0.00848"
+              placeholder="0.00000641"
               mb="16px"
             />
           </Box>
 
           <Box mb="24px">
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
-              {t('Step 4: Rewards Duration')}
+              {t('步骤 4: 奖励周期')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="8px">
-              {t('Enter the reward period duration in seconds. Recommended: 31536000 (1 year)')}
+              {t('输入奖励周期时长（秒）：1天=86400，1周=604800，1月=2592000，1年=31536000')}
             </Text>
             <Input
               type="text"
@@ -808,12 +892,107 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
           </Box>
+          
+          {/* APR 预估计算器 */}
+          <Box mb="24px" p="16px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
+            <Text bold mb="12px" fontSize="16px" color="primary">
+              {t('APR 计算器')}
+            </Text>
+            <Text fontSize="13px" color="textSubtle" mb="12px">
+              {t('输入目标 APR 和预期参数，自动计算建议的奖励率。')}
+            </Text>
+            
+            <Flex style={{ gap: '16px', flexWrap: 'wrap' }} mb="12px">
+              <Box style={{ flex: '1', minWidth: '100px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">{t('目标 APR (%)')}</Text>
+                <Input
+                  type="text"
+                  value={targetAPR}
+                  onChange={(e) => setTargetAPR(e.target.value)}
+                  placeholder="30"
+                  scale="sm"
+                />
+              </Box>
+              <Box style={{ flex: '1', minWidth: '140px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">{t('预期 NBC 质押量')}</Text>
+                <Input
+                  type="text"
+                  value={expectedStakeAmount}
+                  onChange={(e) => setExpectedStakeAmount(e.target.value)}
+                  placeholder="1000000"
+                  scale="sm"
+                />
+              </Box>
+              <Box style={{ flex: '1', minWidth: '100px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">{t('NBC 价格 ($)')}</Text>
+                <Input
+                  type="text"
+                  value={nbcPrice}
+                  onChange={(e) => setNbcPrice(e.target.value)}
+                  placeholder="0.06"
+                  scale="sm"
+                />
+              </Box>
+              <Box style={{ flex: '1', minWidth: '120px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">{t('奖励代币价格 ($)')}</Text>
+                <Input
+                  type="text"
+                  value={rewardTokenPrice}
+                  onChange={(e) => setRewardTokenPrice(e.target.value)}
+                  placeholder="89000"
+                  scale="sm"
+                />
+              </Box>
+            </Flex>
+            
+            <Box p="12px" style={{ background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px' }}>
+              <Flex justifyContent="space-between" alignItems="center" mb="8px">
+                <Text fontSize="14px" color="textSubtle">{t('建议奖励率 (代币/秒):')}</Text>
+                <Flex alignItems="center" style={{ gap: '8px' }}>
+                  <Text fontSize="16px" bold color={suggestedRewardRate ? 'success' : 'textSubtle'}>
+                    {suggestedRewardRate !== null ? suggestedRewardRate.toFixed(11) : '--'}
+                  </Text>
+                  {suggestedRewardRate !== null && (
+                    <Button
+                      scale="xs"
+                      variant="secondary"
+                      onClick={() => setNewPoolRewardRate(suggestedRewardRate.toFixed(11))}
+                    >
+                      {t('填入')}
+                    </Button>
+                  )}
+                </Flex>
+              </Flex>
+              
+              {suggestedRewardRate !== null && (
+                <Flex justifyContent="space-between" alignItems="center" mb="8px">
+                  <Text fontSize="13px" color="textSubtle">{t('年消耗量 (代币):')}</Text>
+                  <Text fontSize="14px" color="textSubtle">
+                    {(suggestedRewardRate * 31536000).toFixed(6)}
+                  </Text>
+                </Flex>
+              )}
+              
+              {newPoolRewardRate && (
+                <Flex justifyContent="space-between" alignItems="center" mt="8px" pt="8px" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Text fontSize="14px" color="textSubtle">{t('当前奖励率对应 APR:')}</Text>
+                  <Text fontSize="16px" bold color={estimatedAPR && estimatedAPR > 0 ? 'primary' : 'textSubtle'}>
+                    {estimatedAPR !== null && !isNaN(estimatedAPR) ? `${estimatedAPR.toFixed(2)}%` : '--'}
+                  </Text>
+                </Flex>
+              )}
+              
+              <Text fontSize="11px" color="textSubtle" mt="8px">
+                {t('注意：实际 APR 会随质押量变化。质押越多 = APR 越低')}
+              </Text>
+            </Box>
+          </Box>
 
           <Button
             onClick={handleAddPool}
             disabled={isPending || !newPoolToken || !newPoolRewardRate || !newPoolDuration}
           >
-            {t('Add Pool')}
+            {t('添加池')}
           </Button>
         </Card>
       )}
@@ -822,29 +1001,29 @@ const NbcStakingAdmin: React.FC = () => {
       {activeTab === 'settings' && (
         <Card p="24px" mb="24px">
           <Heading scale="lg" mb="24px">
-            {t('Settings & Information')}
+            {t('设置与信息')}
           </Heading>
           
           {/* 详细使用说明 */}
           <Box mb="24px" p="20px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
             <Text bold mb="16px" fontSize="18px">
-              {t('📖 Quick Reference Guide')}
+              {t('📖 快速参考指南')}
             </Text>
             
             {/* 代币精度参考 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="12px" fontSize="16px" color="primary">
-                {t('Token Decimals Reference:')}
+                {t('代币精度参考：')}
               </Text>
               <Box as="ul" pl="20px" mb="8px">
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  <strong>{t('18 decimals:')}</strong> {t('NBC, ETH, SOL, BNB, XRP, LTC, DOGE, PEPE, SUI')}
+                  <strong>{t('18 位精度：')}</strong> {t('NBC, ETH, SOL, BNB, XRP, LTC, DOGE, PEPE, SUI')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  <strong>{t('8 decimals:')}</strong> {t('BTC (Bitcoin)')}
+                  <strong>{t('8 位精度：')}</strong> {t('BTC (比特币)')}
                 </Text>
                 <Text as="li" fontSize="14px" color="textSubtle">
-                  <strong>{t('6 decimals:')}</strong> {t('USDT (Tether USD)')}
+                  <strong>{t('6 位精度：')}</strong> {t('USDT (泰达币)')}
                 </Text>
               </Box>
             </Box>
@@ -852,119 +1031,101 @@ const NbcStakingAdmin: React.FC = () => {
             {/* 常见问题 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
               <Text bold mb="12px" fontSize="16px" color="primary">
-                {t('Common Issues & Solutions:')}
+                {t('常见问题与解决方案：')}
               </Text>
               <Box mb="8px">
                 <Text fontSize="14px" color="textSubtle" mb="4px" bold>
-                  {t('1. Precision Mismatch:')}
+                  {t('1. 精度不匹配：')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px" mb="8px">
-                  {t('Problem: Wrong decimals cause incorrect amount calculations.')}
+                  {t('问题：错误的精度导致金额计算错误。')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px">
-                  {t('Solution: Always use correct decimals (BTC: 8, USDT: 6, others: 18)')}
+                  {t('解决：始终使用正确的精度（BTC: 8, USDT: 6, 其他: 18）')}
                 </Text>
               </Box>
               <Box mb="8px">
                 <Text fontSize="14px" color="textSubtle" mb="4px" bold>
-                  {t('2. Insufficient Approval:')}
+                  {t('2. 批准数量不足：')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px" mb="8px">
-                  {t('Problem: notifyRewardAmount fails if approval amount < reward amount.')}
+                  {t('问题：如果批准数量 < 奖励数量，notifyRewardAmount 会失败。')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px">
-                  {t('Solution: Ensure approval amount >= reward amount you plan to send')}
+                  {t('解决：确保批准数量 >= 你计划发送的奖励数量')}
                 </Text>
               </Box>
               <Box mb="8px">
                 <Text fontSize="14px" color="textSubtle" mb="4px" bold>
-                  {t('3. Wrong Pool Index:')}
+                  {t('3. 池索引错误：')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px" mb="8px">
-                  {t('Problem: Using wrong pool index modifies wrong pool.')}
+                  {t('问题：使用错误的池索引会修改错误的池。')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px">
-                  {t('Solution: Index starts from 0. 1st pool = 0, 11th pool = 10. Check total pools above.')}
+                  {t('解决：索引从 0 开始。第 1 个池 = 0，第 11 个池 = 10。')}
                 </Text>
               </Box>
               <Box mb="0">
                 <Text fontSize="14px" color="textSubtle" mb="4px" bold>
-                  {t('4. Period Not Finished:')}
+                  {t('4. 周期未结束：')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px" mb="8px">
-                  {t('Problem: setRewardsDuration can only be called after period ends.')}
+                  {t('问题：setRewardsDuration 只能在周期结束后调用。')}
                 </Text>
                 <Text fontSize="13px" color="textSubtle" pl="16px">
-                  {t('Solution: Wait for period to end, or use notifyRewardAmount to reset the period')}
-                </Text>
-              </Box>
-            </Box>
-
-            {/* 页面功能说明 */}
-            <Box mb="0" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-              <Text bold mb="12px" fontSize="16px" color="primary">
-                {t('Page Functions:')}
-              </Text>
-              <Box as="ul" pl="20px">
-                <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Contract Information: View contract address, owner address, and total pools')}
-                </Text>
-                <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                  {t('Common Values: Quick reference for time periods (1 year, 6 months, etc.)')}
-                </Text>
-                <Text as="li" fontSize="14px" color="textSubtle">
-                  {t('Important Notes: Key reminders about contract functions and limitations')}
+                  {t('解决：等待周期结束，或使用 notifyRewardAmount 重置周期')}
                 </Text>
               </Box>
             </Box>
           </Box>
 
           <Box mb="24px">
-            <Text bold mb="8px">{t('Contract Information')}</Text>
+            <Text bold mb="8px">{t('合约信息')}</Text>
             <Text fontSize="14px" color="textSubtle">
-              {t('Contract Address: %address%', { address: STAKING_CONTRACT_ADDRESS })}
+              {t('合约地址：%address%', { address: STAKING_CONTRACT_ADDRESS })}
             </Text>
             <Text fontSize="14px" color="textSubtle">
-              {t('Owner Address: %address%', { address: ownerAddress || 'Unknown' })}
+              {t('Owner 地址：%address%', { address: ownerAddress || '未知' })}
             </Text>
             <Text fontSize="14px" color="textSubtle">
-              {t('Total Pools: %count%', { count: poolLength?.toString() || '0' })}
+              {t('池总数：%count%', { count: poolLength?.toString() || '0' })}
             </Text>
             <Text fontSize="14px" color="textSubtle">
-              {t('Your Address: %address%', { address: account })}
-            </Text>
-          </Box>
-
-          <Box mb="24px">
-            <Text bold mb="8px">{t('Common Values')}</Text>
-            <Text fontSize="14px" color="textSubtle">
-              {t('1 Year (seconds): 31536000')}
-            </Text>
-            <Text fontSize="14px" color="textSubtle">
-              {t('6 Months (seconds): 15552000')}
-            </Text>
-            <Text fontSize="14px" color="textSubtle">
-              {t('3 Months (seconds): 7776000')}
-            </Text>
-            <Text fontSize="14px" color="textSubtle">
-              {t('1 Month (seconds): 2592000')}
+              {t('你的地址：%address%', { address: account })}
             </Text>
           </Box>
 
           <Box mb="24px">
-            <Text bold mb="8px">{t('Important Notes')}</Text>
+            <Text bold mb="8px">{t('常用值参考')}</Text>
+            <Text fontSize="14px" color="textSubtle">
+              {t('1 年（秒）：31536000')}
+            </Text>
+            <Text fontSize="14px" color="textSubtle">
+              {t('6 个月（秒）：15552000')}
+            </Text>
+            <Text fontSize="14px" color="textSubtle">
+              {t('3 个月（秒）：7776000')}
+            </Text>
+            <Text fontSize="14px" color="textSubtle">
+              {t('1 个月（秒）：2592000')}
+            </Text>
+          </Box>
+
+          <Box mb="24px">
+            <Text bold mb="8px">{t('重要说明')}</Text>
             <Message variant="warning">
               <MessageText>
-                {t('1. setRewardsDuration can only be called after periodFinish')}
+                {t('1. setRewardsDuration 只能在 periodFinish 后调用')}
               </MessageText>
               <MessageText>
-                {t('2. notifyRewardAmount will reset the period and calculate new rewardRate')}
+                {t('2. notifyRewardAmount 会重置周期并计算新的奖励率')}
               </MessageText>
               <MessageText>
-                {t('3. If period is not finished, leftover rewards will be included in calculation')}
+                {t('3. 如果周期未结束，剩余奖励会包含在计算中')}
               </MessageText>
               <MessageText>
-                {t('4. Always verify amounts before submitting transactions')}
+                {t('4. 提交交易前请务必核实金额')}
               </MessageText>
             </Message>
           </Box>

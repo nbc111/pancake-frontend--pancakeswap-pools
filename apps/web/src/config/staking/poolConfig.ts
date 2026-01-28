@@ -19,15 +19,7 @@ export type PoolConfig = {
 export const STAKING_POOL_CONFIGS: PoolConfig[] = [
   {
     sousId: 0,
-    rewardTokenAddress: '0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6' as `0x${string}`,
-    rewardTokenSymbol: 'NBC',
-    rewardTokenName: 'NBC Token',
-    rewardTokenDecimals: 18,
-    rewardTokenLogoURI: '/images/custom-tokens/nbc.png',
-  },
-  {
-    sousId: 1,
-    rewardTokenAddress: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac' as `0x${string}`,
+    rewardTokenAddress: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C' as `0x${string}`,
     rewardTokenSymbol: 'BTC',
     rewardTokenName: 'Bitcoin',
     rewardTokenDecimals: 8,

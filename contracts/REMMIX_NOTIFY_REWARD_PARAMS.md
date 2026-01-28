@@ -162,7 +162,7 @@ reward: 52128000000000000000000
 
 1. **加载代币合约**（例如 BTC）:
    - 在 Remix 中，点击 "At Address" 输入框
-   - 输入代币地址（例如 BTC: `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`）
+   - 输入代币地址（例如 BTC: `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`）
    - 点击 "At Address" 按钮
 
 2. **调用 approve 函数**:
@@ -178,7 +178,7 @@ reward: 52128000000000000000000
 
 | 池索引 | 代币 | 代币地址 | approve 参数 |
 |--------|------|----------|-------------|
-| 1 | BTC | `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac` | spender: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`<br>amount: `7300000000000000` |
+| 1 | BTC | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` | spender: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`<br>amount: `7300000000000000` |
 | 2 | ETH | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` | spender: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`<br>amount: `9120000000000000000` |
 | 3 | SOL | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` | spender: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`<br>amount: `121800000000000000000` |
 | 4 | BNB | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` | spender: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`<br>amount: `5476800000000000000000` |
@@ -194,7 +194,7 @@ reward: 52128000000000000000000
 ### 步骤 1: 批准 BTC 代币
 
 1. 在 Remix 中加载 BTC 代币合约：
-   - 地址: `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`
+   - 地址: `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`
 2. 找到 `approve` 函数
 3. 填写参数：
    ```

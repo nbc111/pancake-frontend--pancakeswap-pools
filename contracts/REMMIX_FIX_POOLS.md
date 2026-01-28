@@ -41,7 +41,7 @@
 #### 3.1 批准代币（以 BTC 为例）
 
 1. 在 Remix 中，点击 **"At Address"** 输入框
-2. 输入 BTC 代币地址：`0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`
+2. 输入 BTC 代币地址：`0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`
 3. 点击 **"At Address"** 按钮
 4. 找到 **`approve`** 函数
 5. 填写参数：
@@ -108,7 +108,7 @@ async function fixPools() {
 
   // 各池的奖励率配置
   const pools = [
-    { index: 0, rewardRate: "231481481", token: "0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac" },
+    { index: 0, rewardRate: "231481481", token: "0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C" },
     { index: 1, rewardRate: "289351851", token: "0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3" },
     // ... 其他池
   ];

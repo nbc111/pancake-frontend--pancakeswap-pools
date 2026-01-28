@@ -70,6 +70,10 @@ interface StakeModalProps {
   imageUrl?: string;
   stakingTokenLogoURI?: string;
   warning?: React.ReactElement;
+  // 动态计算 APR 的回调函数（可选）
+  // 参数：用户输入的质押数量（字符串）
+  // 返回：预期的 APR（百分比数字，如 30 表示 30%）
+  calculateDynamicApr?: (stakeAmount: string) => number;
 }
 
 export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
@@ -97,6 +101,7 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
   imageUrl = "/images/tokens/",
   stakingTokenLogoURI,
   warning,
+  calculateDynamicApr,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -122,7 +127,7 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
     : userDataStakingTokenBalance.lt(fullDecimalStakeAmount);
 
   // 验证输入参数，确保它们是有效数字
-  const validApr = typeof apr === 'number' && Number.isFinite(apr) && apr >= 0 ? apr : 0;
+  const baseApr = typeof apr === 'number' && Number.isFinite(apr) && apr >= 0 ? apr : 0;
   const validEarningTokenPrice = typeof earningTokenPrice === 'number' && Number.isFinite(earningTokenPrice) && earningTokenPrice > 0 ? earningTokenPrice : 1;
   const validStakingTokenPrice = typeof stakingTokenPrice === 'number' && Number.isFinite(stakingTokenPrice) && stakingTokenPrice >= 0 ? stakingTokenPrice : 0;
 
@@ -131,6 +136,16 @@ export const StakeModal: React.FC<React.PropsWithChildren<StakeModalProps>> = ({
   const usdValueStaked = new BigNumber(stakeAmountNum).times(validStakingTokenPrice);
   const formattedUsdValueStaked = !usdValueStaked.isNaN() && usdValueStaked.isFinite() ? formatNumber(usdValueStaked.toNumber()) : '0';
   const validPrincipalInUSD = !usdValueStaked.isNaN() && usdValueStaked.isFinite() && usdValueStaked.gte(0) ? usdValueStaked.toNumber() : 0;
+
+  // 使用动态计算的 APR（如果提供了回调函数），否则使用基础 APR
+  // 这允许在用户输入质押数量时计算"预期 APR"（基于用户质押后的 totalStaked）
+  let validApr = baseApr;
+  if (calculateDynamicApr && stakeAmountNum > 0) {
+    const dynamicApr = calculateDynamicApr(stakeAmount);
+    if (typeof dynamicApr === 'number' && Number.isFinite(dynamicApr) && dynamicApr >= 0) {
+      validApr = dynamicApr;
+    }
+  }
 
   // 计算 ROI：如果 stakeAmount 为空或为 0，直接返回 0
   let interestBreakdown: number[] = [0, 0, 0, 0, 0]

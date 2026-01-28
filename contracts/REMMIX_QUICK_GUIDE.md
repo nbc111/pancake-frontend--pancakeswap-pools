@@ -64,7 +64,7 @@
 
 **BTC 池示例：**
 ```
-rewardToken: 0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac
+rewardToken: 0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C
 rewardRate: 39400000 (需要根据实际计算，见下方)
 rewardsDuration: 31536000 (365 * 24 * 60 * 60，一年)
 ```
@@ -132,7 +132,7 @@ console.log('每秒奖励率:', rewardRate.toString(), 'wei')
 ### 7.1 批准代币
 
 1. 在 Remix 中，点击 **"At Address"** 输入框
-2. 输入奖励代币地址（例如 BTC: `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac`）
+2. 输入奖励代币地址（例如 BTC: `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C`）
 3. 点击 **"At Address"** 按钮
 4. 找到 **`approve`** 函数
 5. 填写参数：
@@ -165,7 +165,7 @@ console.log('每秒奖励率:', rewardRate.toString(), 'wei')
 
 | 代币 | 代币地址 | 精度 | 每秒奖励率示例 (wei) |
 |------|---------|------|---------------------|
-| BTC | `0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac` | 8 | 39400000 |
+| BTC | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` | 8 | 39400000 |
 | ETH | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` | 18 | 8700000000000000 |
 | SOL | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` | 18 | 363000000000000 |
 | BNB | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` | 18 | 2470000000000000 |

@@ -64,7 +64,7 @@ const TOKEN_DECIMALS = {
 // ============ 代币地址配置 ============
 // 按照正确的池索引顺序排列
 const TOKEN_ADDRESSES = {
-  BTC: '0x5EaA2c6ae3bFf47D2188B64F743Ec777733a80ac',
+  BTC: '0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C',
   ETH: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
   SOL: '0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81',
   BNB: '0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c',
@@ -143,7 +143,7 @@ console.log('='.repeat(80))
 console.log('')
 
 // 质押合约地址（假设）
-const STAKING_CONTRACT = '0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789'
+const STAKING_CONTRACT = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1'
 
 // 计算所有代币的配置（按照正确的池索引顺序）
 const results = []
