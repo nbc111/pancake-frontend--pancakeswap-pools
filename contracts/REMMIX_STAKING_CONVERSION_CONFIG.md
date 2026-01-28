@@ -160,7 +160,7 @@ console.log('USDT rewardRate:', calculateRewardRate('USDT').toString());
 | 代币 | 地址 | 池索引 (sousId) |
 |------|------|----------------|
 | BTC  | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` | 1 |
-| ETH  | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` | 2 |
+| ETH  | `0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908` | 2 |
 | SOL  | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` | 3 |
 | BNB  | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` | 4 |
 | XRP  | `0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093` | 5 |

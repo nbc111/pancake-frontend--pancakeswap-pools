@@ -8,7 +8,7 @@
 |---------|---------|---------|------|------|
 | NBC | `NBCToken.sol` | `0xfE473265296e058fd1999cFf7E4536F51f5a1Fe6` | 18 | NBC Chain 原生代币 |
 | BTC | `BTCToken.sol` | `0xb225C29Da2CaB86991b7e0651c63f0fD5C16613C` | 8 | 比特币代币（8 位精度，匹配 Bitcoin 原生精度） |
-| ETH | `ETHToken.sol` | `0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3` | 18 | 以太坊代币 |
+| ETH | `ETHToken.sol` | `0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908` | 18 | 以太坊代币 |
 | SOL | `SOLToken.sol` | `0xd5eECCC885Ef850d90AE40E716c3dFCe5C3D4c81` | 18 | Solana 代币 |
 | BNB | `BNBToken.sol` | `0x9C43237490272BfdD2F1d1ca0B34f20b1A3C9f5c` | 18 | 币安币代币 |
 | XRP | `XRPToken.sol` | `0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093` | 18 | Ripple 代币 |

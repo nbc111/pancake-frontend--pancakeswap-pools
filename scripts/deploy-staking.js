@@ -19,8 +19,8 @@ const TOKEN_CONFIGS = {
     rewardsDuration: 7 * 24 * 60 * 60, // 7天（秒）
   },
   ETH: {
-    tokenAddress: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
-    rewardTokenAddress: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3', // 奖励代币（通常与质押代币相同）
+    tokenAddress: '0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908',
+    rewardTokenAddress: '0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908', // 奖励代币（通常与质押代币相同）
     rewardsDuration: 7 * 24 * 60 * 60, // 7天（秒）
   },
 };

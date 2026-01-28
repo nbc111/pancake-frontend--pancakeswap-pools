@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title ETHToken
  * @notice Ether Token - Wrapped Ether on NBC Chain
  * @dev ERC20 token with 18 decimals
- * @notice 已部署实例地址（仅供参考）: 0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3
+ * @notice 已部署实例地址（仅供参考）: 0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908
  * @notice 此合约可用于部署新的 ETH 代币实例，每次部署会生成新的合约地址
  */
 contract ETHToken is ERC20, Ownable {

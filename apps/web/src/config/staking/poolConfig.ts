@@ -27,7 +27,7 @@ export const STAKING_POOL_CONFIGS: PoolConfig[] = [
   },
   {
     sousId: 2,
-    rewardTokenAddress: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3' as `0x${string}`,
+    rewardTokenAddress: '0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908' as `0x${string}`,
     rewardTokenSymbol: 'ETH',
     rewardTokenName: 'Ether',
     rewardTokenDecimals: 18,

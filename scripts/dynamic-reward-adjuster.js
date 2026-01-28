@@ -54,7 +54,7 @@ const TOKEN_CONFIG = {
   },
   ETH: {
     poolIndex: 2,
-    address: '0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3',
+    address: '0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908',
     decimals: 18,
     coingeckoId: 'ethereum',
     nbcexSymbol: 'ethusdt',

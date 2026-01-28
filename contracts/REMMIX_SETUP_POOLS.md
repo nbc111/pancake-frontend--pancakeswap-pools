@@ -65,14 +65,14 @@
 ```
 函数：addPool
 参数：
-  - rewardToken: 0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3
+  - rewardToken: 0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908
   - rewardRate: 1155015370574946651371377710902
   - rewardsDuration: 31536000
 ```
 
 #### 步骤 2：批准代币（approve）
 
-在 ETH 代币合约（地址：`0x934EbeB6D7D3821B604A5D10F80619d5bcBe49C3`）中：
+在 ETH 代币合约（地址：`0x1Feba2E24a6b7F1D07F55Aa7ba59a4a4bAF9f908`）中：
 
 ```
 函数：approve
