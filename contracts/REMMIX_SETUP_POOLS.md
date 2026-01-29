@@ -269,14 +269,14 @@
 ```
 函数：addPool
 参数：
-  - rewardToken: 0xfd1508502696d0E1910eD850c6236d965cc4db11
+  - rewardToken: 0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85
   - rewardRate: 3488425960810185475501
   - rewardsDuration: 31536000
 ```
 
 #### 步骤 2：批准代币（approve）
 
-在 USDT 代币合约（地址：`0xfd1508502696d0E1910eD850c6236d965cc4db11`）中：
+在 USDT 代币合约（地址：`0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85`）中：
 
 ```
 函数：approve

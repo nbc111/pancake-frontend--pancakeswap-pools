@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title USDTToken
  * @notice Tether USD Token - Stablecoin on NBC Chain
  * @dev ERC20 token with 6 decimals (matching USDT's native precision)
- * @notice 已部署实例地址（仅供参考）: 0xfd1508502696d0E1910eD850c6236d965cc4db11
+ * @notice 已部署实例地址（仅供参考）: 0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85
  * @notice 此合约可用于部署新的 USDT 代币实例，每次部署会生成新的合约地址
  */
 contract USDTToken is ERC20, Ownable {

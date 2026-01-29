@@ -8,15 +8,9 @@ const CONFIG = {
 }
 
 const TOKEN_CONFIG = {
-  BTC: { poolIndex: 1, decimals: 8, symbol: 'BTC' },
-  ETH: { poolIndex: 2, decimals: 18, symbol: 'ETH' },
-  SOL: { poolIndex: 3, decimals: 18, symbol: 'SOL' },
-  BNB: { poolIndex: 4, decimals: 18, symbol: 'BNB' },
-  XRP: { poolIndex: 5, decimals: 18, symbol: 'XRP' },
-  LTC: { poolIndex: 6, decimals: 18, symbol: 'LTC' },
-  DOGE: { poolIndex: 7, decimals: 18, symbol: 'DOGE' },
-  USDT: { poolIndex: 9, decimals: 6, symbol: 'USDT' },
-  SUI: { poolIndex: 10, decimals: 18, symbol: 'SUI' },
+  BTC: { poolIndex: 0, decimals: 8, symbol: 'BTC' },
+  ETH: { poolIndex: 1, decimals: 18, symbol: 'ETH' },
+  USDT: { poolIndex: 2, decimals: 6, symbol: 'USDT' },
 }
 
 const STAKING_ABI = [

@@ -49,7 +49,7 @@
 | 5 | XRP | `0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093` |
 | 6 | LTC | `0x8d22041C22d696fdfF0703852a706a40Ff65a7de` |
 | 7 | DOGE | `0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89` |
-| 9 | USDT | `0xfd1508502696d0E1910eD850c6236d965cc4db11` |
+| 9 | USDT | `0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85` |
 | 10 | SUI | `0x9011191E84Ad832100Ddc891E360f8402457F55E` |
 
 ## ✅ 操作流程
@@ -94,7 +94,7 @@ const POOLS = [
   { index: 5, token: 'XRP', address: '0x48e1772534fabBdcaDe9ca4005E5Ee8BF4190093' },
   { index: 6, token: 'LTC', address: '0x8d22041C22d696fdfF0703852a706a40Ff65a7de' },
   { index: 7, token: 'DOGE', address: '0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89' },
-  { index: 9, token: 'USDT', address: '0xfd1508502696d0E1910eD850c6236d965cc4db11' },
+  { index: 9, token: 'USDT', address: '0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85' },
   { index: 10, token: 'SUI', address: '0x9011191E84Ad832100Ddc891E360f8402457F55E' },
 ];
 

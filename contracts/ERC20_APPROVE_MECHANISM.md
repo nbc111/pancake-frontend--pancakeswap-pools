@@ -92,7 +92,7 @@ approve(质押合约地址, 数量)
 
 ```
 1. 加载 USDT 代币合约
-   地址：0xfd1508502696d0E1910eD850c6236d965cc4db11
+   地址：0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85
 
 2. 调用 approve
    spender: 0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789

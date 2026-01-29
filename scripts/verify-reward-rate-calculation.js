@@ -93,7 +93,7 @@ const TOKEN_CONFIG = {
   },
   USDT: {
     poolIndex: 9,
-    address: '0xfd1508502696d0E1910eD850c6236d965cc4db11',
+    address: '0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85',
     decimals: 6,
     nbcexSymbol: 'usdtusdt',
     gateioSymbol: 'USDT_USDT',

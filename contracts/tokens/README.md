@@ -15,7 +15,7 @@
 | LTC | `LTCToken.sol` | `0x8d22041C22d696fdfF0703852a706a40Ff65a7de` | 18 | 莱特币代币 |
 | DOGE | `DOGEToken.sol` | `0x8cEb9a93405CDdf3D76f72327F868Bd3E8755D89` | 18 | 狗狗币代币 |
 | PEPE | `PEPEToken.sol` | `0xd365877026A43107Efd9825bc3ABFe1d7A450F82` | 18 | Pepe 代币 |
-| USDT | `USDTToken.sol` | `0xfd1508502696d0E1910eD850c6236d965cc4db11` | 6 | Tether USD 稳定币（6 位精度，匹配 USDT 原生精度） |
+| USDT | `USDTToken.sol` | `0x4E4D07268eFFB4d3507a69F64b5780Eb16551f85` | 6 | Tether USD 稳定币（6 位精度，匹配 USDT 原生精度） |
 | SUI | `SUIToken.sol` | `0x9011191E84Ad832100Ddc891E360f8402457F55E` | 18 | Sui 代币 |
 
 ## 通用模板
