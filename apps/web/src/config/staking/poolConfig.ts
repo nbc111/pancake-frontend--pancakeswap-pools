@@ -41,6 +41,22 @@ export const STAKING_POOL_CONFIGS: PoolConfig[] = [
     rewardTokenDecimals: 6,
     rewardTokenLogoURI: '/images/custom-tokens/usdt.png',
   },
+  {
+    sousId: 3,
+    rewardTokenAddress: '0xb9e48217656d607D4D841E88701896FCdfE00190' as `0x${string}`,
+    rewardTokenSymbol: 'BNB',
+    rewardTokenName: 'Binance Coin',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/bnb.png',
+  },
+  {
+    sousId: 4,
+    rewardTokenAddress: '0xb88E464AA780886e96e2a926B4ba56E66dB24CC1' as `0x${string}`,
+    rewardTokenSymbol: 'LTC',
+    rewardTokenName: 'Litecoin',
+    rewardTokenDecimals: 18,
+    rewardTokenLogoURI: '/images/custom-tokens/ltc.png',
+  },
 ]
 
 /**

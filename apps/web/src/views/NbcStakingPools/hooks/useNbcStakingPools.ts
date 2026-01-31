@@ -190,8 +190,102 @@ export const useNbcStakingPools = () => {
     query: { enabled: !!account },
   })
 
+  // Pool 3 (BNB)
+  const { data: staked3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [3, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [3, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool3Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [3],
+    chainId: CHAIN_ID,
+  })
+  const { data: userStake3 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'userStakes',
+    args: [3, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+
+  // Pool 4 (LTC)
+  const { data: staked4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'balanceOf',
+    args: [4, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: earned4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'earned',
+    args: [4, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const { data: totalStaked4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'totalStaked',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+  const { data: poolInfo4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'getPoolInfo',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+  const { data: pool4Details } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'pools',
+    args: [4],
+    chainId: CHAIN_ID,
+  })
+  const { data: userStake4 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'userStakes',
+    args: [4, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+
   const pools = useMemo(() => {
-    // 将数据组织成数组（只有 3 个池：BTC, ETH, USDT）
+    // 将数据组织成数组（BTC, ETH, USDT, BNB, LTC）
     const poolDataQueries = [
       {
         staked: staked0,
@@ -216,6 +310,22 @@ export const useNbcStakingPools = () => {
         poolInfo: poolInfo2,
         poolDetails: pool2Details,
         userStake: userStake2,
+      },
+      {
+        staked: staked3,
+        earned: earned3,
+        totalStaked: totalStaked3,
+        poolInfo: poolInfo3,
+        poolDetails: pool3Details,
+        userStake: userStake3,
+      },
+      {
+        staked: staked4,
+        earned: earned4,
+        totalStaked: totalStaked4,
+        poolInfo: poolInfo4,
+        poolDetails: pool4Details,
+        userStake: userStake4,
       },
     ]
 
@@ -372,6 +482,8 @@ export const useNbcStakingPools = () => {
     staked0, earned0, totalStaked0, poolInfo0, pool0Details, userStake0,
     staked1, earned1, totalStaked1, poolInfo1, pool1Details, userStake1,
     staked2, earned2, totalStaked2, poolInfo2, pool2Details, userStake2,
+    staked3, earned3, totalStaked3, poolInfo3, pool3Details, userStake3,
+    staked4, earned4, totalStaked4, poolInfo4, pool4Details, userStake4,
     currentChainTimestamp,
   ])
 
