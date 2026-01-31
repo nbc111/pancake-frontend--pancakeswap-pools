@@ -96,10 +96,14 @@ export const WalletContent = ({
   evmAccount,
   solanaAccount,
   onDismiss,
+  onReceiveClick,
+  onDisconnect,
 }: {
   evmAccount: string | undefined
   solanaAccount: string | undefined
   onDismiss: () => void
+  onReceiveClick?: () => void
+  onDisconnect?: () => void
 }) => {
   const { view, setView } = useMenuTab()
   const { t } = useTranslation()
@@ -307,8 +311,6 @@ export const WalletContent = ({
                 <Box mb="16px" onClick={(e) => e.stopPropagation()}>
                   <TabsComponent
                     view={view}
-                    solanaAccount={solanaAccount}
-                    evmAccount={evmAccount}
                     handleClick={handleClick}
                     style={{ backgroundColor: 'transparent', padding: '0', borderBottom: 'none' }}
                   />

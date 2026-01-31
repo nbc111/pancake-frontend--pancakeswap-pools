@@ -8,7 +8,7 @@ const TeamPage = () => {
       justifyContent="center"
       minHeight="400px"
       p="24px"
-      textAlign="center"
+      style={{ textAlign: 'center' }}
     >
       <Text fontSize="24px" bold mb="8px">
         Team details are unavailable

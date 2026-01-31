@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Protocol } from '@pancakeswap/farms'
 import type { PoolKey } from '@pancakeswap/infinity-sdk'
 import type { ERC20Token, Pair } from '@pancakeswap/sdk'

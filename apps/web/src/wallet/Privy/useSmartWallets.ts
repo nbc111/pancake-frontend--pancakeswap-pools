@@ -6,8 +6,8 @@ import { isPrivyEnabled } from './config'
 type UseSmartWalletsReturn = ReturnType<typeof useSmartWalletsOriginal>
 
 const stubSmartWallets: UseSmartWalletsReturn = {
-  client: null,
-  getClientForChain: async () => null,
+  client: undefined,
+  getClientForChain: async () => undefined,
 }
 
 type UseSmartWalletsHook = () => UseSmartWalletsReturn

@@ -2,8 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Proposal, ProposalState } from 'state/types'
 import { gql } from 'graphql-request'
 import { SNAPSHOT_API } from 'config/constants/endpoints'
-import { ADMINS, PANCAKE_SPACE } from 'views/Voting/config'
 import { multiQuery } from 'utils/infoQueryHelpers'
+
+// Voting 功能已移除，使用占位常量
+const ADMINS: string[] = []
+const PANCAKE_SPACE = 'cake.eth'
 
 type Proposals = Partial<{
   [key in ProposalState]: Proposal[]

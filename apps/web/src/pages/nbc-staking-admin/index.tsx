@@ -33,8 +33,9 @@ const NbcStakingAdmin: React.FC = () => {
     functionName: 'owner',
     chainId: CHAIN_ID,
   })
+  const ownerStr = typeof ownerAddress === 'string' ? ownerAddress : undefined
 
-  const isOwner = account && ownerAddress && account.toLowerCase() === ownerAddress.toLowerCase()
+  const isOwner = account && ownerStr && account.toLowerCase() === ownerStr.toLowerCase()
 
   // 状态管理
   const [activeTab, setActiveTab] = useState<'pools' | 'add' | 'settings'>('pools')
@@ -258,7 +259,7 @@ const NbcStakingAdmin: React.FC = () => {
               {t('Access Denied: You are not the contract owner')}
             </MessageText>
             <MessageText>
-              {t('Owner Address: %address%', { address: ownerAddress || 'Unknown' })}
+              {t('Owner Address: %address%', { address: ownerStr ?? 'Unknown' })}
             </MessageText>
             <MessageText>
               {t('Your Address: %address%', { address: account })}
@@ -282,7 +283,7 @@ const NbcStakingAdmin: React.FC = () => {
           {t('Contract: %address%', { address: STAKING_CONTRACT_ADDRESS })}
         </Text>
         <Text color="textSubtle" fontSize="14px">
-          {t('Owner: %address%', { address: ownerAddress || 'Unknown' })}
+          {t('Owner: %address%', { address: ownerStr ?? 'Unknown' })}
         </Text>
         <Text color="textSubtle" fontSize="14px">
           {t('Total Pools: %count%', { count: poolLength?.toString() || '0' })}
@@ -290,7 +291,7 @@ const NbcStakingAdmin: React.FC = () => {
       </PageHeader>
 
       {/* 标签页 */}
-      <Flex mb="24px" gap="8px">
+      <Flex mb="24px" style={{ gap: '8px' }}>
         <Button
           variant={activeTab === 'pools' ? 'primary' : 'subtle'}
           onClick={() => setActiveTab('pools')}
@@ -1086,7 +1087,7 @@ const NbcStakingAdmin: React.FC = () => {
               {t('合约地址：%address%', { address: STAKING_CONTRACT_ADDRESS })}
             </Text>
             <Text fontSize="14px" color="textSubtle">
-              {t('Owner 地址：%address%', { address: ownerAddress || '未知' })}
+              {t('Owner 地址：%address%', { address: ownerStr ?? '未知' })}
             </Text>
             <Text fontSize="14px" color="textSubtle">
               {t('池总数：%count%', { count: poolLength?.toString() || '0' })}
@@ -1136,6 +1137,7 @@ const NbcStakingAdmin: React.FC = () => {
 }
 
 // 指定页面支持的链（NBC Chain）
-NbcStakingAdmin.chains = [1281]
+const NbcStakingAdminWithChains = NbcStakingAdmin as React.FC<Record<string, never>> & { chains?: number[] }
+NbcStakingAdminWithChains.chains = [1281]
 
-export default NbcStakingAdmin
+export default NbcStakingAdminWithChains

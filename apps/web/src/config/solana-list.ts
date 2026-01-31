@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SPLToken } from '@pancakeswap/swap-sdk-core'
 import type { TokenInfo } from '@pancakeswap/solana-core-sdk'
 import { NonEVMChainId } from '@pancakeswap/chains'

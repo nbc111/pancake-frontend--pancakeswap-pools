@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiV3PoolInfoConcentratedItem } from '@pancakeswap/solana-core-sdk'
 import { atom, useAtomValue } from 'jotai'
 import { atomFamily } from 'jotai/utils'

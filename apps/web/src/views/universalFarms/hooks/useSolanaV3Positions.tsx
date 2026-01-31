@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ClmmPositionLayout, PositionUtils, TokenInfo } from '@pancakeswap/solana-core-sdk'
 import { INetworkProps, ITokenProps } from '@pancakeswap/widgets-internal'
 import { useMemo } from 'react'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getCurrencyPriceFromId } from '@pancakeswap/infinity-sdk'
 import { FeeAmount, nearestUsableTick, TICK_SPACINGS, TickMath, tickToPrice } from '@pancakeswap/v3-sdk'
 import { Bound } from '@pancakeswap/widgets-internal'

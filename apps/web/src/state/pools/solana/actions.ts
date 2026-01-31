@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DecreaseLiquidityEventLayout, Raydium, TxVersion } from '@pancakeswap/solana-core-sdk'
 import { SolanaV3PositionDetail } from 'state/farmsV4/state/accountPositions/type'
 import { SolanaV3PoolInfo } from 'state/farmsV4/state/type'

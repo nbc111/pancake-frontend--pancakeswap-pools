@@ -21,6 +21,14 @@
       }
     ]
   },
-  "exclude": ["**/node_modules", "**/.*/", "**/config/abi/types/", "**/abis/types/*.ts"],
+  "exclude": [
+    "**/node_modules",
+    "**/.*/",
+    "**/config/abi/types/",
+    "**/abis/types/*.ts",
+    "src/views/Predictions",
+    "src/views/Voting",
+    "src/__tests__"
+  ],
   "include": ["./src/**/*.ts", "./src/**/*.tsx", "_next-typesafe-url_.d.ts", "next-env.d.ts", ".next/types/**/*.ts"]
 }

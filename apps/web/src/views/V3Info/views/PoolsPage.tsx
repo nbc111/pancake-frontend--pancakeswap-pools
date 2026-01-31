@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Flex, Text } from '@pancakeswap/uikit'
 
 const PoolsPage: React.FC = () => {

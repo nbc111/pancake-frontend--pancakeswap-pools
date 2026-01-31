@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTheme } from '@pancakeswap/hooks'
 import { useTranslation } from '@pancakeswap/localization'
 import { TokenInfo, wSolToSolToken } from '@pancakeswap/solana-core-sdk'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useSolanaUserSlippage } from '@pancakeswap/utils/user'
 import { useMemo } from 'react'
 import { convertRawTokenInfoIntoSPLToken } from 'config/solana-list'

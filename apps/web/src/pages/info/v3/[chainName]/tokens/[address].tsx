@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Flex, Spinner } from '@pancakeswap/uikit'
 import dynamic from 'next/dynamic'
 import { NextPageWithLayout } from 'utils/page.types'

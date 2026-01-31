@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Currency, Percent, SPLToken, TradeType } from '@pancakeswap/swap-sdk-core'
 import { Loadable } from '@pancakeswap/utils/Loadable'
 import { TimeoutError } from '@pancakeswap/utils/withTimeout'

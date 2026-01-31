@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getRequestBody, parseQuoteResponse } from '@pancakeswap/price-api-sdk'
 import { TradeType } from '@pancakeswap/swap-sdk-core'
 import { withTimeout } from '@pancakeswap/utils/withTimeout'

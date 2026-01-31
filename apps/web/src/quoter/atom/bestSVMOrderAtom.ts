@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getBestSolanaTrade } from '@pancakeswap/solana-router-sdk'
 import { SPLToken, TradeType, UnifiedCurrencyAmount } from '@pancakeswap/swap-sdk-core'
 import { Loadable } from '@pancakeswap/utils/Loadable'

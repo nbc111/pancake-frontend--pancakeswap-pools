@@ -1,15 +1,14 @@
-import { Suspense } from 'react'
-import { HomeV2 } from 'views/HomeV2'
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 
 const IndexPage = () => {
-  return (
-    <Suspense>
-      <HomeV2 />
-    </Suspense>
-  )
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/nbc-staking')
+  }, [router])
+  return null
 }
 
 IndexPage.chains = []
-IndexPage.isShowV4IconButton = true
 
 export default IndexPage

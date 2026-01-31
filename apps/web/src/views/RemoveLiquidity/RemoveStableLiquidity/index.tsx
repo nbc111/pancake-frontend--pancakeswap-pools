@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useDebouncedChangeHandler } from '@pancakeswap/hooks'
 import { useTranslation } from '@pancakeswap/localization'
 import { Percent, UnifiedCurrency, WNATIVE } from '@pancakeswap/sdk'

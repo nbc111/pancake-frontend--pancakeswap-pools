@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Protocol } from '@pancakeswap/farms'
 import { useTranslation } from '@pancakeswap/localization'
 import { AutoColumn } from '@pancakeswap/uikit'

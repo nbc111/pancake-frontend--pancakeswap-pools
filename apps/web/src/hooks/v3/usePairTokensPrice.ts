@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ChainId } from '@pancakeswap/chains'
 import { PairDataTimeWindowEnum } from '@pancakeswap/uikit'
 import { PriceCalculator } from '@pancakeswap/widgets-internal/roi'

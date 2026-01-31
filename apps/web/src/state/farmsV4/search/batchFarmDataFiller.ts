@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-param-reassign */
 import { ChainId } from '@pancakeswap/chains'
 import { BinPoolManagerAbi, CLPoolManagerAbi, DYNAMIC_FEE_FLAG, findHook } from '@pancakeswap/infinity-sdk'

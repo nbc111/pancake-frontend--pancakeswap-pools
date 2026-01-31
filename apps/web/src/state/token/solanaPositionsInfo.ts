@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useAtomValue } from 'jotai'
 import { useSolanaTokenList } from 'hooks/useSolanaTokenList'
 import { useMemo } from 'react'

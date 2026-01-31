@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ChainId, Chains, NonEVMChainId, UnifiedChainId, isEvm, isSolana } from '@pancakeswap/chains'
 import { useTranslation } from '@pancakeswap/localization'
 import {

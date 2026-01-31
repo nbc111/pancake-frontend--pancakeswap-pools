@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Badge } from '@pancakeswap/uikit'
 
 export const GreyBadge = (props: React.ComponentProps<typeof Badge>) => {

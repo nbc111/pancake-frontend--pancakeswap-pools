@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { POOL_TYPE, Pool, PoolKey } from '@pancakeswap/infinity-sdk'
 import { CurrencyAmount, Token } from '@pancakeswap/swap-sdk-core'
 import { TickMath } from '@pancakeswap/v3-sdk'

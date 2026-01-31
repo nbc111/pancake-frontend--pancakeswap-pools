@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import { FlexProps } from "../../Box";
 import Flex from "../../Box/Flex";

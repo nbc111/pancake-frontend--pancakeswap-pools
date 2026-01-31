@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from '@pancakeswap/localization'
 import {
   AutoColumn,

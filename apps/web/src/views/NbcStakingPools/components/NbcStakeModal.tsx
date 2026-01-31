@@ -58,8 +58,8 @@ const NbcStakeModal: React.FC<NbcStakeModalProps> = ({ pool, stakingTokenBalance
       // 计算质押后的新 totalStaked
       const newTotalStaked = currentTotalStakedBigInt + stakeAmountWei
       
-      // 获取 rewardRate
-      const rewardRateStr = pool.tokenPerBlock?.toString() || '0'
+      // 获取 rewardRate（NBC 池使用 Legacy 形态，含 tokenPerBlock）
+      const rewardRateStr = (pool as { tokenPerBlock?: string }).tokenPerBlock?.toString() || '0'
       const rewardRate = BigInt(rewardRateStr)
       
       // 如果 rewardRate 为 0，返回当前 APR
@@ -96,7 +96,7 @@ const NbcStakeModal: React.FC<NbcStakeModalProps> = ({ pool, stakingTokenBalance
         if (poolConfig && pool.apr && pool.apr > TARGET_APR) {
           const totalStaked = pool.totalStaked?.toString() || '0'
           const totalStakedBigInt = BigInt(totalStaked)
-          const rewardRateStr = pool.tokenPerBlock?.toString() || '0'
+          const rewardRateStr = (pool as { tokenPerBlock?: string }).tokenPerBlock?.toString() || '0'
           const rewardRate = BigInt(rewardRateStr)
           const nbcPrice = pool.stakingTokenPrice || 1
           const tokenPrice = pool.earningTokenPrice || 1

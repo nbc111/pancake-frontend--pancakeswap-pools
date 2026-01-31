@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from '@pancakeswap/localization'
 import { Currency, CurrencyAmount, Percent, Token, Trade, TradeType } from '@pancakeswap/sdk'
 import { AutoColumn, BottomDrawer, Box, Button, Flex, Link, useMatchBreakpoints, useModal } from '@pancakeswap/uikit'

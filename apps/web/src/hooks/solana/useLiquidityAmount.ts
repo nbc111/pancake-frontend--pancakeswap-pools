@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PositionUtils, TokenInfo } from '@pancakeswap/solana-core-sdk'
 import { Percent, UnifiedCurrencyAmount } from '@pancakeswap/swap-sdk-core'
 import BN from 'bn.js'

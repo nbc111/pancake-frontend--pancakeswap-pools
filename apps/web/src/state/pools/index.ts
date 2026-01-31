@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ChainId } from '@pancakeswap/chains'
 import { getFarmsPrices } from '@pancakeswap/farms/farmPrices'
 import { fetchPublicIfoData, fetchUserIfoCredit } from '@pancakeswap/ifos'

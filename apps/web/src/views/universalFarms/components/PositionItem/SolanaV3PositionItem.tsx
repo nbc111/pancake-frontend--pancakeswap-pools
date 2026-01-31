@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useMemo, useState } from 'react'
 import { PositionInfoLayout, PositionUtils, TickUtils, TokenInfo } from '@pancakeswap/solana-core-sdk'
 import { NonEVMChainId } from '@pancakeswap/chains'

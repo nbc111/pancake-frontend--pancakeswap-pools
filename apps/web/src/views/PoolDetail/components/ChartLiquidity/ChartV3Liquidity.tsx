@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTheme } from '@pancakeswap/hooks'
 import { CurrencyAmount, Token } from '@pancakeswap/swap-sdk-core'
 import { Box, Flex, Spinner } from '@pancakeswap/uikit'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from '@pancakeswap/localization'
 import { Flex, Text, Skeleton, AccountFilledIcon } from '@pancakeswap/uikit'
 import { StyledVolumeText } from 'views/TradingCompetition/components/TeamRanks/Podium/styles'

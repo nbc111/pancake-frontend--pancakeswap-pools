@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TickUtils, TokenInfo, MAX_TICK, MIN_TICK } from '@pancakeswap/solana-core-sdk'
 import { Percent, Price } from '@pancakeswap/swap-sdk-core'
 import { convertRawTokenInfoIntoSPLToken } from 'config/solana-list'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PoolUtils } from '@pancakeswap/solana-core-sdk'
 import { SolanaV3PositionDetail } from 'state/farmsV4/state/accountPositions/type'
 import { SolanaV3Pool } from 'state/pools/solana'

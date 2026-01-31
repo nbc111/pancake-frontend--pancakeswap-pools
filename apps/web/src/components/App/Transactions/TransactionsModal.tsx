@@ -10,12 +10,13 @@ import useAccountActiveChain from 'hooks/useAccountActiveChain'
 import ConnectWalletButton from '../../ConnectWalletButton'
 import { AutoRow } from '../../Layout/Row'
 import Transaction from './Transaction'
+import type { TransactionDetails } from 'state/transactions/reducer'
 
 type AmmTransactionItem = {
   chainId: number
   addedTime: number
   hash: string
-  item: ReturnType<typeof useAMMSortedRecentTransactions>[number]
+  item: TransactionDetails
 }
 
 export function RecentTransactions() {

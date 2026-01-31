@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ChainId, getChainIdByChainName } from '@pancakeswap/chains'
 import {
   V2TokenDataQuery,

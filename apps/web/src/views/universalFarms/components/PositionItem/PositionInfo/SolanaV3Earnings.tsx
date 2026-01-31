@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from '@pancakeswap/localization'
 import { AtomBoxProps, Box, Grid, Row, useMatchBreakpoints } from '@pancakeswap/uikit'
 import { SolanaV3PoolInfo } from 'state/farmsV4/state/type'

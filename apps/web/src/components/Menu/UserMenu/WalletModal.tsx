@@ -49,6 +49,7 @@ export const TabsComponent: React.FC<React.PropsWithChildren<TabsComponentProps>
     <Tabs style={style}>
       <ButtonMenu scale="sm" variant="text" onItemClick={handleClick} activeIndex={view}>
         <StyledButtonMenuItem variant="secondary">{t('Assets')}</StyledButtonMenuItem>
+        <StyledButtonMenuItem variant="secondary">{t('Gifts')}</StyledButtonMenuItem>
       </ButtonMenu>
     </Tabs>
   )

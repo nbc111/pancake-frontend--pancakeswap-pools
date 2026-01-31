@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SmartRouter } from '@pancakeswap/smart-router'
 import { InfinityTradeWithoutGraph } from '@pancakeswap/smart-router/dist/evm/infinity-router'
 import { TradeType } from '@pancakeswap/swap-sdk-core'

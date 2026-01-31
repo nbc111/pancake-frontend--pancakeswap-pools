@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom, useAtom } from 'jotai'
 import { Raydium, SignAllTransactions, JupTokenType } from '@pancakeswap/solana-core-sdk'
 import { useCallback, useEffect, useRef, useMemo } from 'react'

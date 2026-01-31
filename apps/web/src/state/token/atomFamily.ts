@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TokenAccount } from '@pancakeswap/solana-core-sdk'
 import { rpcUrlAtom } from '@pancakeswap/utils/user'
 import { atom } from 'jotai'

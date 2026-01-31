@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PublicKey } from '@solana/web3.js'

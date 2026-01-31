@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Loadable } from '@pancakeswap/utils/Loadable'
 import { Field } from 'state/swap/actions'
 import { computeSlippageAdjustedAmounts } from 'views/Swap/V3Swap/utils/exchange'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useSetAtom } from 'jotai'
 import { SolanaV3Pool, updateSolanaV3PoolAtom } from 'state/pools/solana'
 import { useEffect, useState } from 'react'

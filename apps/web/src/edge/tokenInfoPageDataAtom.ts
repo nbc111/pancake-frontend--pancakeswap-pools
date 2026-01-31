@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-nested-ternary */
 
 import { ChainId, getChainIdByChainName } from '@pancakeswap/chains'

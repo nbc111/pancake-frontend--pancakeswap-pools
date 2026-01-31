@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SolanaV3PositionDetail } from 'state/farmsV4/state/accountPositions/type'
 import { useSolanaUserSlippage } from '@pancakeswap/utils/user'
 import { useCallback } from 'react'

@@ -22,7 +22,7 @@ const mockPrivy: PrivyHookReturn = {
   refreshUser: async () => {},
   getAccessToken: async () => undefined,
   getUser: async () => null,
-} as PrivyHookReturn
+} as unknown as PrivyHookReturn
 
 type UsePrivyHook = () => PrivyHookReturn
 

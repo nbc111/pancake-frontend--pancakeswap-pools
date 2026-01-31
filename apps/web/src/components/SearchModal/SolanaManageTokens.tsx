@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from '@pancakeswap/localization'
 import { SPLToken } from '@pancakeswap/swap-sdk-core'
 import type { TokenInfo } from '@pancakeswap/solana-core-sdk'

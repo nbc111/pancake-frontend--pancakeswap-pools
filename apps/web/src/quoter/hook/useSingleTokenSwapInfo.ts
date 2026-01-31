@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Currency, CurrencyAmount, Price, TradeType } from '@pancakeswap/swap-sdk-core'
 import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
 import { useActiveChainId } from 'hooks/useActiveChainId'

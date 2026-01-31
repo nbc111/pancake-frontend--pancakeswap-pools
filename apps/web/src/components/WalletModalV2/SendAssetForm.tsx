@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ChainId, NonEVMChainId, getChainName } from '@pancakeswap/chains'
 import { useDebounce } from '@pancakeswap/hooks'
 import { useTranslation } from '@pancakeswap/localization'

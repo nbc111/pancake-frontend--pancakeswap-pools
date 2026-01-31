@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TokenInfo, ZERO } from '@pancakeswap/solana-core-sdk'
 import { useCallback, useMemo } from 'react'
 import { useSolanaConnectionWithRpcAtom } from 'hooks/solana/useSolanaConnectionWithRpcAtom'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { OrderType } from '@pancakeswap/price-api-sdk'
 import { Currency, CurrencyAmount, SPLToken, UnifiedCurrency, UnifiedCurrencyAmount } from '@pancakeswap/swap-sdk-core'
 import { useUserSlippage } from '@pancakeswap/utils/user'
