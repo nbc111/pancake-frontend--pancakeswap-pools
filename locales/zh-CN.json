@@ -892,7 +892,7 @@
   "“My Balance” here includes both %assetSymbol% in your wallet, and %assetSymbol% already staked in this pool.": "此处的“我的余额”包括您钱包中的 %assetSymbol% 以及已质押在此池子中的 %assetSymbol%。",
   "APY (%compoundTimes%x daily compound)": "年化收益率（每天复利 %compoundTimes%x 次）",
   "My Balance": "我的余额",
-  "Staked for": "质押时长",
+  "Staked for": "已质押时长",
   "Compounding every": "复利周期",
   "1D": "1 天",
   "7D": "7 天",

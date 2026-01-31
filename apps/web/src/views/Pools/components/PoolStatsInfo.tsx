@@ -8,7 +8,7 @@ import getTimePeriods from '@pancakeswap/utils/getTimePeriods'
 import AddToWalletButton, { AddToWalletTextOptions } from 'components/AddToWallet/AddToWalletButton'
 import { useActiveChainId } from 'hooks/useActiveChainId'
 import { memo, useMemo } from 'react'
-import { useCurrentBlock } from 'state/block/hooks'
+import { useCurrentBlock, useCurrentBlockTimestamp } from 'state/block/hooks'
 import { getBlockExploreLink } from 'utils'
 import { getPoolBlockInfo } from 'views/Pools/helpers'
 import MaxStakeRow from './MaxStakeRow'
@@ -29,6 +29,7 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
 }) => {
   const { t } = useTranslation()
   const currentBlock = useCurrentBlock()
+  const chainTimestamp = useCurrentBlockTimestamp()
   const { chainId } = useActiveChainId()
 
   const {
@@ -61,18 +62,22 @@ const PoolStatsInfo: React.FC<React.PropsWithChildren<ExpandedFooterProps>> = ({
 
   // 计算当前已质押时长（仅在连接钱包且用户已质押时显示）
   const hasStaked = account && stakedBalance && stakedBalance.gt(0)
+  const stakedAt = poolUserData && 'stakedAt' in poolUserData ? (poolUserData as { stakedAt?: number }).stakedAt : undefined
   const stakingDuration = useMemo(() => {
     if (!hasStaked) return null
 
-    // 使用池的开始时间作为估算（如果池没有开始时间，使用当前时间作为下限）
-    const currentTimestamp = Math.floor(Date.now() / 1000)
-    const startTime = startTimestamp && startTimestamp > 0 ? startTimestamp : currentTimestamp
+    // 使用链上当前时间与 stakedAt（链上时间戳）一致，避免本地时钟与链时间偏差导致显示错误（如刚质押却显示 22 小时）
+    const currentTimestamp =
+      chainTimestamp != null ? Number(chainTimestamp) : Math.floor(Date.now() / 1000)
+    // 优先使用合约返回的用户首次质押时间；否则用池的开始时间估算
+    const startTime =
+      stakedAt != null && stakedAt > 0 ? stakedAt : startTimestamp && startTimestamp > 0 ? startTimestamp : currentTimestamp
     const durationSeconds = currentTimestamp - startTime
 
     if (durationSeconds <= 0) return null
 
     return getTimePeriods(durationSeconds)
-  }, [hasStaked, startTimestamp])
+  }, [hasStaked, stakedAt, startTimestamp, chainTimestamp])
 
   return (
     <>

@@ -127,6 +127,8 @@ interface PoolInfo extends CorePoolProps {
     stakingTokenBalance: BigNumber
     stakedBalance: BigNumber
     pendingReward: BigNumber
+    /** 用户在该池中的首次质押时间戳（秒），用于显示已质押时长 */
+    stakedAt?: number
   }
 }
 

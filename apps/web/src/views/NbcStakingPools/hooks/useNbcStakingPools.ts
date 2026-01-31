@@ -87,6 +87,14 @@ export const useNbcStakingPools = () => {
     args: [0],
     chainId: CHAIN_ID,
   })
+  const { data: userStake0 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'userStakes',
+    args: [0, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
 
   // Pool 1 (ETH)
   const { data: staked1 } = useReadContract({
@@ -125,6 +133,14 @@ export const useNbcStakingPools = () => {
     functionName: 'pools',
     args: [1],
     chainId: CHAIN_ID,
+  })
+  const { data: userStake1 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'userStakes',
+    args: [1, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
   })
 
   // Pool 2 (USDT)
@@ -165,19 +181,56 @@ export const useNbcStakingPools = () => {
     args: [2],
     chainId: CHAIN_ID,
   })
+  const { data: userStake2 } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'userStakes',
+    args: [2, acct],
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
 
   const pools = useMemo(() => {
     // 将数据组织成数组（只有 3 个池：BTC, ETH, USDT）
     const poolDataQueries = [
-      { staked: staked0, earned: earned0, totalStaked: totalStaked0, poolInfo: poolInfo0, poolDetails: pool0Details },
-      { staked: staked1, earned: earned1, totalStaked: totalStaked1, poolInfo: poolInfo1, poolDetails: pool1Details },
-      { staked: staked2, earned: earned2, totalStaked: totalStaked2, poolInfo: poolInfo2, poolDetails: pool2Details },
+      {
+        staked: staked0,
+        earned: earned0,
+        totalStaked: totalStaked0,
+        poolInfo: poolInfo0,
+        poolDetails: pool0Details,
+        userStake: userStake0,
+      },
+      {
+        staked: staked1,
+        earned: earned1,
+        totalStaked: totalStaked1,
+        poolInfo: poolInfo1,
+        poolDetails: pool1Details,
+        userStake: userStake1,
+      },
+      {
+        staked: staked2,
+        earned: earned2,
+        totalStaked: totalStaked2,
+        poolInfo: poolInfo2,
+        poolDetails: pool2Details,
+        userStake: userStake2,
+      },
     ]
 
     const stakingLogoURI = '/images/custom-tokens/nbc.png'
 
     const result = POOL_CONFIGS.map((config, index) => {
-      const { staked, earned, totalStaked, poolInfo, poolDetails } = poolDataQueries[index]
+      const { staked, earned, totalStaked, poolInfo, poolDetails, userStake } = poolDataQueries[index]
+      // userStakes 合约返回 (amount, rewardPerTokenPaid, rewards, stakedAt)，取 stakedAt 用于已质押时长
+      const stakedAtRaw =
+        userStake != null
+          ? Array.isArray(userStake)
+            ? (userStake as [bigint, bigint, bigint, bigint])[3]
+            : (userStake as { stakedAt?: bigint })?.stakedAt
+          : undefined
+      const stakedAtSeconds = stakedAtRaw != null && stakedAtRaw !== 0n ? Number(stakedAtRaw) : undefined
       
       // 从 poolDetails 中提取 rewardsDuration
       let rewardsDuration: bigint | undefined = undefined
@@ -302,6 +355,7 @@ export const useNbcStakingPools = () => {
                 : new BigNumber(0),
               stakedBalance: staked ? new BigNumber(staked.toString()) : new BigNumber(0),
               pendingReward: earned ? new BigNumber(earned.toString()) : new BigNumber(0),
+              stakedAt: stakedAtSeconds,
             }
           : undefined,
       }
@@ -315,9 +369,9 @@ export const useNbcStakingPools = () => {
     nativeBalance,
     tokenPrices,
     nbcPrice,
-    staked0, earned0, totalStaked0, poolInfo0, pool0Details,
-    staked1, earned1, totalStaked1, poolInfo1, pool1Details,
-    staked2, earned2, totalStaked2, poolInfo2, pool2Details,
+    staked0, earned0, totalStaked0, poolInfo0, pool0Details, userStake0,
+    staked1, earned1, totalStaked1, poolInfo1, pool1Details, userStake1,
+    staked2, earned2, totalStaked2, poolInfo2, pool2Details, userStake2,
     currentChainTimestamp,
   ])
 
