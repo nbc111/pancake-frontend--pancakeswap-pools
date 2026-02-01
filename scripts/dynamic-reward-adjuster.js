@@ -137,6 +137,7 @@ const TOKEN_CONFIG = {
 // 合约 ABI
 const STAKING_ABI = [
   'function notifyRewardAmount(uint256 poolIndex, uint256 reward) external',
+  'function setRewardRate(uint256 poolIndex, uint256 newRewardRate) external',
   'function getPoolInfo(uint256 poolIndex) external view returns (address rewardToken, uint256 totalStakedAmount, uint256 rewardRate, uint256 periodFinish, bool active)',
   'function emergencyWithdrawReward(uint256 poolIndex, uint256 amount) external',
 ]
@@ -619,118 +620,44 @@ async function updatePoolReward(symbol, config, tokenPriceUSD, nbcPriceUSD) {
     console.log(`   📈 Change: ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%`)
     console.log(`   💎 Annual Reward: ${annualRewardBN.toString()} wei`)
 
-    // 4. 连接区块链
+    // 4. 判断当前奖励期是否仍在进行中：若未结束则只调用 setRewardRate，不重置周期
     const provider = new ethers.providers.JsonRpcProvider(CONFIG.RPC_URL)
-    const wallet = new ethers.Wallet(CONFIG.PRIVATE_KEY, provider)
-    const stakingContract = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, wallet)
+    const readContract = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider)
+    const poolInfo = await readContract.getPoolInfo(config.poolIndex)
+    const periodFinish = ethers.BigNumber.from(poolInfo.periodFinish.toString())
+    const block = await provider.getBlock('latest')
+    const now = ethers.BigNumber.from(block.timestamp)
+    const periodStillActive = now.lt(periodFinish)
 
-    // 5. 检查奖励代币余额
-    const rewardTokenABI = ['function balanceOf(address) external view returns (uint256)']
-    const rewardToken = new ethers.Contract(config.address, rewardTokenABI, provider)
-
-    // 检查合约地址的余额（因为代币已经转到合约地址了）
-    const contractBalance = await rewardToken.balanceOf(CONFIG.STAKING_CONTRACT_ADDRESS)
-    // 检查 owner 地址的余额（用于 transferFrom）
-    const ownerBalance = await rewardToken.balanceOf(wallet.address)
-
-    // 计算总可用余额（合约 + owner）
-    const totalAvailableBalance = contractBalance.add(ownerBalance)
-
-    // 如果总可用余额不足，直接失败
-    if (totalAvailableBalance.lt(annualRewardBN)) {
-      console.error(`   ❌ Insufficient total reward token balance!`)
-      console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
-      console.error(`   Owner balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
-      console.error(`   Total available: ${formatUnits(totalAvailableBalance, config.decimals)} ${symbol}`)
-      console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
-      return { success: false, error: 'Insufficient total balance', symbol }
-    }
-
-    // 如果合约地址有足够的余额，但 owner 地址余额不足，自动提取
-    if (contractBalance.gt(0) && ownerBalance.lt(annualRewardBN)) {
-      console.log(`   ✅ Contract has sufficient balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
-      console.warn(
-        `   ⚠️  Warning: Owner balance (${formatUnits(
-          ownerBalance,
-          config.decimals,
-        )} ${symbol}) is less than required.`,
-      )
-      console.log(`   🔄 Auto-extracting tokens from contract to owner address...`)
-
-      try {
-        // 计算需要提取的数量：确保提取后 owner 余额 >= annualRewardBN
-        // 如果 owner 当前余额 + 合约可提取余额 < annualRewardBN，则提取全部合约余额
-        // 否则提取 (annualRewardBN - ownerBalance) 的数量
-        const ownerBalanceShortfall = annualRewardBN.sub(ownerBalance)
-        const amountToWithdraw = ownerBalanceShortfall.gt(contractBalance)
-          ? contractBalance // 如果缺口大于合约余额，提取全部
-          : ownerBalanceShortfall.gt(0)
-          ? ownerBalanceShortfall // 如果缺口小于等于合约余额，提取缺口数量
-          : ethers.BigNumber.from(0) // 如果不需要提取（理论上不应该到这里）
-
-        if (amountToWithdraw.lte(0)) {
-          console.warn(`   ⚠️  No need to extract (owner balance already sufficient)`)
-        } else {
-          console.log(
-            `   💡 Extracting ${formatUnits(amountToWithdraw, config.decimals)} ${symbol} (need ${formatUnits(
-              annualRewardBN,
-              config.decimals,
-            )} ${symbol}, owner has ${formatUnits(ownerBalance, config.decimals)} ${symbol})`,
-          )
-          const withdrawTx = await stakingContract.emergencyWithdrawReward(config.poolIndex, amountToWithdraw)
-          console.log(`   🔗 Withdraw transaction hash: ${withdrawTx.hash}`)
-          console.log(`   ⏳ Waiting for withdrawal confirmation...`)
-          await withdrawTx.wait()
-          console.log(`   ✅ Tokens extracted successfully!`)
-
-          // 重新检查 owner 余额
-          const newOwnerBalance = await rewardToken.balanceOf(wallet.address)
-          console.log(`   📊 New owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
-
-          if (newOwnerBalance.lt(annualRewardBN)) {
-            console.error(`   ❌ Still insufficient balance after extraction!`)
-            console.error(`   Owner balance: ${formatUnits(newOwnerBalance, config.decimals)} ${symbol}`)
-            console.error(`   Required: ${formatUnits(annualRewardBN, config.decimals)} ${symbol}`)
-            console.error(`   Contract balance: ${formatUnits(contractBalance, config.decimals)} ${symbol}`)
-            console.error(
-              `   💡 Suggestion: Manually deposit more ${symbol} tokens to the owner address or contract address`,
-            )
-            return { success: false, error: 'Insufficient balance after extraction', symbol }
-          }
-        }
-      } catch (error) {
-        console.error(`   ❌ Failed to extract tokens: ${error.message}`)
-        return { success: false, error: `Extraction failed: ${error.message}`, symbol }
+    if (periodStillActive) {
+      // 周期未结束：只更新 rewardRate，不调用 notifyRewardAmount，避免重置 periodFinish
+      console.log(`   ⏱️  Period still active (ends ${new Date(periodFinish.toNumber() * 1000).toISOString()}), using setRewardRate (no period reset)`)
+      const wallet = new ethers.Wallet(CONFIG.PRIVATE_KEY, provider)
+      const stakingContract = new ethers.Contract(CONFIG.STAKING_CONTRACT_ADDRESS, STAKING_ABI, wallet)
+      console.log(`   📤 Sending setRewardRate transaction...`)
+      const tx = await stakingContract.setRewardRate(config.poolIndex, rewardRateBN)
+      console.log(`   🔗 Transaction hash: ${tx.hash}`)
+      console.log(`   ⏳ Waiting for confirmation...`)
+      const receipt = await tx.wait()
+      console.log(`   ✅ Reward rate updated (period unchanged).`)
+      console.log(`   📦 Block: ${receipt.blockNumber}`)
+      const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice || receipt.gasPrice)
+      console.log(`   ⛽ Gas used: ${formatUnits(gasUsed, 18)} NBC`)
+      return {
+        success: true,
+        symbol,
+        poolIndex: config.poolIndex,
+        conversionRate,
+        rewardRate: rewardRateBN.toString(),
+        annualReward: annualRewardBN.toString(),
+        txHash: tx.hash,
+        blockNumber: receipt.blockNumber,
       }
-    } else if (ownerBalance.gte(annualRewardBN)) {
-      // Owner 地址有足够余额，不需要提取
-      console.log(`   ✅ Owner has sufficient balance: ${formatUnits(ownerBalance, config.decimals)} ${symbol}`)
     }
 
-    // 6. 调用合约更新奖励
-    console.log(`   📤 Sending transaction...`)
-    const tx = await stakingContract.notifyRewardAmount(config.poolIndex, annualRewardBN)
-    console.log(`   🔗 Transaction hash: ${tx.hash}`)
-
-    // 7. 等待确认
-    console.log(`   ⏳ Waiting for confirmation...`)
-    const receipt = await tx.wait()
-
-    console.log(`   ✅ Reward updated successfully!`)
-    console.log(`   📦 Block: ${receipt.blockNumber}`)
-    const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice || receipt.gasPrice)
-    console.log(`   ⛽ Gas used: ${formatUnits(gasUsed, 18)} NBC`)
-
-    return {
-      success: true,
-      symbol,
-      poolIndex: config.poolIndex,
-      conversionRate,
-      rewardRate: rewardRateBN.toString(),
-      annualReward: annualRewardBN.toString(),
-      txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
-    }
+    // 周期已结束：不调整该池奖励率，跳过（由管理员在 nbc-staking-admin 页面手动操作）
+    console.log(`   ⏭️  Period already ended (was ${new Date(periodFinish.toNumber() * 1000).toISOString()}), skipping (no auto-adjust when period finished)`)
+    return { success: true, skipped: true, symbol }
   } catch (error) {
     console.error(`   ❌ Error updating ${symbol} pool:`, error.message)
     if (error.transaction) {

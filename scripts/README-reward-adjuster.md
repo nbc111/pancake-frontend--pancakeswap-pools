@@ -95,9 +95,10 @@ pm2 logs reward-adjuster
 每秒奖励率 = 年总奖励(代币) / 31536000
 ```
 
-### 4. 更新逻辑
+### 4. 更新逻辑（不重置质押周期）
 - 如果奖励率变化 < 5%，跳过更新（节省 Gas）
-- 如果奖励率变化 ≥ 5%，调用合约的 `notifyRewardAmount` 更新
+- **周期未结束**（当前时间 < periodFinish）：只调用 `setRewardRate(poolIndex, newRate)`，仅更新每秒奖励率，**不修改 periodFinish**，不重置质押周期
+- **周期已结束**：**不调整**该池奖励率，直接跳过；由管理员在 nbc-staking-admin 页面手动操作（如 notifyRewardAmount 或 setRewardsDuration）
 
 ## 配置说明
 
