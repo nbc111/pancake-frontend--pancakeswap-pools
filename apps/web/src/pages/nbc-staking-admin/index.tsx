@@ -1,31 +1,93 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { styled } from 'styled-components'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
 import { useTranslation } from '@pancakeswap/localization'
-import { 
-  Box, 
-  Button, 
-  Card, 
-  Flex, 
-  Heading, 
-  Input, 
-  Text, 
+import {
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  Input,
+  Text,
   PageHeader,
   Message,
   MessageText,
+  TabMenu,
+  Tab,
 } from '@pancakeswap/uikit'
 import Page from 'components/Layout/Page'
+
+/**
+ * 与 nbc-staking 标题左边距一致。
+ * admin 的 header 在 Page (Container) 内，多一层 px 16px/24px，需用负 margin 抵消：
+ * 小屏 16px + 与 staking 一致的 8px = -24px；sm 及以上 24px + 8px = -32px。
+ */
+const StyledPageHeader = styled(PageHeader)`
+  margin-left: -24px;
+  margin-right: -24px;
+
+  ${({ theme }) => theme.mediaQueries.sm} {
+    margin-left: -32px;
+    margin-right: -32px;
+    padding-top: 8px;
+  }
+
+  ${({ theme }) => theme.mediaQueries.lg} {
+    padding-top: 8px;
+  }
+`
 import { STAKING_CONTRACT_ADDRESS, STAKING_ABI, CHAIN_ID } from 'config/staking/constants'
-import { getPoolConfigBySousId } from 'config/staking/poolConfig'
+import { getPoolConfigBySousId, STAKING_POOL_CONFIGS } from 'config/staking/poolConfig'
+import { CHAIN_QUERY_NAME, getChainId } from 'config/chains'
+import { ChainId } from '@pancakeswap/chains'
+import { useSetAtom } from 'jotai'
+import { accountActiveChainAtom } from 'wallet/atoms/accountStateAtoms'
 import { parseUnits } from 'viem'
+
+const NBC_CHAIN_ID = 1281 as ChainId
+const TAB_KEYS = ['pools', 'add', 'settings'] as const
+const DURATION_PRESETS = [
+  { label: '1年', value: '31536000' },
+  { label: '6月', value: '15552000' },
+  { label: '3月', value: '7776000' },
+  { label: '1月', value: '2592000' },
+  { label: '1天', value: '86400' },
+] as const
 
 const NbcStakingAdmin: React.FC = () => {
   const { t } = useTranslation()
+  const router = useRouter()
+  const updateAccountState = useSetAtom(accountActiveChainAtom)
   const { address: account } = useAccount()
   const chainId = useChainId()
   const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   })
+
+  // 当 chain 参数为空时自动重定向为 chain=nbc
+  useEffect(() => {
+    if (router.isReady && !router.query.chain) {
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, chain: CHAIN_QUERY_NAME[NBC_CHAIN_ID] },
+        },
+        undefined,
+        { shallow: true },
+      )
+    }
+  }, [router.isReady, router.query.chain, router.pathname, router.query])
+  useEffect(() => {
+    if (router.isReady && router.query.chain === 'nbc') {
+      const resolvedChainId = getChainId(router.query.chain as string)
+      if (resolvedChainId === NBC_CHAIN_ID) {
+        updateAccountState((prev) => ({ ...prev, chainId: NBC_CHAIN_ID }))
+      }
+    }
+  }, [router.isReady, router.query.chain, updateAccountState])
 
   // 检查是否为合约 owner
   const { data: ownerAddress } = useReadContract({
@@ -39,7 +101,12 @@ const NbcStakingAdmin: React.FC = () => {
   const isOwner = account && ownerStr && account.toLowerCase() === ownerStr.toLowerCase()
 
   // 状态管理
-  const [activeTab, setActiveTab] = useState<'pools' | 'add' | 'settings'>('pools')
+  const [activeTabIndex, setActiveTabIndex] = useState(0)
+  const activeTab = TAB_KEYS[activeTabIndex]
+  const [showPoolsGuide, setShowPoolsGuide] = useState(false)
+  const [showAddGuide, setShowAddGuide] = useState(false)
+  const [showSettingsGuide, setShowSettingsGuide] = useState(false)
+  const [emergencyWithdrawConfirmed, setEmergencyWithdrawConfirmed] = useState(false)
   const [poolIndex, setPoolIndex] = useState<string>('0')
   const [rewardAmount, setRewardAmount] = useState<string>('')
   const [rewardsDuration, setRewardsDuration] = useState<string>('31536000') // 默认 1 年
@@ -235,11 +302,11 @@ const NbcStakingAdmin: React.FC = () => {
   if (chainId !== CHAIN_ID) {
     return (
       <Page>
-        <PageHeader>
+        <StyledPageHeader>
           <Heading as="h1" scale="xxl" color="secondary" mb="24px">
             {t('NBC Staking Admin')}
           </Heading>
-        </PageHeader>
+        </StyledPageHeader>
         <Card>
           <Message variant="warning">
             <MessageText>
@@ -258,11 +325,11 @@ const NbcStakingAdmin: React.FC = () => {
   if (!account) {
     return (
       <Page>
-        <PageHeader>
+        <StyledPageHeader>
           <Heading as="h1" scale="xxl" color="secondary" mb="24px">
             {t('NBC Staking Admin')}
           </Heading>
-        </PageHeader>
+        </StyledPageHeader>
         <Card>
           <Message variant="warning">
             <MessageText>{t('Please connect your wallet')}</MessageText>
@@ -275,11 +342,11 @@ const NbcStakingAdmin: React.FC = () => {
   if (!isOwner) {
     return (
       <Page>
-        <PageHeader>
+        <StyledPageHeader>
           <Heading as="h1" scale="xxl" color="secondary" mb="24px">
             {t('NBC Staking Admin')}
           </Heading>
-        </PageHeader>
+        </StyledPageHeader>
         <Card>
           <Message variant="danger">
             <MessageText>
@@ -299,45 +366,56 @@ const NbcStakingAdmin: React.FC = () => {
 
   return (
     <Page>
-      <PageHeader>
-        <Heading as="h1" scale="xxl" color="secondary" mb="24px">
+      <StyledPageHeader>
+        <Heading as="h1" scale="xxl" color="secondary" mb="8px">
           {t('NBC Staking Admin Panel')}
         </Heading>
-        <Text color="textSubtle" mb="24px">
+        <Text color="textSubtle" fontSize="16px" mb="20px">
           {t('Manage staking pools, reward rates, and configurations')}
         </Text>
-        <Text color="textSubtle" fontSize="14px">
-          {t('Contract: %address%', { address: STAKING_CONTRACT_ADDRESS })}
-        </Text>
-        <Text color="textSubtle" fontSize="14px">
-          {t('Owner: %address%', { address: ownerStr ?? 'Unknown' })}
-        </Text>
-        <Text color="textSubtle" fontSize="14px">
-          {t('Total Pools: %count%', { count: poolLength?.toString() || '0' })}
-        </Text>
-      </PageHeader>
+        <Flex
+          flexWrap="wrap"
+          gap="48px"
+          p="16px"
+          borderRadius="12px"
+          bg="backgroundAlt"
+          style={{ border: '1px solid var(--colors-input)' }}
+        >
+          <Box minWidth="140px" px="8px">
+            <Text fontSize="12px" color="textSubtle" textTransform="uppercase" mb="4px">
+              {t('Contract')}
+            </Text>
+            <Text fontSize="14px" fontFamily="monospace" title={STAKING_CONTRACT_ADDRESS}>
+              {STAKING_CONTRACT_ADDRESS}
+            </Text>
+          </Box>
+          <Box minWidth="140px" px="8px">
+            <Text fontSize="12px" color="textSubtle" textTransform="uppercase" mb="4px">
+              {t('Owner')}
+            </Text>
+            <Text fontSize="14px" fontFamily="monospace" title={ownerStr ?? ''}>
+              {ownerStr ?? '—'}
+            </Text>
+          </Box>
+          <Box minWidth="80px" px="8px">
+            <Text fontSize="12px" color="textSubtle" textTransform="uppercase" mb="4px">
+              {t('Total Pools')}
+            </Text>
+            <Text fontSize="14px" bold>
+              {poolLength?.toString() ?? '0'}
+            </Text>
+          </Box>
+        </Flex>
+      </StyledPageHeader>
 
-      {/* 标签页 */}
-      <Flex mb="24px" style={{ gap: '8px' }}>
-        <Button
-          variant={activeTab === 'pools' ? 'primary' : 'subtle'}
-          onClick={() => setActiveTab('pools')}
-        >
-          {t('管理现有池')}
-        </Button>
-        <Button
-          variant={activeTab === 'add' ? 'primary' : 'subtle'}
-          onClick={() => setActiveTab('add')}
-        >
-          {t('添加新池')}
-        </Button>
-        <Button
-          variant={activeTab === 'settings' ? 'primary' : 'subtle'}
-          onClick={() => setActiveTab('settings')}
-        >
-          {t('设置')}
-        </Button>
-      </Flex>
+      {/* 标签页导航 */}
+      <Box mb="24px">
+        <TabMenu activeIndex={activeTabIndex} onItemClick={setActiveTabIndex} fullWidth>
+          <Tab>{t('管理现有池')}</Tab>
+          <Tab>{t('添加新池')}</Tab>
+          <Tab>{t('设置')}</Tab>
+        </TabMenu>
+      </Box>
 
       {/* 交易状态 */}
       {error && (
@@ -366,46 +444,49 @@ const NbcStakingAdmin: React.FC = () => {
         </Message>
       )}
 
-      {/* 管理池 */}
+      {/* 管理池：用 Box 替代 Card，避免标题区域出现「白底 + 外层背景」双层效果 */}
       {activeTab === 'pools' && (
-        <Card p="24px" mb="24px">
+        <Box p="24px" mb="24px">
           <Heading scale="lg" mb="24px">
             {t('Manage Existing Pools')}
           </Heading>
           
-          {/* 使用说明 */}
-          <Box mb="24px" p="16px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px' }}>
-            <Text bold mb="12px" fontSize="16px">
-              {t('📖 使用说明 - 管理池')}
-            </Text>
-            <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('此页面用于管理现有的质押池。你可以：')}
-            </Text>
-            <Box as="ul" pl="20px" mb="16px">
-              <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('1. 设置奖励率：发送奖励代币并更新池的奖励率')}
-              </Text>
-              <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('2. 设置奖励周期：修改奖励周期（仅在当前周期结束后可用）')}
-              </Text>
-              <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('3. 设置池状态：启用或禁用池')}
-              </Text>
-              <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
-                {t('4. 紧急提取：从合约中提取多余的奖励代币')}
-              </Text>
-            </Box>
-            <Message variant="warning" mb="8px">
-              <MessageText fontSize="12px">
-                {t('⚠️ 重要：设置奖励率之前，必须先：')}
-              </MessageText>
-              <MessageText fontSize="12px">
-                {t('1. 批准奖励代币给质押合约（使用下方的「批准代币」功能）')}
-              </MessageText>
-              <MessageText fontSize="12px">
-                {t('2. 确保钱包中有足够的代币')}
-              </MessageText>
-            </Message>
+          {/* 使用说明（可折叠） */}
+          <Box mb="24px">
+            <Button
+              variant="text"
+              scale="sm"
+              onClick={() => setShowPoolsGuide((v) => !v)}
+              style={{ padding: 0, marginBottom: showPoolsGuide ? 12 : 0 }}
+            >
+              {t('📖 使用说明 - 管理池')} {showPoolsGuide ? '▲' : '▼'}
+            </Button>
+            {showPoolsGuide && (
+              <Box p="16px" style={{ background: 'rgba(118, 69, 217, 0.08)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.2)' }}>
+                <Text fontSize="14px" color="textSubtle" mb="8px">
+                  {t('此页面用于管理现有的质押池。你可以：')}
+                </Text>
+                <Box as="ul" pl="20px" mb="12px">
+                  <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
+                    {t('1. 设置奖励率：发送奖励代币并更新池的奖励率')}
+                  </Text>
+                  <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
+                    {t('2. 设置奖励周期：修改奖励周期（仅在当前周期结束后可用）')}
+                  </Text>
+                  <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
+                    {t('3. 设置池状态：启用或禁用池')}
+                  </Text>
+                  <Text as="li" fontSize="14px" color="textSubtle" mb="4px">
+                    {t('4. 紧急提取：从合约中提取多余的奖励代币')}
+                  </Text>
+                </Box>
+                <Message variant="warning" mb="0">
+                  <MessageText fontSize="12px">
+                    {t('重要：设置奖励率之前，必须先批准代币（下方「批准代币」）并确保钱包有足够代币。')}
+                  </MessageText>
+                </Message>
+              </Box>
+            )}
           </Box>
 
           {/* 代币授权 */}
@@ -436,7 +517,7 @@ const NbcStakingAdmin: React.FC = () => {
               </Box>
               <Message variant="warning" mb="0">
                 <MessageText fontSize="12px">
-                  {t('⚠️ 重要：如果批准数量 < 奖励数量，notifyRewardAmount 将失败并显示 "Transfer failed" 错误')}
+                  {t('重要：如果批准数量 < 奖励数量，notifyRewardAmount 将失败并显示 "Transfer failed" 错误')}
                 </MessageText>
               </Message>
             </Box>
@@ -478,6 +559,7 @@ const NbcStakingAdmin: React.FC = () => {
               onClick={handleApproveToken}
               disabled={isPending || !approveTokenAddress || !approveAmount}
               variant="secondary"
+              isLoading={isPending}
             >
               {t('批准代币')}
             </Button>
@@ -504,17 +586,18 @@ const NbcStakingAdmin: React.FC = () => {
               </Text>
             </Box>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('池索引（从 0 开始）：')}
+              {t('选择池')}
             </Text>
-            <Input
-              type="number"
-              value={poolIndex}
-              onChange={(e) => setPoolIndex(e.target.value)}
-              placeholder="0"
-              mb="16px"
-            />
+            <Box as="select" mb="16px" value={poolIndex} onChange={(e) => setPoolIndex(e.target.value)} style={{ width: '100%', maxWidth: 320, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--colors-input)', background: 'var(--colors-input)', color: 'inherit', fontSize: 14 }}>
+              {STAKING_POOL_CONFIGS.map((c) => (
+                <option key={c.sousId} value={c.sousId}>{c.sousId} — {c.rewardTokenSymbol}</option>
+              ))}
+              {[5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n} — {t('其他')}</option>
+              ))}
+            </Box>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('代币精度（BTC=8，USDT=6，其他大多数=18）：')}
+              {t('代币精度（BTC=8，USDT=6，其他大多数=18）')}
             </Text>
             <Input
               type="number"
@@ -523,7 +606,7 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="18"
               mb="16px"
             />
-            
+
             {/* 奖励数量详细说明 */}
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
               {t('奖励数量（整个周期内分发的总奖励）：')}
@@ -555,7 +638,7 @@ const NbcStakingAdmin: React.FC = () => {
             </Box>
             <Message variant="warning" mb="12px">
               <MessageText fontSize="12px" bold>
-                {t('⚠️ 为何填了 0.22 BTC 但「已赚取」仍为 0？')}
+                {t('为何填了 0.22 BTC 但「已赚取」仍为 0？')}
               </MessageText>
               <MessageText fontSize="12px" mt="4px">
                 {t('合约使用整数除法：rewardRate = reward ÷ rewardsDuration。')}
@@ -586,6 +669,7 @@ const NbcStakingAdmin: React.FC = () => {
             <Button
               onClick={handleNotifyReward}
               disabled={isPending || !rewardAmount || !poolIndex}
+              isLoading={isPending}
             >
               {t('发送奖励')}
             </Button>
@@ -616,15 +700,16 @@ const NbcStakingAdmin: React.FC = () => {
                   {t('只修改每秒发放的 rewardRate，不转入代币、不修改 periodFinish，当前奖励期不变。')}
                 </Text>
                 <Text fontSize="14px" color="textSubtle" mb="8px">
-                  {t('池索引（0=BTC，1=ETH，2=USDT，3=BNB，4=LTC）：')}
+                  {t('选择池')}
                 </Text>
-                <Input
-                  type="number"
-                  value={setRewardRateOnlyPoolIndex}
-                  onChange={(e) => setSetRewardRateOnlyPoolIndex(e.target.value)}
-                  placeholder="0"
-                  mb="16px"
-                />
+                <Box as="select" mb="16px" value={setRewardRateOnlyPoolIndex} onChange={(e) => setSetRewardRateOnlyPoolIndex(e.target.value)} style={{ width: '100%', maxWidth: 320, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--colors-input)', background: 'var(--colors-input)', color: 'inherit', fontSize: 14 }}>
+                  {STAKING_POOL_CONFIGS.map((c) => (
+                    <option key={c.sousId} value={c.sousId}>{c.sousId} — {c.rewardTokenSymbol}</option>
+                  ))}
+                  {[5, 6, 7, 8, 9, 10].map((n) => (
+                    <option key={n} value={n}>{n} — {t('其他')}</option>
+                  ))}
+                </Box>
                 <Text fontSize="14px" color="textSubtle" mb="8px" bold>
                   {t('每秒发放数量（代币单位）')}
                 </Text>
@@ -656,6 +741,7 @@ const NbcStakingAdmin: React.FC = () => {
                   onClick={handleSetRewardRateOnly}
                   disabled={isPending || !setRewardRateOnlyPoolIndex || setRewardRateOnlyValue === ''}
                   variant="secondary"
+                  isLoading={isPending}
                 >
                   {t('仅设置 rewardRate')}
                 </Button>
@@ -671,25 +757,38 @@ const NbcStakingAdmin: React.FC = () => {
             </Text>
             <Message variant="warning" mb="12px">
               <MessageText fontSize="12px">
-                {t('⚠️ 重要：只有在当前周期结束后才能调用此函数')}
+                {t('重要：只有在当前周期结束后才能调用此函数')}
               </MessageText>
               <MessageText fontSize="12px">
                 {t('如果周期未结束，需要等待或使用 notifyRewardAmount 重置周期')}
               </MessageText>
             </Message>
-            <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('池索引：')}
+            <Text fontSize="14px" color="textSubtle" mb="8px">
+              {t('选择池')}
             </Text>
-            <Input
-              type="number"
-              value={poolIndex}
-              onChange={(e) => setPoolIndex(e.target.value)}
-              placeholder="0"
-              mb="16px"
-            />
-            <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('奖励周期（秒，1天=86400，1年=31536000）：')}
+            <Box as="select" mb="16px" value={poolIndex} onChange={(e) => setPoolIndex(e.target.value)} style={{ width: '100%', maxWidth: 320, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--colors-input)', background: 'var(--colors-input)', color: 'inherit', fontSize: 14 }}>
+              {STAKING_POOL_CONFIGS.map((c) => (
+                <option key={c.sousId} value={c.sousId}>{c.sousId} — {c.rewardTokenSymbol}</option>
+              ))}
+              {[5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n} — {t('其他')}</option>
+              ))}
+            </Box>
+            <Text fontSize="14px" color="textSubtle" mb="8px">
+              {t('奖励周期（秒）')}
             </Text>
+            <Flex flexWrap="wrap" gap="8px" mb="12px">
+              {DURATION_PRESETS.map((preset) => (
+                <Button
+                  key={preset.value}
+                  scale="sm"
+                  variant={rewardsDuration === preset.value ? 'primary' : 'tertiary'}
+                  onClick={() => setRewardsDuration(preset.value)}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </Flex>
             <Input
               type="text"
               value={rewardsDuration}
@@ -700,6 +799,7 @@ const NbcStakingAdmin: React.FC = () => {
             <Button
               onClick={handleSetRewardsDuration}
               disabled={isPending || !rewardsDuration || !poolIndex}
+              isLoading={isPending}
             >
               {t('设置奖励周期')}
             </Button>
@@ -712,58 +812,62 @@ const NbcStakingAdmin: React.FC = () => {
               {t('启用或禁用质押池。禁用后，用户无法质押或提取。')}
             </Text>
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('池索引：')}
+              {t('选择池')}
             </Text>
-            <Input
-              type="number"
-              value={poolIndex}
-              onChange={(e) => setPoolIndex(e.target.value)}
-              placeholder="0"
-              mb="16px"
-            />
+            <Box as="select" mb="16px" value={poolIndex} onChange={(e) => setPoolIndex(e.target.value)} style={{ width: '100%', maxWidth: 320, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--colors-input)', background: 'var(--colors-input)', color: 'inherit', fontSize: 14 }}>
+              {STAKING_POOL_CONFIGS.map((c) => (
+                <option key={c.sousId} value={c.sousId}>{c.sousId} — {c.rewardTokenSymbol}</option>
+              ))}
+              {[5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n} — {t('其他')}</option>
+              ))}
+            </Box>
             <Flex alignItems="center" mb="16px">
               <input
                 type="checkbox"
+                id="pool-active-checkbox"
                 checked={poolActive}
                 onChange={(e) => setPoolActive(e.target.checked)}
-                style={{ marginRight: '8px' }}
+                style={{ marginRight: '8px', cursor: 'pointer' }}
               />
-              <Text>{t('启用')}</Text>
+              <Text as="label" htmlFor="pool-active-checkbox" style={{ cursor: 'pointer' }}>{t('启用')}</Text>
             </Flex>
             <Button
               onClick={handleSetPoolActive}
               disabled={isPending || poolIndex === ''}
+              isLoading={isPending}
             >
               {t('设置池状态')}
             </Button>
           </Box>
 
-          {/* 紧急提取奖励 */}
-          <Box mb="24px" p="16px" style={{ border: '1px solid rgba(255, 77, 77, 0.3)', borderRadius: '8px' }}>
-            <Text bold mb="8px" fontSize="18px">{t('4. 紧急提取奖励')}</Text>
+          {/* 紧急提取奖励（危险操作需确认） */}
+          <Box mb="24px" p="16px" style={{ border: '2px solid rgba(255, 77, 77, 0.4)', borderRadius: '12px', background: 'rgba(255, 77, 77, 0.04)' }}>
+            <Text bold mb="8px" fontSize="18px" color="failure">{t('4. 紧急提取奖励')}</Text>
             <Text fontSize="14px" color="textSubtle" mb="12px">
               {t('从合约中提取奖励代币。当合约中有多余代币时使用。')}
             </Text>
             <Message variant="danger" mb="12px">
               <MessageText fontSize="12px">
-                {t('⚠️ 警告：这将从合约中提取奖励代币到 Owner 地址')}
+                {t('警告：这将从合约中提取奖励代币到 Owner 地址')}
               </MessageText>
               <MessageText fontSize="12px">
                 {t('请谨慎使用 - 提取过多可能影响池的奖励发放')}
               </MessageText>
             </Message>
-            <Text fontSize="14px" color="textSubtle" mb="16px">
-              {t('池索引：')}
-            </Text>
-            <Input
-              type="number"
-              value={poolIndex}
-              onChange={(e) => setPoolIndex(e.target.value)}
-              placeholder="0"
-              mb="16px"
-            />
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('代币精度（BTC=8，USDT=6，其他大多数=18）：')}
+              {t('选择池')}
+            </Text>
+            <Box as="select" mb="16px" value={poolIndex} onChange={(e) => setPoolIndex(e.target.value)} style={{ width: '100%', maxWidth: 320, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--colors-input)', background: 'var(--colors-input)', color: 'inherit', fontSize: 14 }}>
+              {STAKING_POOL_CONFIGS.map((c) => (
+                <option key={c.sousId} value={c.sousId}>{c.sousId} — {c.rewardTokenSymbol}</option>
+              ))}
+              {[5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n} — {t('其他')}</option>
+              ))}
+            </Box>
+            <Text fontSize="14px" color="textSubtle" mb="8px">
+              {t('代币精度（BTC=8，USDT=6，其他大多数=18）')}
             </Text>
             <Input
               type="number"
@@ -773,7 +877,7 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
             <Text fontSize="14px" color="textSubtle" mb="8px">
-              {t('提取数量：')}
+              {t('提取数量')}
             </Text>
             <Text fontSize="12px" color="primary" mb="8px">
               {t('直接输入代币数量，无需手动换算')}
@@ -785,29 +889,49 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="0.001"
               mb="16px"
             />
+            <Flex alignItems="flex-start" mb="16px">
+              <input
+                type="checkbox"
+                id="emergency-withdraw-confirm"
+                checked={emergencyWithdrawConfirmed}
+                onChange={(e) => setEmergencyWithdrawConfirmed(e.target.checked)}
+                style={{ marginRight: '8px', marginTop: 4, cursor: 'pointer' }}
+              />
+              <Text as="label" htmlFor="emergency-withdraw-confirm" fontSize="14px" color="textSubtle" style={{ cursor: 'pointer' }}>
+                {t('我已知晓：此操作将把代币从合约转至 Owner 地址，请谨慎操作。')}
+              </Text>
+            </Flex>
             <Button
               onClick={handleEmergencyWithdraw}
-              disabled={isPending || !withdrawAmount || !poolIndex}
+              disabled={isPending || !withdrawAmount || !poolIndex || !emergencyWithdrawConfirmed}
               variant="danger"
+              isLoading={isPending}
             >
               {t('紧急提取')}
             </Button>
           </Box>
-        </Card>
+        </Box>
       )}
 
-      {/* 添加新池 */}
+      {/* 添加新池：用 Box 替代 Card，与页面背景统一 */}
       {activeTab === 'add' && (
-        <Card p="24px" mb="24px">
+        <Box p="24px" mb="24px">
           <Heading scale="lg" mb="24px">
             {t('添加新奖励池')}
           </Heading>
-          
-          {/* 详细使用说明 */}
-          <Box mb="24px" p="20px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
-            <Text bold mb="16px" fontSize="18px">
-              {t('📖 完整操作指南')}
-            </Text>
+
+          {/* 详细使用说明（可折叠） */}
+          <Box mb="24px">
+            <Button
+              variant="text"
+              scale="sm"
+              onClick={() => setShowAddGuide((v) => !v)}
+              style={{ padding: 0, marginBottom: showAddGuide ? 12 : 0 }}
+            >
+              {t('📖 完整操作指南')} {showAddGuide ? '▲' : '▼'}
+            </Button>
+            {showAddGuide && (
+          <Box p="20px" style={{ background: 'rgba(118, 69, 217, 0.08)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.2)' }}>
             
             {/* 步骤 1: 部署代币 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
@@ -916,7 +1040,7 @@ const NbcStakingAdmin: React.FC = () => {
               </Box>
               <Message variant="warning" mb="0">
                 <MessageText fontSize="12px">
-                  {t('⚠️ 重要：设置奖励率之前必须先批准代币！')}
+                  {t('重要：设置奖励率之前必须先批准代币！')}
                 </MessageText>
               </Message>
             </Box>
@@ -944,11 +1068,13 @@ const NbcStakingAdmin: React.FC = () => {
                 {t('注意：系统会根据奖励周期自动计算新的奖励率')}
               </Text>
             </Box>
-            <Message variant="primary" mb="8px">
+            <Message variant="primary" mb="0">
               <MessageText fontSize="12px">
                 {t('💡 提示：添加池后，可在「管理现有池」中使用「设置奖励率」根据实际质押量调整')}
               </MessageText>
             </Message>
+          </Box>
+            )}
           </Box>
 
           <Box mb="24px">
@@ -981,7 +1107,9 @@ const NbcStakingAdmin: React.FC = () => {
               placeholder="18"
               mb="16px"
             />
-            
+          </Box>
+
+          <Box mb="24px">
             <Text fontSize="14px" color="textSubtle" mb="8px" bold>
               {t('步骤 3: 初始奖励率')}
             </Text>
@@ -1002,8 +1130,20 @@ const NbcStakingAdmin: React.FC = () => {
               {t('步骤 4: 奖励周期')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="8px">
-              {t('输入奖励周期时长（秒）：1天=86400，1周=604800，1月=2592000，1年=31536000')}
+              {t('选择或输入奖励周期（秒）')}
             </Text>
+            <Flex flexWrap="wrap" gap="8px" mb="12px">
+              {DURATION_PRESETS.map((preset) => (
+                <Button
+                  key={preset.value}
+                  scale="sm"
+                  variant={newPoolDuration === preset.value ? 'primary' : 'tertiary'}
+                  onClick={() => setNewPoolDuration(preset.value)}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </Flex>
             <Input
               type="text"
               value={newPoolDuration}
@@ -1012,7 +1152,7 @@ const NbcStakingAdmin: React.FC = () => {
               mb="16px"
             />
           </Box>
-          
+
           {/* APR 预估计算器 */}
           <Box mb="24px" p="16px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
             <Text bold mb="12px" fontSize="16px" color="primary">
@@ -1150,24 +1290,32 @@ const NbcStakingAdmin: React.FC = () => {
           <Button
             onClick={handleAddPool}
             disabled={isPending || !newPoolToken || !newPoolRewardRate || !newPoolDuration}
+            isLoading={isPending}
           >
             {t('添加池')}
           </Button>
-        </Card>
+        </Box>
       )}
 
-      {/* 设置 */}
+      {/* 设置：用 Box 替代 Card，与页面背景统一 */}
       {activeTab === 'settings' && (
-        <Card p="24px" mb="24px">
+        <Box p="24px" mb="24px">
           <Heading scale="lg" mb="24px">
             {t('设置与信息')}
           </Heading>
-          
-          {/* 详细使用说明 */}
-          <Box mb="24px" p="20px" style={{ background: 'rgba(118, 69, 217, 0.1)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.3)' }}>
-            <Text bold mb="16px" fontSize="18px">
-              {t('📖 快速参考指南')}
-            </Text>
+
+          {/* 快速参考指南（可折叠） */}
+          <Box mb="24px">
+            <Button
+              variant="text"
+              scale="sm"
+              onClick={() => setShowSettingsGuide((v) => !v)}
+              style={{ padding: 0, marginBottom: showSettingsGuide ? 12 : 0 }}
+            >
+              {t('📖 快速参考指南')} {showSettingsGuide ? '▲' : '▼'}
+            </Button>
+            {showSettingsGuide && (
+          <Box p="20px" style={{ background: 'rgba(118, 69, 217, 0.08)', borderRadius: '8px', border: '1px solid rgba(118, 69, 217, 0.2)' }}>
             
             {/* 代币精度参考 */}
             <Box mb="20px" p="16px" style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
@@ -1238,6 +1386,8 @@ const NbcStakingAdmin: React.FC = () => {
               </Box>
             </Box>
           </Box>
+            )}
+          </Box>
 
           <Box mb="24px">
             <Text bold mb="8px">{t('合约信息')}</Text>
@@ -1288,7 +1438,7 @@ const NbcStakingAdmin: React.FC = () => {
               </MessageText>
             </Message>
           </Box>
-        </Card>
+        </Box>
       )}
     </Page>
   )
