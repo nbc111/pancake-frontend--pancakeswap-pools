@@ -1,10 +1,8 @@
 import { EN, languages } from './config/languages'
 
-// In development, use local locale files from /locales
-// In production, use remote CDN or env variable
-const publicUrl =
-  process.env.NEXT_PUBLIC_I18N_BASE_URL ||
-  (process.env.NODE_ENV === 'development' ? '' : 'https://locales.pancakeswap.finance')
+// Use NEXT_PUBLIC_I18N_BASE_URL if set (e.g. CDN). Otherwise use relative /locales (app's public/locales).
+// This ensures projects with custom locale keys (e.g. nbc-staking-admin) use their own files in production.
+const publicUrl = process.env.NEXT_PUBLIC_I18N_BASE_URL ?? ''
 
 export const LS_KEY = 'pancakeswap_language'
 
