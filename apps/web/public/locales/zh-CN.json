@@ -4248,6 +4248,7 @@
   "Manage staking pools, reward rates, and configurations": "管理质押池、奖励率和配置",
   "Contract: %address%": "合约：%address%",
   "Owner: %address%": "所有者：%address%",
+  "Other": "其他",
   "Total Pools: %count%": "总池数：%count%",
   "Your Address: %address%": "您的地址：%address%",
   "Please connect your wallet": "请连接您的钱包",

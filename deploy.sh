@@ -5,11 +5,11 @@
 
 set -e
 
-# 配置信息
-SERVER_IP="156.251.17.96"
+# 配置信息（https://staking.nbblocks.cc/）
+SERVER_IP="206.238.197.207"
 SERVER_USER="root"
 SERVER_PASSWORD="Tk%Cv7AgMwpIv&Z"
-DEPLOY_PATH="/www/pancake-staking"
+DEPLOY_PATH="/www/staking"
 GIT_REPO="https://github.com/nbc111/pancake-frontend--pancakeswap-pools.git"
 GIT_BRANCH="main"
 APP_PORT="5000"

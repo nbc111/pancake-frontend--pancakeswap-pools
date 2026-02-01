@@ -113,13 +113,14 @@ const UserMenu = () => {
   // Use new Privy wallet address hook to prevent flickering
   const { address: privyAddress, isLoading: isPrivyAddressLoading, hasSetupFailed } = usePrivyWalletAddress()
 
-  // Determine which address to use: if Privy login use privyAddress, otherwise use account
+  // Determine which address to use: if Privy login use privyAddress, otherwise use account for current chain
+  // On EVM pages do not fall back to solanaAccount (would show Solana address when EVM wallet is disconnected)
   const finalAddress = useMemo(() => {
     if (ready && authenticated && user) return privyAddress
     if (chainId === NonEVMChainId.SOLANA && solanaAccount) return solanaAccount
     if (chainId !== NonEVMChainId.SOLANA && evmAccount) return evmAccount
-
-    return evmAccount ?? solanaAccount ?? undefined
+    if (chainId === NonEVMChainId.SOLANA) return solanaAccount ?? undefined
+    return evmAccount ?? undefined
   }, [ready, authenticated, user, privyAddress, evmAccount, solanaAccount, chainId])
 
   const shouldShowLoading = ready && authenticated && user ? isPrivyAddressLoading : false

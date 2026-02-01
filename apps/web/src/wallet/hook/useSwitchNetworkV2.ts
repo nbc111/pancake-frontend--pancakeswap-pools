@@ -189,7 +189,8 @@ const useProcessSwitchChainRequest = () => {
             }
           }
 
-          if (wagmiConnector && (await requireLogout(wagmiConnector, requestChainId, evmAddress))) {
+          // 刷新后重连时 (from === 'connect') 只做 URL 与链同步，不因 requireLogout 断开钱包
+          if (from !== 'connect' && wagmiConnector && (await requireLogout(wagmiConnector, requestChainId, evmAddress))) {
             await logout()
           }
           return true
