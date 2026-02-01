@@ -55,6 +55,7 @@ export const useVotingStatus = () => {
       return null
     },
 
+    enabled: typeof window !== 'undefined' && !window.location.origin.includes('localhost'),
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,

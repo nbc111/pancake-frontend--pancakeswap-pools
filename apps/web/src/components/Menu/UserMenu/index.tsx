@@ -76,7 +76,7 @@ const ClickableUserMenu = styled.div`
   position: relative;
 `
 
-const ClickablePopover = styled.div<{ isOpen: boolean }>`
+const ClickablePopover = styled.div<{ $isOpen: boolean }>`
   position: absolute;
   top: 100%;
   right: 0;
@@ -86,8 +86,8 @@ const ClickablePopover = styled.div<{ isOpen: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: 16px;
   margin-top: 28px;
-  visibility: ${({ isOpen }) => (isOpen ? 'visible' : 'hidden')};
-  opacity: ${({ isOpen }) => (isOpen ? 1 : 0)};
+  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
+  opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   transition: visibility 0.2s, opacity 0.2s;
 `
 
@@ -297,7 +297,7 @@ const UserMenu = () => {
 
           {/* Custom click-based menu for desktop */}
           {!isMobile && (
-            <ClickablePopover isOpen={isMenuOpen}>
+            <ClickablePopover $isOpen={isMenuOpen}>
               {isMenuOpen && showDesktopPopup && (
                 <UserMenuItems onDismiss={() => setIsMenuOpen(false)} onReceiveClick={() => {}} />
               )}
@@ -340,7 +340,7 @@ const UserMenu = () => {
 
         {/* Custom click-based menu for desktop */}
         {!isMobile && (
-          <ClickablePopover isOpen={isMenuOpen}>
+          <ClickablePopover $isOpen={isMenuOpen}>
             {isMenuOpen && <UserMenuItems onReceiveClick={() => {}} onDismiss={() => setIsMenuOpen(false)} />}
           </ClickablePopover>
         )}

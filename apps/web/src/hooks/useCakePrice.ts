@@ -37,10 +37,6 @@ export const useCakePrice = ({ enabled = true } = {}) => {
         }
         return BIG_ZERO
       }
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log(`[NBC Price] ✅ Fetched successfully: $${price}`)
-      }
       return new BigNumber(price)
     },
     staleTime: FAST_INTERVAL * 6,
@@ -49,20 +45,6 @@ export const useCakePrice = ({ enabled = true } = {}) => {
     retry: 3, // 重试 3 次
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 指数退避
   })
-
-  // 调试日志
-  if (process.env.NODE_ENV === 'development') {
-    if (isLoading) {
-      // eslint-disable-next-line no-console
-      console.log('[NBC Price] ⏳ Loading...')
-    } else if (error) {
-      // eslint-disable-next-line no-console
-      console.error('[NBC Price] ❌ Error:', error)
-    } else if (data) {
-      // eslint-disable-next-line no-console
-      console.log(`[NBC Price] 📊 Current price: $${data.toString()}`)
-    }
-  }
 
   return data ?? BIG_ZERO
 }

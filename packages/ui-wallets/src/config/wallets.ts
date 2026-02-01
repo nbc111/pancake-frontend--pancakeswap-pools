@@ -45,7 +45,6 @@ export const getWalletsConfig = ({
   solanaWalletAdapters: SolanaWalletAdapter[]
 }): WalletConfigV3[] => {
   const qrCode = createEvmQrCode ? createEvmQrCode() : undefined
-  console.log('debug sol wallets', solanaWalletAdapters)
   const isSolanaWalletInstalled = (walletName: WalletName) => {
     if (!solanaWalletAdapters || solanaWalletAdapters.length === 0) return false
     return solanaWalletAdapters.some(

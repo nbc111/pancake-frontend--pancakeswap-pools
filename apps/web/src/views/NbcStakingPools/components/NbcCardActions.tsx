@@ -33,6 +33,8 @@ const NbcCardActions: React.FC<NbcCardActionsProps> = ({ pool }) => {
     earningToken.decimals,
   )
   const hasEarnings = earnings.gt(0)
+  // 已赚取显示小数位：按代币精度显示，最多 8 位，避免小数额被舍入为 0（如 BTC 8 位、ETH 8 位）
+  const earnedDisplayDecimals = Math.min(earningToken.decimals, 8)
 
   const harvestActionTitle = (
     <>
@@ -83,7 +85,7 @@ const NbcCardActions: React.FC<NbcCardActionsProps> = ({ pool }) => {
             <Flex flex="1" flexDirection="column" alignSelf="flex-center">
               {hasEarnings ? (
                 <>
-                  <Balance lineHeight="1" bold fontSize="20px" decimals={5} value={earningTokenBalance} />
+                  <Balance lineHeight="1" bold fontSize="20px" decimals={earnedDisplayDecimals} value={earningTokenBalance} />
                   {earningTokenPrice !== undefined && earningTokenPrice > 0 && (
                     <Balance
                       display="inline"

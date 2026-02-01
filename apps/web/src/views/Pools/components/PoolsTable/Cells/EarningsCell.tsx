@@ -37,6 +37,8 @@ const EarningsCell: React.FC<React.PropsWithChildren<EarningsCellProps>> = ({ po
   const fullBalance = getFullDisplayBalance(earnings, earningToken.decimals)
   const formattedBalance = formatNumber(earningTokenBalance, 3, 3)
   const isBnbPool = poolCategory === PoolCategory.BINANCE
+  // 已赚取显示小数位：按代币精度最多 8 位，避免小数额被舍入为 0
+  const earnedDisplayDecimals = Math.min(earningToken.decimals, 8)
 
   const labelText = t('%asset% Earned', { asset: earningToken.symbol })
 
@@ -71,7 +73,7 @@ const EarningsCell: React.FC<React.PropsWithChildren<EarningsCellProps>> = ({ po
                   bold={!isMobile}
                   fontSize={isMobile ? '14px' : '16px'}
                   color={hasEarnings ? 'primary' : 'textDisabled'}
-                  decimals={hasEarnings ? 5 : 1}
+                  decimals={hasEarnings ? earnedDisplayDecimals : 1}
                   value={hasEarnings ? earningTokenBalance : 0}
                 />
                 {hasEarnings ? (

@@ -15,6 +15,7 @@ import {
 } from '@pancakeswap/uikit'
 import Page from 'components/Layout/Page'
 import { STAKING_CONTRACT_ADDRESS, STAKING_ABI, CHAIN_ID } from 'config/staking/constants'
+import { getPoolConfigBySousId } from 'config/staking/poolConfig'
 import { parseUnits } from 'viem'
 
 const NbcStakingAdmin: React.FC = () => {
@@ -50,13 +51,19 @@ const NbcStakingAdmin: React.FC = () => {
   const [approveTokenAddress, setApproveTokenAddress] = useState<string>('')
   const [approveAmount, setApproveAmount] = useState<string>('')
   const [tokenDecimals, setTokenDecimals] = useState<string>('18')
-  
+  const [setRewardRateOnlyPoolIndex, setSetRewardRateOnlyPoolIndex] = useState<string>('0')
+  const [setRewardRateOnlyValue, setSetRewardRateOnlyValue] = useState<string>('')
+
   // APR 计算器相关状态
   const [expectedStakeAmount, setExpectedStakeAmount] = useState<string>('1000000') // 预期质押量 NBC
   const [nbcPrice, setNbcPrice] = useState<string>('0.06') // NBC 价格
   const [rewardTokenPrice, setRewardTokenPrice] = useState<string>('89000') // 奖励代币价格
   const [targetAPR, setTargetAPR] = useState<string>('30') // 目标 APR
-  
+  const [aprCalculatorDecimals, setAprCalculatorDecimals] = useState<string>('18') // 奖励代币精度，用于最小有效值
+
+  // 当前精度下的最小有效奖励率（代币/秒），小于此值链上会变为 0
+  const minEffectiveRatePerSecond = 1 / 10 ** (parseInt(aprCalculatorDecimals, 10) || 18)
+
   // 根据目标 APR 计算建议的奖励率
   const calculateSuggestedRewardRate = () => {
     try {
@@ -141,6 +148,26 @@ const NbcStakingAdmin: React.FC = () => {
       args: [BigInt(poolIndex), BigInt(rewardsDuration)],
       chainId: CHAIN_ID,
     })
+  }
+
+  const handleSetRewardRateOnly = () => {
+    if (!setRewardRateOnlyPoolIndex || setRewardRateOnlyValue === '') return
+    const poolIdx = Number(setRewardRateOnlyPoolIndex)
+    const poolConfig = getPoolConfigBySousId(poolIdx)
+    const decimals = poolConfig?.rewardTokenDecimals ?? 18
+    try {
+      const rate = parseUnits(setRewardRateOnlyValue.trim(), decimals)
+      if (rate <= 0n) return
+      writeContract({
+        address: STAKING_CONTRACT_ADDRESS,
+        abi: STAKING_ABI as any,
+        functionName: 'setRewardRate',
+        args: [BigInt(setRewardRateOnlyPoolIndex), rate],
+        chainId: CHAIN_ID,
+      })
+    } catch {
+      // parseUnits 失败时由用户检查输入格式
+    }
   }
 
   const handleAddPool = () => {
@@ -526,6 +553,26 @@ const NbcStakingAdmin: React.FC = () => {
                 </Text>
               </Box>
             </Box>
+            <Message variant="warning" mb="12px">
+              <MessageText fontSize="12px" bold>
+                {t('⚠️ 为何填了 0.22 BTC 但「已赚取」仍为 0？')}
+              </MessageText>
+              <MessageText fontSize="12px" mt="4px">
+                {t('合约使用整数除法：rewardRate = reward ÷ rewardsDuration。')}
+              </MessageText>
+              <MessageText fontSize="12px" mt="2px">
+                {t('BTC 池（8 位小数）：0.22 BTC = 22,000,000。若周期为 1 年（31,536,000 秒），22,000,000 ÷ 31,536,000 = 0，rewardRate 会被设为 1 wei/秒，已赚取仍会舍入为 0。')}
+              </MessageText>
+              <MessageText fontSize="12px" mt="4px" bold>
+                {t('解决办法：')}
+              </MessageText>
+              <MessageText fontSize="12px" mt="2px">
+                {t('• 1 年周期下 BTC 池至少填 0.31536 BTC（≈31,536,000 satoshi），rewardRate 才 ≥ 1；要看到明显已赚取建议填更大或缩短周期。')}
+              </MessageText>
+              <MessageText fontSize="12px" mt="2px">
+                {t('• 或先把该池奖励周期改为 1 天（86400 秒），再填 0.22 BTC，可得 rewardRate = 254，已赚取会开始累积。')}
+              </MessageText>
+            </Message>
             <Text fontSize="12px" color="primary" mb="8px">
               {t('直接输入代币数量，无需手动换算精度。如 BTC 输入 "0.22" 表示 0.22 个 BTC')}
             </Text>
@@ -543,6 +590,78 @@ const NbcStakingAdmin: React.FC = () => {
               {t('发送奖励')}
             </Button>
           </Box>
+
+          {/* 仅设置 rewardRate（不重置周期） */}
+          {(() => {
+            const setRewardRatePoolConfig = getPoolConfigBySousId(Number(setRewardRateOnlyPoolIndex))
+            const setRewardRateTokenSymbol = setRewardRatePoolConfig?.rewardTokenSymbol ?? t('代币')
+            const setRewardRateDecimals = setRewardRatePoolConfig?.rewardTokenDecimals ?? 18
+            const minEffective1b = 1 / 10 ** setRewardRateDecimals
+            let wouldRoundToZero = false
+            if (setRewardRateOnlyValue.trim()) {
+              try {
+                const parsed = parseFloat(setRewardRateOnlyValue.trim())
+                if (parsed > 0) {
+                  const rateWei = parseUnits(setRewardRateOnlyValue.trim(), setRewardRateDecimals)
+                  wouldRoundToZero = rateWei === 0n
+                }
+              } catch {
+                wouldRoundToZero = false
+              }
+            }
+            return (
+              <Box mb="24px" p="16px" style={{ border: '1px solid rgba(49, 208, 170, 0.3)', borderRadius: '8px' }}>
+                <Text bold mb="8px" fontSize="18px">{t('1b. 仅设置 rewardRate（不重置周期）')}</Text>
+                <Text fontSize="14px" color="textSubtle" mb="12px">
+                  {t('只修改每秒发放的 rewardRate，不转入代币、不修改 periodFinish，当前奖励期不变。')}
+                </Text>
+                <Text fontSize="14px" color="textSubtle" mb="8px">
+                  {t('池索引（0=BTC，1=ETH，2=USDT，3=BNB，4=LTC）：')}
+                </Text>
+                <Input
+                  type="number"
+                  value={setRewardRateOnlyPoolIndex}
+                  onChange={(e) => setSetRewardRateOnlyPoolIndex(e.target.value)}
+                  placeholder="0"
+                  mb="16px"
+                />
+                <Text fontSize="14px" color="textSubtle" mb="8px" bold>
+                  {t('每秒发放数量（代币单位）')}
+                </Text>
+                <Text fontSize="12px" color="textSubtle" mb="4px">
+                  {t('直接填「每秒发多少个代币」即可，如 0.00001 表示每秒 0.00001 个')}
+                  {setRewardRateTokenSymbol}
+                  {t('；')}
+                  {t('当前精度下最小有效值')}
+                  {`: ${minEffective1b.toFixed(setRewardRateDecimals)}`}
+                </Text>
+                {wouldRoundToZero && (
+                  <Message variant="warning" mb="12px">
+                    <MessageText fontSize="12px" bold>
+                      {t('当前值在该池代币精度下会变为 0，链上 rewardRate 将为 0，已赚取会一直为 0。')}
+                    </MessageText>
+                    <MessageText fontSize="12px" mt="4px">
+                      {t('请至少填')} {minEffective1b.toFixed(setRewardRateDecimals)} {t('（每秒 1 个最小单位）')}
+                    </MessageText>
+                  </Message>
+                )}
+                <Input
+                  type="text"
+                  value={setRewardRateOnlyValue}
+                  onChange={(e) => setSetRewardRateOnlyValue(e.target.value)}
+                  placeholder="0.00001"
+                  mb="16px"
+                />
+                <Button
+                  onClick={handleSetRewardRateOnly}
+                  disabled={isPending || !setRewardRateOnlyPoolIndex || setRewardRateOnlyValue === ''}
+                  variant="secondary"
+                >
+                  {t('仅设置 rewardRate')}
+                </Button>
+              </Box>
+            )
+          })()}
 
           {/* 设置奖励周期 */}
           <Box mb="24px" p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
@@ -900,7 +1019,7 @@ const NbcStakingAdmin: React.FC = () => {
               {t('APR 计算器')}
             </Text>
             <Text fontSize="13px" color="textSubtle" mb="12px">
-              {t('输入目标 APR 和预期参数，自动计算建议的奖励率。')}
+              {t('输入目标 APR 和预期参数，自动计算建议的奖励率。按奖励代币精度取「最小有效值」，小于该值链上会变为 0。')}
             </Text>
             
             <Flex style={{ gap: '16px', flexWrap: 'wrap' }} mb="12px">
@@ -944,9 +1063,42 @@ const NbcStakingAdmin: React.FC = () => {
                   scale="sm"
                 />
               </Box>
+              <Box style={{ flex: '1', minWidth: '140px' }}>
+                <Text fontSize="12px" color="textSubtle" mb="4px">{t('奖励代币精度')}</Text>
+                <select
+                  value={aprCalculatorDecimals}
+                  onChange={(e) => setAprCalculatorDecimals(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(118, 69, 217, 0.3)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: 'inherit',
+                    fontSize: '14px',
+                  }}
+                >
+                  <option value="6">6 (USDT 等)</option>
+                  <option value="8">8 (BTC 等)</option>
+                  <option value="18">18 (ETH/BNB 等)</option>
+                </select>
+              </Box>
             </Flex>
             
             <Box p="12px" style={{ background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px' }}>
+              {suggestedRewardRate !== null && suggestedRewardRate > 0 && suggestedRewardRate < minEffectiveRatePerSecond && (
+                <Message variant="warning" mb="12px">
+                  <MessageText fontSize="12px" bold>
+                    {t('该建议值在当前精度下链上会变为 0，无法达到目标 APR。')}
+                  </MessageText>
+                  <MessageText fontSize="12px" mt="4px">
+                    {t('请提高目标 APR 或减少预期质押量，使建议值 ≥ 最小有效值；或换用更高精度的奖励代币。')}
+                  </MessageText>
+                  <MessageText fontSize="12px" mt="2px">
+                    {t('最小有效值 (代币/秒):')} {minEffectiveRatePerSecond.toFixed(parseInt(aprCalculatorDecimals, 10) || 18)}
+                  </MessageText>
+                </Message>
+              )}
               <Flex justifyContent="space-between" alignItems="center" mb="8px">
                 <Text fontSize="14px" color="textSubtle">{t('建议奖励率 (代币/秒):')}</Text>
                 <Flex alignItems="center" style={{ gap: '8px' }}>
@@ -963,6 +1115,12 @@ const NbcStakingAdmin: React.FC = () => {
                     </Button>
                   )}
                 </Flex>
+              </Flex>
+              <Flex justifyContent="space-between" alignItems="center" mb="8px">
+                <Text fontSize="13px" color="textSubtle">{t('最小有效值 (当前精度):')}</Text>
+                <Text fontSize="13px" color="textSubtle">
+                  {minEffectiveRatePerSecond.toFixed(parseInt(aprCalculatorDecimals, 10) || 18)}
+                </Text>
               </Flex>
               
               {suggestedRewardRate !== null && (

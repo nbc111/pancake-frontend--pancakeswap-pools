@@ -151,65 +151,7 @@ export function calculateAPRFromRewardRate(
   const annualRewardNBC = (annualRewardToken * conversionRateScaled) / rewardTokenMultiplier
 
   // APR = (年总奖励 / 总质押量) * 100
-  const apr = (Number(annualRewardNBC) / Number(totalStakedNBC)) * 100
-
-  // APR 计算详细日志（仅在开发环境）
-  if (process.env.NODE_ENV === 'development') {
-    // 格式化数值以便于阅读
-    const totalStakedNBCFormatted = Number(totalStakedNBC) / 1e18
-    const annualRewardNBCFormatted = Number(annualRewardNBC) / 1e18
-    const annualRewardTokenFormatted = Number(annualRewardToken) / 10 ** rewardTokenDecimals
-    const durationFormatted = Number(duration)
-    const durationYears = durationFormatted / (365 * 24 * 60 * 60)
-    const totalRewardTokenFormatted = Number(totalRewardToken) / 10 ** rewardTokenDecimals
-    const rewardRateFormatted = Number(rewardRate) / 10 ** rewardTokenDecimals
-    const isHighAPR = apr > 1000 // 超过1000%视为异常高
-
-    // eslint-disable-next-line no-console
-    console.group(`[NBC_STAKING_APR] [APR计算] 详细步骤`)
-    // eslint-disable-next-line no-console
-    console.log('[NBC_STAKING_APR] 📥 输入参数:')
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   奖励率: ${rewardRateFormatted.toFixed(8)} tokens/秒 (原始: ${rewardRate.toString()})`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   总质押量: ${totalStakedNBCFormatted.toFixed(2)} NBC (原始: ${totalStakedNBC.toString()})`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   兑换比例: 1 token = ${conversionRate.toFixed(6)} NBC`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   代币精度: ${rewardTokenDecimals}`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   奖励周期: ${durationYears.toFixed(2)} 年 (${durationFormatted} 秒)`)
-    // eslint-disable-next-line no-console
-    console.log('')
-    // eslint-disable-next-line no-console
-    console.log('[NBC_STAKING_APR] 🔢 计算过程:')
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   周期总奖励: ${totalRewardTokenFormatted.toFixed(8)} tokens (${totalRewardToken.toString()})`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   年化奖励代币: ${annualRewardTokenFormatted.toFixed(6)} tokens/年 (${annualRewardToken.toString()})`)
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR]   年化奖励NBC: ${annualRewardNBCFormatted.toFixed(2)} NBC/年 (${annualRewardNBC.toString()})`)
-    // eslint-disable-next-line no-console
-    console.log('')
-    // eslint-disable-next-line no-console
-    console.log(`[NBC_STAKING_APR] 💰 APR结果: ${apr.toFixed(2)}%${isHighAPR ? ' ⚠️ 异常高' : ''}`)
-    if (isHighAPR) {
-      // eslint-disable-next-line no-console
-      console.warn(`[NBC_STAKING_APR]   ⚠️ 警告: APR异常高！`)
-      // eslint-disable-next-line no-console
-      console.warn(`[NBC_STAKING_APR]      - 总质押量: ${totalStakedNBCFormatted.toFixed(2)} NBC (可能过小)`)
-      // eslint-disable-next-line no-console
-      console.warn(`[NBC_STAKING_APR]      - 奖励率: ${rewardRateFormatted.toFixed(8)} tokens/秒 (可能过大)`)
-      // eslint-disable-next-line no-console
-      console.warn(`[NBC_STAKING_APR]      - 年化奖励: ${annualRewardNBCFormatted.toFixed(2)} NBC/年`)
-      // eslint-disable-next-line no-console
-      console.warn(`[NBC_STAKING_APR]      - 建议检查: 总质押量是否过小，或奖励率设置是否合理`)
-    }
-    // eslint-disable-next-line no-console
-    console.groupEnd()
-  }
-
-  return apr
+  return (Number(annualRewardNBC) / Number(totalStakedNBC)) * 100
 }
 
 /**

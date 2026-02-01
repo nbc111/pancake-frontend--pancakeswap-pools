@@ -12,7 +12,11 @@ const getNormalizedDappUrl = (raw: string) => {
   }
 }
 
-const normalizedDappUrl = getNormalizedDappUrl(process.env.NEXT_PUBLIC_DAPP_URL || DEFAULT_DAPP_URL)
+// 客户端开发时使用当前页面 URL，避免 WalletConnect metadata.url 与实际地址不一致
+const normalizedDappUrl =
+  typeof window !== 'undefined' && window.location?.origin
+    ? `${window.location.origin}${window.location.pathname}${window.location.search || ''}`
+    : getNormalizedDappUrl(process.env.NEXT_PUBLIC_DAPP_URL || DEFAULT_DAPP_URL)
 
 const dappHostForDeepLink = (() => {
   try {
@@ -31,6 +35,9 @@ const dappHostForDeepLink = (() => {
 })()
 
 const dappOrigin = (() => {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin
+  }
   try {
     const parsed = new URL(normalizedDappUrl)
     return `${parsed.protocol}//${parsed.host}`
