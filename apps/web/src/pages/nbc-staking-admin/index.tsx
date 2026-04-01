@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { styled } from 'styled-components'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, usePublicClient } from 'wagmi'
 import { useTranslation } from '@pancakeswap/localization'
 import {
   Box,
@@ -48,7 +48,62 @@ import { accountActiveChainAtom } from 'wallet/atoms/accountStateAtoms'
 import { parseUnits } from 'viem'
 
 const NBC_CHAIN_ID = 1281 as ChainId
-const TAB_KEYS = ['pools', 'add', 'settings'] as const
+const TAB_KEYS = ['pools', 'add', 'monitor', 'settings'] as const
+
+// 提现记录类型
+type WithdrawRecord = {
+  poolIndex: number
+  user: string
+  amount: bigint
+  timestamp: number
+  txHash: string
+  blockNumber: bigint
+}
+
+const BLACKLIST_STORAGE_KEY = 'nbc_staking_blacklist'
+const WITHDRAW_HISTORY_KEY = 'nbc_staking_withdraw_history'
+const MAX_HISTORY = 200
+
+function loadBlacklist(): string[] {
+  try {
+    const raw = localStorage.getItem(BLACKLIST_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveBlacklist(list: string[]) {
+  try {
+    localStorage.setItem(BLACKLIST_STORAGE_KEY, JSON.stringify(list))
+  } catch {
+    // ignore
+  }
+}
+
+function loadWithdrawHistory(): WithdrawRecord[] {
+  try {
+    const raw = localStorage.getItem(WITHDRAW_HISTORY_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return parsed.map((r: any) => ({ ...r, amount: BigInt(r.amount), blockNumber: BigInt(r.blockNumber) }))
+  } catch {
+    return []
+  }
+}
+
+function saveWithdrawHistory(history: WithdrawRecord[]) {
+  try {
+    const serializable = history.slice(0, MAX_HISTORY).map((r) => ({
+      ...r,
+      amount: r.amount.toString(),
+      blockNumber: r.blockNumber.toString(),
+    }))
+    localStorage.setItem(WITHDRAW_HISTORY_KEY, JSON.stringify(serializable))
+  } catch {
+    // ignore
+  }
+}
 const DURATION_PRESETS = [
   { label: '1年', value: '31536000' },
   { label: '6月', value: '15552000' },
@@ -122,6 +177,14 @@ const NbcStakingAdmin: React.FC = () => {
   const [setRewardRateOnlyPoolIndex, setSetRewardRateOnlyPoolIndex] = useState<string>('0')
   const [setRewardRateOnlyValue, setSetRewardRateOnlyValue] = useState<string>('')
 
+  // 监控面板状态
+  const [withdrawHistory, setWithdrawHistory] = useState<WithdrawRecord[]>(() => loadWithdrawHistory())
+  const [blacklist, setBlacklist] = useState<string[]>(() => loadBlacklist())
+  const [blacklistInput, setBlacklistInput] = useState<string>('')
+  const [monitorFilter, setMonitorFilter] = useState<'all' | 'blacklisted'>('all')
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const historyLoadedRef = useRef(false)
+
   // APR 计算器相关状态
   const [expectedStakeAmount, setExpectedStakeAmount] = useState<string>('1000000') // 预期质押量 NBC
   const [nbcPrice, setNbcPrice] = useState<string>('0.06') // NBC 价格
@@ -193,6 +256,113 @@ const NbcStakingAdmin: React.FC = () => {
     functionName: 'poolLength',
     chainId: CHAIN_ID,
   })
+
+  // 查询合约暂停状态
+  const { data: isPaused, refetch: refetchPaused } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'paused',
+    chainId: CHAIN_ID,
+  })
+
+  const handlePause = () => {
+    writeContract({
+      address: STAKING_CONTRACT_ADDRESS,
+      abi: STAKING_ABI as any,
+      functionName: isPaused ? 'unpause' : 'pause',
+      args: [],
+      chainId: CHAIN_ID,
+    })
+  }
+
+  // 黑名单管理
+  const handleAddToBlacklist = (addr: string) => {
+    const normalized = addr.trim().toLowerCase()
+    if (!normalized || !normalized.startsWith('0x')) return
+    const updated = blacklist.includes(normalized) ? blacklist : [...blacklist, normalized]
+    setBlacklist(updated)
+    saveBlacklist(updated)
+    setBlacklistInput('')
+  }
+
+  const handleRemoveFromBlacklist = (addr: string) => {
+    const updated = blacklist.filter((a) => a !== addr.toLowerCase())
+    setBlacklist(updated)
+    saveBlacklist(updated)
+  }
+
+  const isBlacklisted = useCallback((addr: string) => blacklist.includes(addr.toLowerCase()), [blacklist])
+
+  // 监听实时 Withdrawn 事件
+  useWatchContractEvent({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    eventName: 'Withdrawn',
+    chainId: CHAIN_ID,
+    onLogs: (logs) => {
+      const newRecords: WithdrawRecord[] = logs.map((log: any) => ({
+        poolIndex: Number(log.args?.poolIndex ?? 0),
+        user: log.args?.user ?? '',
+        amount: log.args?.amount ?? 0n,
+        timestamp: Date.now(),
+        txHash: log.transactionHash ?? '',
+        blockNumber: log.blockNumber ?? 0n,
+      }))
+      setWithdrawHistory((prev) => {
+        const merged = [...newRecords, ...prev].slice(0, MAX_HISTORY)
+        saveWithdrawHistory(merged)
+        return merged
+      })
+    },
+  })
+
+  // 获取历史提现记录（最近 N 个区块）
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
+
+  const handleFetchHistory = useCallback(async () => {
+    if (!publicClient || isLoadingHistory) return
+    setIsLoadingHistory(true)
+    try {
+      const latestBlock = await publicClient.getBlockNumber()
+      // 拉最近 50000 个区块的 Withdrawn 事件
+      const fromBlock = latestBlock > 50000n ? latestBlock - 50000n : 0n
+      const logs = await publicClient.getLogs({
+        address: STAKING_CONTRACT_ADDRESS,
+        event: {
+          anonymous: false,
+          inputs: [
+            { indexed: true, name: 'poolIndex', type: 'uint256' },
+            { indexed: true, name: 'user', type: 'address' },
+            { indexed: false, name: 'amount', type: 'uint256' },
+          ],
+          name: 'Withdrawn',
+          type: 'event',
+        },
+        fromBlock,
+        toBlock: latestBlock,
+      })
+      const records: WithdrawRecord[] = logs.map((log: any) => ({
+        poolIndex: Number(log.args?.poolIndex ?? 0),
+        user: log.args?.user ?? '',
+        amount: log.args?.amount ?? 0n,
+        timestamp: 0,
+        txHash: log.transactionHash ?? '',
+        blockNumber: log.blockNumber ?? 0n,
+      }))
+      // 去重（by txHash+user）
+      setWithdrawHistory((prev) => {
+        const existing = new Set(prev.map((r) => r.txHash + r.user))
+        const fresh = records.filter((r) => !existing.has(r.txHash + r.user))
+        const merged = [...fresh, ...prev].slice(0, MAX_HISTORY)
+        saveWithdrawHistory(merged)
+        return merged
+      })
+    } catch (err) {
+      console.error('fetchHistory error', err)
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }, [publicClient, isLoadingHistory])
 
   // 处理函数定义（必须在 hooks 之后，条件返回之前）
   const handleNotifyReward = () => {
@@ -414,6 +584,7 @@ const NbcStakingAdmin: React.FC = () => {
         <TabMenu activeIndex={activeTabIndex} onItemClick={setActiveTabIndex} fullWidth>
           <Tab>{t('Manage Existing Pools')}</Tab>
           <Tab>{t('Add New Pool')}</Tab>
+          <Tab>🔍 {t('Withdraw Monitor')}</Tab>
           <Tab>{t('Settings')}</Tab>
         </TabMenu>
       </Box>
@@ -442,6 +613,12 @@ const NbcStakingAdmin: React.FC = () => {
               {t('Hash: %hash%', { hash })}
             </MessageText>
           )}
+        </Message>
+      )}
+      {/* 合约暂停状态横幅 */}
+      {isPaused && (
+        <Message variant="danger" mb="16px">
+          <MessageText bold>⏸ {t('Contract is currently PAUSED — all user operations are frozen')}</MessageText>
         </Message>
       )}
 
@@ -1295,6 +1472,213 @@ const NbcStakingAdmin: React.FC = () => {
           >
             {t('Add Pool')}
           </Button>
+        </Box>
+      )}
+
+      {/* 提现监控面板 */}
+      {activeTab === 'monitor' && (
+        <Box p="24px" mb="24px">
+          <Heading scale="lg" mb="8px">
+            🔍 {t('Withdraw Monitor')}
+          </Heading>
+          <Text fontSize="14px" color="textSubtle" mb="24px">
+            {t('Monitor on-chain withdrawals in real-time. Flag suspicious addresses and pause the contract if needed.')}
+          </Text>
+
+          {/* 合约暂停控制 */}
+          <Box mb="24px" p="16px" style={{ border: `2px solid ${isPaused ? 'rgba(255,77,77,0.5)' : 'rgba(49,208,170,0.4)'}`, borderRadius: '12px', background: isPaused ? 'rgba(255,77,77,0.06)' : 'rgba(49,208,170,0.04)' }}>
+            <Flex justifyContent="space-between" alignItems="center" mb="8px">
+              <Box>
+                <Text bold fontSize="18px" color={isPaused ? 'failure' : 'success'}>
+                  {isPaused ? `⏸ ${t('Contract PAUSED')}` : `▶ ${t('Contract RUNNING')}`}
+                </Text>
+                <Text fontSize="13px" color="textSubtle" mt="4px">
+                  {isPaused
+                    ? t('All stake / withdraw / claim operations are frozen for users.')
+                    : t('Contract is active. Users can stake, withdraw, and claim rewards.')}
+                </Text>
+              </Box>
+              <Button
+                onClick={() => { handlePause(); setTimeout(() => refetchPaused(), 3000) }}
+                disabled={isPending}
+                variant={isPaused ? 'primary' : 'danger'}
+                isLoading={isPending}
+                scale="md"
+              >
+                {isPaused ? t('Unpause Contract') : t('Pause Contract')}
+              </Button>
+            </Flex>
+            {!isPaused && (
+              <Message variant="warning" mb="0">
+                <MessageText fontSize="12px">
+                  {t('⚠️ Pausing will immediately stop all user interactions. Use only when suspicious activity is detected.')}
+                </MessageText>
+              </Message>
+            )}
+          </Box>
+
+          {/* 黑名单管理 */}
+          <Box mb="24px" p="16px" style={{ border: '1px solid rgba(255, 77, 77, 0.3)', borderRadius: '8px' }}>
+            <Text bold fontSize="16px" mb="8px" color="failure">
+              🚫 {t('Suspicious Address List (Local)')}
+            </Text>
+            <Text fontSize="13px" color="textSubtle" mb="12px">
+              {t('Mark addresses as suspicious for visual tracking. This is client-side only — it does NOT block on-chain operations. Use Pause to freeze the contract.')}
+            </Text>
+            <Flex mb="12px" style={{ gap: '8px' }}>
+              <Input
+                value={blacklistInput}
+                onChange={(e) => setBlacklistInput(e.target.value)}
+                placeholder="0x..."
+                style={{ flex: 1 }}
+              />
+              <Button
+                scale="md"
+                variant="danger"
+                onClick={() => handleAddToBlacklist(blacklistInput)}
+                disabled={!blacklistInput.trim()}
+              >
+                {t('Add')}
+              </Button>
+            </Flex>
+            {blacklist.length === 0 ? (
+              <Text fontSize="13px" color="textSubtle">{t('No flagged addresses yet.')}</Text>
+            ) : (
+              <Box>
+                {blacklist.map((addr) => (
+                  <Flex key={addr} alignItems="center" mb="6px" style={{ gap: '8px' }}>
+                    <Text fontSize="12px" fontFamily="monospace" style={{ flex: 1, wordBreak: 'break-all' }}>
+                      {addr}
+                    </Text>
+                    <Button
+                      scale="xs"
+                      variant="text"
+                      onClick={() => handleRemoveFromBlacklist(addr)}
+                      style={{ color: 'var(--colors-failure)', padding: '0 4px' }}
+                    >
+                      ✕
+                    </Button>
+                  </Flex>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          {/* 提现历史 */}
+          <Box p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
+            <Flex justifyContent="space-between" alignItems="center" mb="12px" flexWrap="wrap" style={{ gap: '8px' }}>
+              <Text bold fontSize="16px">
+                📋 {t('Withdraw History')} ({withdrawHistory.length})
+              </Text>
+              <Flex style={{ gap: '8px' }} flexWrap="wrap">
+                <Button
+                  scale="sm"
+                  variant={monitorFilter === 'all' ? 'primary' : 'tertiary'}
+                  onClick={() => setMonitorFilter('all')}
+                >
+                  {t('All')}
+                </Button>
+                <Button
+                  scale="sm"
+                  variant={monitorFilter === 'blacklisted' ? 'danger' : 'tertiary'}
+                  onClick={() => setMonitorFilter('blacklisted')}
+                >
+                  🚫 {t('Flagged')} ({withdrawHistory.filter((r) => isBlacklisted(r.user)).length})
+                </Button>
+                <Button
+                  scale="sm"
+                  variant="secondary"
+                  onClick={handleFetchHistory}
+                  isLoading={isLoadingHistory}
+                  disabled={isLoadingHistory}
+                >
+                  {t('Fetch History')}
+                </Button>
+                <Button
+                  scale="sm"
+                  variant="text"
+                  onClick={() => { setWithdrawHistory([]); saveWithdrawHistory([]) }}
+                  style={{ color: 'var(--colors-textSubtle)' }}
+                >
+                  {t('Clear')}
+                </Button>
+              </Flex>
+            </Flex>
+
+            <Text fontSize="12px" color="textSubtle" mb="12px">
+              {t('Realtime: new withdrawals appear automatically. Click "Fetch History" to load past events (last 50,000 blocks).')}
+            </Text>
+
+            {withdrawHistory.length === 0 ? (
+              <Text fontSize="13px" color="textSubtle">{t('No withdraw events recorded yet. Click "Fetch History" to load from chain.')}</Text>
+            ) : (
+              <Box style={{ maxHeight: '480px', overflowY: 'auto' }}>
+                {withdrawHistory
+                  .filter((r) => monitorFilter === 'all' || isBlacklisted(r.user))
+                  .map((record, i) => {
+                    const flagged = isBlacklisted(record.user)
+                    const poolCfg = STAKING_POOL_CONFIGS.find((c) => c.sousId === record.poolIndex)
+                    const decimals = poolCfg?.rewardTokenDecimals ?? 18
+                    const symbol = poolCfg?.rewardTokenSymbol ?? 'NBC'
+                    const amountReadable = (Number(record.amount) / 10 ** 18).toFixed(4)
+
+                    return (
+                      <Box
+                        key={`${record.txHash}-${record.user}-${i}`}
+                        mb="8px"
+                        p="10px 14px"
+                        style={{
+                          borderRadius: '8px',
+                          border: flagged ? '1px solid rgba(255,77,77,0.5)' : '1px solid rgba(255,255,255,0.06)',
+                          background: flagged ? 'rgba(255,77,77,0.07)' : 'rgba(255,255,255,0.02)',
+                        }}
+                      >
+                        <Flex justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" style={{ gap: '4px' }}>
+                          <Box style={{ flex: 1, minWidth: 0 }}>
+                            <Flex alignItems="center" style={{ gap: '6px' }} mb="2px">
+                              {flagged && <Text fontSize="12px" color="failure">🚫</Text>}
+                              <Text fontSize="12px" fontFamily="monospace" style={{ wordBreak: 'break-all' }}>
+                                {record.user}
+                              </Text>
+                            </Flex>
+                            <Text fontSize="11px" color="textSubtle">
+                              Pool {record.poolIndex} · {amountReadable} NBC · Block #{record.blockNumber.toString()}
+                              {record.timestamp > 0 && ` · ${new Date(record.timestamp).toLocaleTimeString()}`}
+                            </Text>
+                            {record.txHash && (
+                              <Text fontSize="11px" color="primary" style={{ wordBreak: 'break-all' }}>
+                                Tx: {record.txHash.slice(0, 20)}...
+                              </Text>
+                            )}
+                          </Box>
+                          <Flex style={{ gap: '6px' }} alignItems="center">
+                            {flagged ? (
+                              <Button
+                                scale="xs"
+                                variant="text"
+                                onClick={() => handleRemoveFromBlacklist(record.user)}
+                                style={{ color: 'var(--colors-textSubtle)', fontSize: '11px' }}
+                              >
+                                {t('Unflag')}
+                              </Button>
+                            ) : (
+                              <Button
+                                scale="xs"
+                                variant="text"
+                                onClick={() => handleAddToBlacklist(record.user)}
+                                style={{ color: 'var(--colors-failure)', fontSize: '11px' }}
+                              >
+                                🚫 {t('Flag')}
+                              </Button>
+                            )}
+                          </Flex>
+                        </Flex>
+                      </Box>
+                    )
+                  })}
+              </Box>
+            )}
+          </Box>
         </Box>
       )}
 
