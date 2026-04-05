@@ -6,9 +6,11 @@
  *  3. 金额 bigint 序列化/反序列化
  *  4. 过滤逻辑（all / blacklisted）
  *  5. 边界条件：空值、非法地址、超过 MAX_HISTORY
+ *
+ * 注意：不可放在 `pages/` 下，否则 Next 生产构建会将其当作页面路由并失败。
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 
 // ─── 复制 index.tsx 中的纯逻辑，避免引入 React/wagmi 依赖 ─────────────────
 
