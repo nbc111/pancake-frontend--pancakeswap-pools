@@ -1,0 +1,22 @@
+# 本地测试邀请绑定 PostgreSQL：在 apps/web 目录执行
+#   pnpm referral:db:up
+# 连接串已写入 .env.development 的 DATABASE_URL（可用 .env.local 覆盖）
+services:
+  referral-pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: referral
+      POSTGRES_PASSWORD: referral
+      POSTGRES_DB: referral
+    ports:
+      - '5433:5432'
+    volumes:
+      - referral_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U referral -d referral']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  referral_pg_data:

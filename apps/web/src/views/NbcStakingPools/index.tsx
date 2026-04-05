@@ -11,6 +11,7 @@ import { useInitialBlockTimestamp } from 'state/block/hooks'
 import { useNbcStakingPools } from './hooks/useNbcStakingPools'
 import NbcPoolCard from './components/NbcPoolCard'
 import NbcPoolRow from './components/NbcPoolRow'
+import { NbcReferralShareFab } from './components/NbcReferralShareFab'
 
 const StyledPageHeader = styled(PageHeader)`
   padding-top: 8px;
@@ -119,6 +120,7 @@ const NbcStakingPools: React.FC<React.PropsWithChildren> = () => {
         </PageHeader>
       )}
       {isMobile ? null : <Page>{poolContent}</Page>}
+      <NbcReferralShareFab />
     </>
   )
 }

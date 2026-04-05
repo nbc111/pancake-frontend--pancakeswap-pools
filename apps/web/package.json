@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "analyze": "ANALYZE=true pnpm build",
-    "dev": "concurrently  \"next-typesafe-url -w\" \"next dev -p 5000\"",
+    "dev": "concurrently  \"next-typesafe-url -w\" \"next dev -p 3000\"",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next",
     "build": "npm run build:check && next info && next build --debug  --no-lint",
     "build:check": "tsc --noEmit",
@@ -15,7 +15,15 @@
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}' --ignore-pattern src/components/Chart/lib/pancakeswap-charting-library.es.js",
     "lint:style": "npx stylelint '**/*.{ts,tsx}'",
     "format:write": "prettier --write \"**/*.{js,jsx,ts,tsx,json}\"",
-    "typechecks": "tsc --noEmit -p ./tsconfig.json"
+    "typechecks": "tsc --noEmit -p ./tsconfig.json",
+    "referral:db:up": "docker compose -f docker-compose.referral-pg.yml up -d",
+    "referral:db:down": "docker compose -f docker-compose.referral-pg.yml down",
+    "referral:db:psql": "docker compose -f docker-compose.referral-pg.yml exec referral-pg psql -U referral -d referral",
+    "referral:smoke": "node ./scripts/referral-smoke.mjs",
+    "verify:referral-staking-local": "node ./scripts/verify-referral-staking-local.mjs",
+    "staking:index-rewards": "node ./scripts/staking-index-reward-paid.mjs",
+    "staking:backfill-commission": "node ./scripts/staking-backfill-commission.mjs",
+    "staking:cron-sync": "bash ./scripts/cron-sync-staking-reward-paid.sh"
   },
   "browserslist": {
     "production": [
@@ -156,6 +164,7 @@
     "next-typesafe-url": "^4.1.1",
     "nuqs": "^1.17.4",
     "openapi-fetch": "^0.13.5",
+    "pg": "^8.13.1",
     "permissionless": "^0.2.47",
     "polished": "^4.2.2",
     "p-queue": "8.1.0",
@@ -206,6 +215,7 @@
     "@types/js-cookie": "^3.0.2",
     "@types/lodash": "^4.14.178",
     "@types/node": "^18.18.14",
+    "@types/pg": "^8.11.10",
     "@types/qs": "^6.0.0",
     "@types/react": "catalog:",
     "@types/react-datepicker": "^4.4.1",

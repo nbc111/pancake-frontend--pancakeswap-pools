@@ -6,7 +6,7 @@
 
 ## 访问地址
 
-- **URL**: `/nbc-staking-admin`
+- **URL**: `/nbc-staking-admin`（会重定向到 `/nbc-staking-admin/pools`）；各功能为子路径，例如 `/nbc-staking-admin/add-pool`、`/nbc-staking-admin/monitor`。
 - **权限**: 仅合约 Owner 可访问
 
 ## 功能

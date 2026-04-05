@@ -32,6 +32,7 @@ import { useEmbeddedSmartAccountConnectorV2 } from 'wallet/Privy/hooks/usePrivyS
 import { useDataDogRUM } from 'hooks/useDataDogRUM'
 import { useLoadExperimentalFeatures } from 'hooks/useExperimentalFeatureEnabled'
 import useInitNotificationsClient from 'hooks/useInitNotificationsClient'
+import { useReferralRefBinding } from 'hooks/useReferralRefBinding'
 import { useWalletConnectRouterSync } from 'hooks/useWalletConnectRouterSync'
 import { useWeb3WalletView } from 'hooks/useWeb3WalletView'
 import { useInitGlobalWorker } from 'hooks/useWorker'
@@ -77,6 +78,7 @@ function GlobalHooks() {
   useLockedEndNotification()
   useInitNotificationsClient()
   useWalletConnectRouterSync()
+  useReferralRefBinding()
   useEmbeddedSmartAccountConnectorV2()
   return null
 }

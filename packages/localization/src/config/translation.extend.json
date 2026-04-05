@@ -757,5 +757,113 @@
   "Round.predictions": {
     "value": "Round",
     "hint": "Used in predictions/betting contexts to indicate a betting round/iteration. Translate as a round/iteration term (e.g., “第{round}轮” or “轮次”)."
+  },
+  "Commission payout status column": {
+    "value": "Payout status",
+    "hint": "Admin commission table column: ledger payout state (pending/approved/etc.)."
+  },
+  "Commission payout action column": {
+    "value": "Admin actions",
+    "hint": "Admin commission table column header for buttons to open payout review."
+  },
+  "Commission payout open modal": {
+    "value": "Review payout",
+    "hint": "Button to open modal where admin approves/declines commission payout."
+  },
+  "Commission payout status pending": {
+    "value": "Pending review",
+    "hint": "Commission row not yet reviewed for payout."
+  },
+  "Commission payout status approved": {
+    "value": "Approved for payout",
+    "hint": "Admin approved paying this commission (off-chain status)."
+  },
+  "Commission payout status rejected": {
+    "value": "Payout declined",
+    "hint": "Admin declined this commission payout."
+  },
+  "Commission payout status paid": {
+    "value": "Marked paid",
+    "hint": "Admin marked commission as paid after transfer."
+  },
+  "Commission payout decision modal title": {
+    "value": "Review commission payout",
+    "hint": "Modal title for admin commission payout workflow."
+  },
+  "Commission payout decision modal hint": {
+    "value": "This row is an off-chain commission ledger entry. Actions here only update server status and do not send on-chain transfers. Add an optional note when declining.",
+    "hint": "Explains off-chain-only admin actions vs on-chain payout."
+  },
+  "Commission payout current status": {
+    "value": "Current payout status",
+    "hint": "Label before showing payout status in admin modal."
+  },
+  "Commission payout reject note label": {
+    "value": "Decline reason (optional)",
+    "hint": "Label for optional textarea when declining payout."
+  },
+  "Commission payout reject note placeholder": {
+    "value": "e.g. risk check / address concern",
+    "hint": "Placeholder for decline reason field."
+  },
+  "Commission payout action approve": {
+    "value": "Approve for payout",
+    "hint": "Admin button to approve commission payout."
+  },
+  "Commission payout action reject": {
+    "value": "Decline payout",
+    "hint": "Admin button to reject commission payout."
+  },
+  "Commission payout action paid": {
+    "value": "Mark as paid",
+    "hint": "Admin button after off-chain/chain payout completed."
+  },
+  "Commission payout action reset pending": {
+    "value": "Reset to pending review",
+    "hint": "Admin button to undo status back to pending."
+  },
+  "NBC referral share commission status column": {
+    "value": "Status",
+    "hint": "User-facing NBC staking referral modal: table column for commission payout state."
+  },
+  "NBC referral share commission status pending": {
+    "value": "Under review",
+    "hint": "User sees commission is awaiting admin review."
+  },
+  "NBC referral share commission status approved": {
+    "value": "Approved — pending transfer",
+    "hint": "Admin approved; user-facing: payout not yet received."
+  },
+  "NBC referral share commission status rejected": {
+    "value": "Not paid out",
+    "hint": "Commission line was declined by admin."
+  },
+  "NBC referral share commission status paid": {
+    "value": "Paid out",
+    "hint": "Admin marked commission as paid."
+  },
+  "Commission admin table page size hint": {
+    "value": "%size% per page · %total% total",
+    "hint": "Admin referral commission table: page size and total row count next to pagination."
+  },
+  "NBC admin pools page title": {
+    "value": "Manage staking reward pools",
+    "hint": "NBC staking admin pools tab: main heading (ops-friendly)."
+  },
+  "NBC admin pools ops path title": {
+    "value": "Recommended flow",
+    "hint": "Short ops checklist on pools admin page."
+  },
+  "NBC admin pools section deposit title": {
+    "value": "Fund this period’s rewards",
+    "hint": "Replaces raw notifyRewardAmount in UI title."
+  },
+  "NBC admin pools submit deposit rewards": {
+    "value": "Confirm fund rewards (submit tx)",
+    "hint": "Primary CTA for notifyRewardAmount flow."
+  },
+  "NBC admin pool select option": {
+    "value": "%symbol% (%name%) · index %id%",
+    "hint": "Pool dropdown label: symbol, name, sousId."
   }
 }
