@@ -39,10 +39,27 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         uint256 rewardPerTokenPaid;
         uint256 rewards;
         uint256 stakedAt;  // 首次质押时间戳（全部提取后会重置）
+        uint256 lockedForWithdraw; // 已申请提现但尚未执行的锁定金额
+    }
+
+    struct WithdrawRequest {
+        uint256 poolIndex;
+        address user;
+        uint256 amount;
+        uint256 requestedAt;
+        bool approved;
+        bool executed;
+        bool rejected;
     }
     
     mapping(uint256 => RewardPool) public pools;
     mapping(uint256 => mapping(address => UserStake)) public userStakes;
+    WithdrawRequest[] public withdrawRequests;
+    // user => poolIndex => 是否有 pending 请求
+    mapping(address => mapping(uint256 => bool)) public hasPendingRequest;
+    // 请求总数
+    uint256 public withdrawRequestCount;
+
     mapping(uint256 => uint256) public minStakeAmount;  // 单次质押的最小值（0 = 无限制）
     mapping(uint256 => uint256) public maxStakeAmount;  // 单个用户的总质押量上限（0 = 无限制）
     mapping(uint256 => uint256) public maxTotalStaked;  // 整个池的 TVL 上限，所有用户的总和（0 = 无限制）
@@ -63,6 +80,10 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
     event MaxTotalStakedUpdated(uint256 indexed poolIndex, uint256 maxTotalStaked);
     event EmergencyWithdrawStake(uint256 indexed poolIndex, address indexed user, uint256 amount);
     event ReceivedEther(address indexed sender, uint256 amount);
+    event WithdrawRequested(uint256 indexed requestId, uint256 indexed poolIndex, address indexed user, uint256 amount);
+    event WithdrawApproved(uint256 indexed requestId);
+    event WithdrawRejected(uint256 indexed requestId);
+    event WithdrawExecuted(uint256 indexed requestId, uint256 indexed poolIndex, address indexed user, uint256 amount);
     
     // ============ Constructor ============
     
@@ -273,6 +294,11 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         emit Staked(poolIndex, msg.sender, msg.value);
     }
     
+    /**
+     * @notice 发起提现申请（需 owner 审批后才能执行）
+     * @param poolIndex 池索引
+     * @param amount 申请提现数量
+     */
     function withdraw(uint256 poolIndex, uint256 amount)
         external
         nonReentrant
@@ -281,20 +307,26 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         updateReward(poolIndex, msg.sender)
     {
         require(amount > 0, "Cannot withdraw 0");
-        require(userStakes[poolIndex][msg.sender].amount >= amount, "Insufficient balance");
-        
-        pools[poolIndex].totalStaked -= amount;
-        userStakes[poolIndex][msg.sender].amount -= amount;
-        
-        // 如果全部提取，清零质押时间
-        if (userStakes[poolIndex][msg.sender].amount == 0) {
-            userStakes[poolIndex][msg.sender].stakedAt = 0;
-        }
-        
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Transfer failed");
-        
-        emit Withdrawn(poolIndex, msg.sender, amount);
+        uint256 available = userStakes[poolIndex][msg.sender].amount - userStakes[poolIndex][msg.sender].lockedForWithdraw;
+        require(available >= amount, "Insufficient available balance");
+        require(!hasPendingRequest[msg.sender][poolIndex], "Already has pending request for this pool");
+
+        userStakes[poolIndex][msg.sender].lockedForWithdraw += amount;
+        hasPendingRequest[msg.sender][poolIndex] = true;
+
+        uint256 requestId = withdrawRequestCount;
+        withdrawRequests.push(WithdrawRequest({
+            poolIndex: poolIndex,
+            user: msg.sender,
+            amount: amount,
+            requestedAt: block.timestamp,
+            approved: false,
+            executed: false,
+            rejected: false
+        }));
+        withdrawRequestCount++;
+
+        emit WithdrawRequested(requestId, poolIndex, msg.sender, amount);
     }
     
     function getReward(uint256 poolIndex)
@@ -339,9 +371,9 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
     }
     
     /**
-     * @notice 退出部分质押并提取奖励
+     * @notice 退出部分质押并提取奖励（本金申请走审批，奖励立即发放）
      * @param poolIndex 池索引
-     * @param amount 提取的质押数量
+     * @param amount 申请提现的质押数量
      */
     function exit(uint256 poolIndex, uint256 amount) 
         external 
@@ -351,20 +383,28 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         updateReward(poolIndex, msg.sender)
     {
         require(amount > 0, "Cannot withdraw 0");
-        require(userStakes[poolIndex][msg.sender].amount >= amount, "Insufficient balance");
-        
-        pools[poolIndex].totalStaked -= amount;
-        userStakes[poolIndex][msg.sender].amount -= amount;
-        
-        // 如果全部提取，清零质押时间
-        if (userStakes[poolIndex][msg.sender].amount == 0) {
-            userStakes[poolIndex][msg.sender].stakedAt = 0;
-        }
-        
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Transfer failed");
-        emit Withdrawn(poolIndex, msg.sender, amount);
-        
+        uint256 available = userStakes[poolIndex][msg.sender].amount - userStakes[poolIndex][msg.sender].lockedForWithdraw;
+        require(available >= amount, "Insufficient available balance");
+        require(!hasPendingRequest[msg.sender][poolIndex], "Already has pending request for this pool");
+
+        userStakes[poolIndex][msg.sender].lockedForWithdraw += amount;
+        hasPendingRequest[msg.sender][poolIndex] = true;
+
+        uint256 requestId = withdrawRequestCount;
+        withdrawRequests.push(WithdrawRequest({
+            poolIndex: poolIndex,
+            user: msg.sender,
+            amount: amount,
+            requestedAt: block.timestamp,
+            approved: false,
+            executed: false,
+            rejected: false
+        }));
+        withdrawRequestCount++;
+
+        emit WithdrawRequested(requestId, poolIndex, msg.sender, amount);
+
+        // 奖励立即发放，不走审批
         uint256 reward = userStakes[poolIndex][msg.sender].rewards;
         if (reward > 0) {
             userStakes[poolIndex][msg.sender].rewards = 0;
@@ -374,7 +414,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
     }
     
     /**
-     * @notice 退出所有质押并提取所有奖励
+     * @notice 退出所有可用质押并提取奖励（本金申请走审批，奖励立即发放）
      * @param poolIndex 池索引
      */
     function exitAll(uint256 poolIndex) 
@@ -384,17 +424,28 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         validPool(poolIndex)
         updateReward(poolIndex, msg.sender)
     {
-        uint256 amount = userStakes[poolIndex][msg.sender].amount;
-        require(amount > 0, "No stake to exit");
-        
-        pools[poolIndex].totalStaked -= amount;
-        userStakes[poolIndex][msg.sender].amount = 0;
-        userStakes[poolIndex][msg.sender].stakedAt = 0;  // 全部提取，清零质押时间
-        
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Transfer failed");
-        emit Withdrawn(poolIndex, msg.sender, amount);
-        
+        uint256 available = userStakes[poolIndex][msg.sender].amount - userStakes[poolIndex][msg.sender].lockedForWithdraw;
+        require(available > 0, "No available stake to exit");
+        require(!hasPendingRequest[msg.sender][poolIndex], "Already has pending request for this pool");
+
+        userStakes[poolIndex][msg.sender].lockedForWithdraw += available;
+        hasPendingRequest[msg.sender][poolIndex] = true;
+
+        uint256 requestId = withdrawRequestCount;
+        withdrawRequests.push(WithdrawRequest({
+            poolIndex: poolIndex,
+            user: msg.sender,
+            amount: available,
+            requestedAt: block.timestamp,
+            approved: false,
+            executed: false,
+            rejected: false
+        }));
+        withdrawRequestCount++;
+
+        emit WithdrawRequested(requestId, poolIndex, msg.sender, available);
+
+        // 奖励立即发放，不走审批
         uint256 reward = userStakes[poolIndex][msg.sender].rewards;
         if (reward > 0) {
             userStakes[poolIndex][msg.sender].rewards = 0;
@@ -403,8 +454,96 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
         }
     }
     
+    // ============ Withdraw Approval Functions ============
+
+    /**
+     * @notice Owner 审批通过提现申请
+     * @param requestId 申请 ID
+     */
+    function approveWithdraw(uint256 requestId) external onlyOwner {
+        require(requestId < withdrawRequestCount, "Request does not exist");
+        WithdrawRequest storage req = withdrawRequests[requestId];
+        require(!req.approved && !req.rejected && !req.executed, "Invalid request state");
+        req.approved = true;
+        emit WithdrawApproved(requestId);
+    }
+
+    /**
+     * @notice Owner 拒绝提现申请（退回锁定余额）
+     * @param requestId 申请 ID
+     */
+    function rejectWithdraw(uint256 requestId) external onlyOwner {
+        require(requestId < withdrawRequestCount, "Request does not exist");
+        WithdrawRequest storage req = withdrawRequests[requestId];
+        require(!req.approved && !req.rejected && !req.executed, "Invalid request state");
+        req.rejected = true;
+        // 解锁余额
+        userStakes[req.poolIndex][req.user].lockedForWithdraw -= req.amount;
+        hasPendingRequest[req.user][req.poolIndex] = false;
+        emit WithdrawRejected(requestId);
+    }
+
+    /**
+     * @notice 用户执行已审批的提现
+     * @param requestId 申请 ID
+     */
+    function executeWithdraw(uint256 requestId)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        require(requestId < withdrawRequestCount, "Request does not exist");
+        WithdrawRequest storage req = withdrawRequests[requestId];
+        require(req.user == msg.sender, "Not your request");
+        require(req.approved, "Not approved yet");
+        require(!req.executed, "Already executed");
+
+        uint256 poolIndex = req.poolIndex;
+        uint256 amount = req.amount;
+
+        req.executed = true;
+        hasPendingRequest[msg.sender][poolIndex] = false;
+
+        _updateReward(poolIndex, msg.sender);
+        pools[poolIndex].totalStaked -= amount;
+        userStakes[poolIndex][msg.sender].amount -= amount;
+        userStakes[poolIndex][msg.sender].lockedForWithdraw -= amount;
+
+        if (userStakes[poolIndex][msg.sender].amount == 0) {
+            userStakes[poolIndex][msg.sender].stakedAt = 0;
+        }
+
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit WithdrawExecuted(requestId, poolIndex, msg.sender, amount);
+        emit Withdrawn(poolIndex, msg.sender, amount);
+    }
+
+    /**
+     * @notice 查询提现申请详情
+     * @param requestId 申请 ID
+     */
+    function getWithdrawRequest(uint256 requestId)
+        external
+        view
+        returns (
+            uint256 poolIndex,
+            address user,
+            uint256 amount,
+            uint256 requestedAt,
+            bool approved,
+            bool executed,
+            bool rejected
+        )
+    {
+        require(requestId < withdrawRequestCount, "Request does not exist");
+        WithdrawRequest storage req = withdrawRequests[requestId];
+        return (req.poolIndex, req.user, req.amount, req.requestedAt, req.approved, req.executed, req.rejected);
+    }
+
     // ============ Owner Functions ============
-    
+
     function addPool(
         address rewardToken,
         uint256 rewardRate,

@@ -1,114 +1,93 @@
 /**
- * NBC Staking Admin — Withdraw Monitor
+ * NBC Staking Admin — Withdraw Approval Queue
  * 测试覆盖：
- *  1. 黑名单 load/save/add/remove
- *  2. 提现历史 load/save/merge 去重
- *  3. 金额 bigint 序列化/反序列化
- *  4. 过滤逻辑（all / blacklisted）
- *  5. 边界条件：空值、非法地址、超过 MAX_HISTORY
- *
- * 注意：不可放在 `pages/` 下，否则 Next 生产构建会将其当作页面路由并失败。
+ *  1. WithdrawRequest 状态判断（pending / approved / rejected / executed）
+ *  2. 过滤逻辑（all / pending / approved / rejected）
+ *  3. 统计计数（各状态数量）
+ *  4. 排序（最新申请在前）
+ *  5. 金额格式化
+ *  6. 边界条件：空列表、全部同一状态等
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
-// ─── 复制 index.tsx 中的纯逻辑，避免引入 React/wagmi 依赖 ─────────────────
+// ─── 类型定义（与 index.tsx 保持一致）────────────────────────────────────────
 
-const BLACKLIST_STORAGE_KEY = 'nbc_staking_blacklist'
-const WITHDRAW_HISTORY_KEY = 'nbc_staking_withdraw_history'
-const MAX_HISTORY = 200
-
-type WithdrawRecord = {
+type WithdrawRequest = {
+  requestId: number
   poolIndex: number
   user: string
   amount: bigint
-  timestamp: number
-  txHash: string
-  blockNumber: bigint
+  requestedAt: number
+  approved: boolean
+  executed: boolean
+  rejected: boolean
 }
 
-function loadBlacklist(storage: Storage): string[] {
-  try {
-    const raw = storage.getItem(BLACKLIST_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
+// ─── 纯逻辑函数（从 UI 中抽取，方便单测）─────────────────────────────────────
+
+function isPending(req: WithdrawRequest): boolean {
+  return !req.approved && !req.rejected && !req.executed
+}
+
+function isApprovedPending(req: WithdrawRequest): boolean {
+  return req.approved && !req.executed
+}
+
+function filterRequests(
+  requests: WithdrawRequest[],
+  filter: 'all' | 'pending' | 'approved' | 'rejected',
+): WithdrawRequest[] {
+  switch (filter) {
+    case 'pending':
+      return requests.filter((r) => !r.approved && !r.rejected && !r.executed)
+    case 'approved':
+      return requests.filter((r) => r.approved && !r.executed)
+    case 'rejected':
+      return requests.filter((r) => r.rejected)
+    case 'all':
+    default:
+      return requests
   }
 }
 
-function saveBlacklist(storage: Storage, list: string[]) {
-  storage.setItem(BLACKLIST_STORAGE_KEY, JSON.stringify(list))
-}
-
-function loadWithdrawHistory(storage: Storage): WithdrawRecord[] {
-  try {
-    const raw = storage.getItem(WITHDRAW_HISTORY_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return parsed.map((r: any) => ({
-      ...r,
-      amount: BigInt(r.amount),
-      blockNumber: BigInt(r.blockNumber),
-    }))
-  } catch {
-    return []
-  }
-}
-
-function saveWithdrawHistory(storage: Storage, history: WithdrawRecord[]) {
-  const serializable = history.slice(0, MAX_HISTORY).map((r) => ({
-    ...r,
-    amount: r.amount.toString(),
-    blockNumber: r.blockNumber.toString(),
-  }))
-  storage.setItem(WITHDRAW_HISTORY_KEY, JSON.stringify(serializable))
-}
-
-function mergeHistory(incoming: WithdrawRecord[], existing: WithdrawRecord[]): WithdrawRecord[] {
-  const seen = new Set(existing.map((r) => r.txHash + r.user))
-  const fresh = incoming.filter((r) => !seen.has(r.txHash + r.user))
-  return [...fresh, ...existing].slice(0, MAX_HISTORY)
-}
-
-function isBlacklisted(blacklist: string[], addr: string): boolean {
-  return blacklist.includes(addr.toLowerCase())
-}
-
-function addToBlacklist(blacklist: string[], addr: string): string[] {
-  const normalized = addr.trim().toLowerCase()
-  if (!normalized || !normalized.startsWith('0x')) return blacklist
-  return blacklist.includes(normalized) ? blacklist : [...blacklist, normalized]
-}
-
-function removeFromBlacklist(blacklist: string[], addr: string): string[] {
-  return blacklist.filter((a) => a !== addr.toLowerCase())
-}
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-function makeRecord(overrides: Partial<WithdrawRecord> = {}): WithdrawRecord {
+function countByStatus(requests: WithdrawRequest[]) {
   return {
+    pending: requests.filter((r) => !r.approved && !r.rejected && !r.executed).length,
+    approved: requests.filter((r) => r.approved && !r.executed).length,
+    rejected: requests.filter((r) => r.rejected).length,
+    executed: requests.filter((r) => r.executed).length,
+  }
+}
+
+function sortByIdDesc(requests: WithdrawRequest[]): WithdrawRequest[] {
+  return [...requests].sort((a, b) => b.requestId - a.requestId)
+}
+
+function formatAmount(amount: bigint, decimals = 18): string {
+  return (Number(amount) / 10 ** decimals).toFixed(4)
+}
+
+function getStatusLabel(req: WithdrawRequest): string {
+  if (req.executed) return 'Executed'
+  if (req.rejected) return 'Rejected'
+  if (req.approved) return 'Approved - Awaiting user execution'
+  return 'Pending Approval'
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function makeRequest(overrides: Partial<WithdrawRequest> = {}): WithdrawRequest {
+  return {
+    requestId: 0,
     poolIndex: 0,
-    user: '0xabc000000000000000000000000000000000001',
+    user: '0xuser000000000000000000000000000000001',
     amount: 1000000000000000000n, // 1 NBC
-    timestamp: 1000000,
-    txHash: '0xdeadbeef0000000000000000000000000000000000000000000000000000001',
-    blockNumber: 100n,
+    requestedAt: 1700000000,
+    approved: false,
+    executed: false,
+    rejected: false,
     ...overrides,
-  }
-}
-
-// ─── 模拟 localStorage ────────────────────────────────────────────────────────
-
-function createMockStorage(): Storage {
-  const store: Record<string, string> = {}
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { Object.keys(store).forEach((k) => delete store[k]) },
-    key: (index: number) => Object.keys(store)[index] ?? null,
-    get length() { return Object.keys(store).length },
   }
 }
 
@@ -116,252 +95,227 @@ function createMockStorage(): Storage {
 // 测试套件
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('黑名单管理', () => {
-  let storage: Storage
-
-  beforeEach(() => {
-    storage = createMockStorage()
+describe('状态判断', () => {
+  it('新申请默认为 pending', () => {
+    const req = makeRequest()
+    expect(isPending(req)).toBe(true)
+    expect(isApprovedPending(req)).toBe(false)
   })
 
-  it('初始黑名单为空', () => {
-    expect(loadBlacklist(storage)).toEqual([])
+  it('approved=true, executed=false → approved pending', () => {
+    const req = makeRequest({ approved: true })
+    expect(isPending(req)).toBe(false)
+    expect(isApprovedPending(req)).toBe(true)
   })
 
-  it('保存并读取黑名单', () => {
-    const list = ['0xabc123', '0xdef456']
-    saveBlacklist(storage, list)
-    expect(loadBlacklist(storage)).toEqual(list)
+  it('approved=true, executed=true → 已执行，不再是 pending 也不是 approved pending', () => {
+    const req = makeRequest({ approved: true, executed: true })
+    expect(isPending(req)).toBe(false)
+    expect(isApprovedPending(req)).toBe(false)
   })
 
-  it('添加地址：自动小写化', () => {
-    const result = addToBlacklist([], '0xABC000000000000000000000000000000000001')
-    expect(result).toContain('0xabc000000000000000000000000000000000001')
+  it('rejected=true → 不是 pending', () => {
+    const req = makeRequest({ rejected: true })
+    expect(isPending(req)).toBe(false)
   })
 
-  it('添加地址：去重，不会重复', () => {
-    const addr = '0xabc000000000000000000000000000000000001'
-    const list1 = addToBlacklist([], addr)
-    const list2 = addToBlacklist(list1, addr)
-    expect(list2.length).toBe(1)
+  it('getStatusLabel: 默认 pending', () => {
+    expect(getStatusLabel(makeRequest())).toBe('Pending Approval')
   })
 
-  it('添加地址：大写版本视为相同地址', () => {
-    const lower = '0xabc000000000000000000000000000000000001'
-    const upper = '0xABC000000000000000000000000000000000001'
-    const list1 = addToBlacklist([], lower)
-    const list2 = addToBlacklist(list1, upper)
-    expect(list2.length).toBe(1)
+  it('getStatusLabel: approved 未执行', () => {
+    expect(getStatusLabel(makeRequest({ approved: true }))).toBe('Approved - Awaiting user execution')
   })
 
-  it('添加空字符串：忽略', () => {
-    const result = addToBlacklist([], '')
-    expect(result).toEqual([])
+  it('getStatusLabel: rejected', () => {
+    expect(getStatusLabel(makeRequest({ rejected: true }))).toBe('Rejected')
   })
 
-  it('添加非 0x 开头的地址：忽略', () => {
-    const result = addToBlacklist([], 'notanaddress')
-    expect(result).toEqual([])
-  })
-
-  it('删除地址', () => {
-    const addr = '0xabc000000000000000000000000000000000001'
-    const list = [addr, '0xother000000000000000000000000000000001']
-    const result = removeFromBlacklist(list, addr)
-    expect(result).not.toContain(addr)
-    expect(result.length).toBe(1)
-  })
-
-  it('删除不存在的地址：列表不变', () => {
-    const list = ['0xabc000000000000000000000000000000000001']
-    const result = removeFromBlacklist(list, '0xnonexistent')
-    expect(result).toEqual(list)
-  })
-
-  it('isBlacklisted：大小写不敏感', () => {
-    const list = ['0xabc000000000000000000000000000000000001']
-    expect(isBlacklisted(list, '0xABC000000000000000000000000000000000001')).toBe(true)
-    expect(isBlacklisted(list, '0xabc000000000000000000000000000000000001')).toBe(true)
-  })
-
-  it('isBlacklisted：未标记地址返回 false', () => {
-    const list = ['0xabc000000000000000000000000000000000001']
-    expect(isBlacklisted(list, '0xother00000000000000000000000000000000001')).toBe(false)
-  })
-
-  it('storage 损坏时 loadBlacklist 返回空数组', () => {
-    storage.setItem(BLACKLIST_STORAGE_KEY, '{invalid json}')
-    expect(loadBlacklist(storage)).toEqual([])
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('提现历史 持久化', () => {
-  let storage: Storage
-
-  beforeEach(() => {
-    storage = createMockStorage()
-  })
-
-  it('初始历史为空', () => {
-    expect(loadWithdrawHistory(storage)).toEqual([])
-  })
-
-  it('保存后读取，bigint 正确还原', () => {
-    const record = makeRecord({ amount: 999999999999999999n, blockNumber: 12345678n })
-    saveWithdrawHistory(storage, [record])
-    const loaded = loadWithdrawHistory(storage)
-    expect(loaded[0].amount).toBe(999999999999999999n)
-    expect(loaded[0].blockNumber).toBe(12345678n)
-  })
-
-  it('保存多条记录并全部读取', () => {
-    const records = [
-      makeRecord({ txHash: '0x1', user: '0xuser1000000000000000000000000000000001' }),
-      makeRecord({ txHash: '0x2', user: '0xuser2000000000000000000000000000000002' }),
-      makeRecord({ txHash: '0x3', user: '0xuser3000000000000000000000000000000003' }),
-    ]
-    saveWithdrawHistory(storage, records)
-    const loaded = loadWithdrawHistory(storage)
-    expect(loaded.length).toBe(3)
-    expect(loaded[0].txHash).toBe('0x1')
-  })
-
-  it('超过 MAX_HISTORY 条时截断', () => {
-    const records = Array.from({ length: MAX_HISTORY + 50 }, (_, i) =>
-      makeRecord({ txHash: `0x${i.toString().padStart(4, '0')}`, blockNumber: BigInt(i) }),
-    )
-    saveWithdrawHistory(storage, records)
-    const loaded = loadWithdrawHistory(storage)
-    expect(loaded.length).toBe(MAX_HISTORY)
-  })
-
-  it('storage 损坏时返回空数组', () => {
-    storage.setItem(WITHDRAW_HISTORY_KEY, 'not valid json [')
-    expect(loadWithdrawHistory(storage)).toEqual([])
-  })
-
-  it('amount 为 0 时正确处理', () => {
-    const record = makeRecord({ amount: 0n })
-    saveWithdrawHistory(storage, [record])
-    const loaded = loadWithdrawHistory(storage)
-    expect(loaded[0].amount).toBe(0n)
-  })
-
-  it('极大 bigint 值不丢失精度', () => {
-    // 比 Number.MAX_SAFE_INTEGER 大的值
-    const huge = 99999999999999999999999999999n
-    const record = makeRecord({ amount: huge })
-    saveWithdrawHistory(storage, [record])
-    const loaded = loadWithdrawHistory(storage)
-    expect(loaded[0].amount).toBe(huge)
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('提现历史 合并去重', () => {
-  it('新记录插在前面', () => {
-    const existing = [makeRecord({ txHash: '0xold', blockNumber: 1n })]
-    const incoming = [makeRecord({ txHash: '0xnew', blockNumber: 2n })]
-    const merged = mergeHistory(incoming, existing)
-    expect(merged[0].txHash).toBe('0xnew')
-    expect(merged[1].txHash).toBe('0xold')
-  })
-
-  it('相同 txHash+user 不会重复', () => {
-    const record = makeRecord({ txHash: '0xdup', user: '0xuser000000000000000000000000000000001' })
-    const merged = mergeHistory([record], [record])
-    expect(merged.length).toBe(1)
-  })
-
-  it('不同 user 但相同 txHash 视为不同记录', () => {
-    const r1 = makeRecord({ txHash: '0xsame', user: '0xuser1000000000000000000000000000000001' })
-    const r2 = makeRecord({ txHash: '0xsame', user: '0xuser2000000000000000000000000000000002' })
-    const merged = mergeHistory([r1], [r2])
-    expect(merged.length).toBe(2)
-  })
-
-  it('合并后总数超过 MAX_HISTORY 时截断', () => {
-    const existing = Array.from({ length: MAX_HISTORY }, (_, i) =>
-      makeRecord({ txHash: `0xexist${i}`, blockNumber: BigInt(i) }),
-    )
-    const incoming = [makeRecord({ txHash: '0xbrand_new', blockNumber: 9999n })]
-    const merged = mergeHistory(incoming, existing)
-    expect(merged.length).toBe(MAX_HISTORY)
-    expect(merged[0].txHash).toBe('0xbrand_new') // 新记录在最前
-  })
-
-  it('incoming 为空时返回原有记录', () => {
-    const existing = [makeRecord()]
-    const merged = mergeHistory([], existing)
-    expect(merged).toEqual(existing)
-  })
-
-  it('existing 为空时返回所有新记录', () => {
-    const incoming = [makeRecord({ txHash: '0xa' }), makeRecord({ txHash: '0xb' })]
-    const merged = mergeHistory(incoming, [])
-    expect(merged.length).toBe(2)
+  it('getStatusLabel: executed', () => {
+    expect(getStatusLabel(makeRequest({ approved: true, executed: true }))).toBe('Executed')
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('过滤逻辑', () => {
-  const records: WithdrawRecord[] = [
-    makeRecord({ user: '0xgood000000000000000000000000000000001', txHash: '0x1' }),
-    makeRecord({ user: '0xbad0000000000000000000000000000000001', txHash: '0x2' }),
-    makeRecord({ user: '0xbad0000000000000000000000000000000001', txHash: '0x3' }),
-    makeRecord({ user: '0xclean00000000000000000000000000000001', txHash: '0x4' }),
+  const requests: WithdrawRequest[] = [
+    makeRequest({ requestId: 0 }),                                         // pending
+    makeRequest({ requestId: 1, approved: true }),                         // approved pending
+    makeRequest({ requestId: 2, rejected: true }),                         // rejected
+    makeRequest({ requestId: 3, approved: true, executed: true }),         // executed
+    makeRequest({ requestId: 4 }),                                         // pending
   ]
-  const blacklist = ['0xbad0000000000000000000000000000000001']
 
-  it('filter=all 返回全部记录', () => {
-    const filtered = records.filter(() => true)
-    expect(filtered.length).toBe(4)
+  it('filter=all 返回全部', () => {
+    expect(filterRequests(requests, 'all').length).toBe(5)
   })
 
-  it('filter=blacklisted 只返回黑名单地址的记录', () => {
-    const filtered = records.filter((r) => isBlacklisted(blacklist, r.user))
-    expect(filtered.length).toBe(2)
-    filtered.forEach((r) => expect(r.user).toBe('0xbad0000000000000000000000000000000001'))
+  it('filter=pending 只返回待审批', () => {
+    const result = filterRequests(requests, 'pending')
+    expect(result.length).toBe(2)
+    result.forEach((r) => expect(isPending(r)).toBe(true))
   })
 
-  it('黑名单为空时 filter=blacklisted 返回空', () => {
-    const filtered = records.filter((r) => isBlacklisted([], r.user))
-    expect(filtered.length).toBe(0)
+  it('filter=approved 只返回已批准但未执行', () => {
+    const result = filterRequests(requests, 'approved')
+    expect(result.length).toBe(1)
+    expect(result[0].requestId).toBe(1)
   })
 
-  it('blacklisted 计数正确', () => {
-    const count = records.filter((r) => isBlacklisted(blacklist, r.user)).length
-    expect(count).toBe(2)
+  it('filter=rejected 只返回被拒绝的', () => {
+    const result = filterRequests(requests, 'rejected')
+    expect(result.length).toBe(1)
+    expect(result[0].requestId).toBe(2)
+  })
+
+  it('空列表各 filter 均返回空数组', () => {
+    expect(filterRequests([], 'all')).toEqual([])
+    expect(filterRequests([], 'pending')).toEqual([])
+    expect(filterRequests([], 'approved')).toEqual([])
+    expect(filterRequests([], 'rejected')).toEqual([])
+  })
+
+  it('全部 pending 时 filter=approved 返回空', () => {
+    const allPending = [makeRequest({ requestId: 0 }), makeRequest({ requestId: 1 })]
+    expect(filterRequests(allPending, 'approved')).toEqual([])
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('金额显示格式化', () => {
-  it('1 NBC (18 decimals) 显示为 1.0000', () => {
-    const amount = 1000000000000000000n
-    const readable = (Number(amount) / 10 ** 18).toFixed(4)
-    expect(readable).toBe('1.0000')
+describe('统计计数', () => {
+  it('空列表所有计数为 0', () => {
+    const counts = countByStatus([])
+    expect(counts).toEqual({ pending: 0, approved: 0, rejected: 0, executed: 0 })
   })
 
-  it('0.5 NBC 显示为 0.5000', () => {
-    const amount = 500000000000000000n
-    const readable = (Number(amount) / 10 ** 18).toFixed(4)
-    expect(readable).toBe('0.5000')
+  it('混合状态计数正确', () => {
+    const requests = [
+      makeRequest({ requestId: 0 }),                                      // pending
+      makeRequest({ requestId: 1 }),                                      // pending
+      makeRequest({ requestId: 2, approved: true }),                      // approved
+      makeRequest({ requestId: 3, rejected: true }),                      // rejected
+      makeRequest({ requestId: 4, approved: true, executed: true }),      // executed
+      makeRequest({ requestId: 5, approved: true, executed: true }),      // executed
+    ]
+    const counts = countByStatus(requests)
+    expect(counts.pending).toBe(2)
+    expect(counts.approved).toBe(1)
+    expect(counts.rejected).toBe(1)
+    expect(counts.executed).toBe(2)
   })
 
-  it('0 NBC 显示为 0.0000', () => {
-    const amount = 0n
-    const readable = (Number(amount) / 10 ** 18).toFixed(4)
-    expect(readable).toBe('0.0000')
+  it('全部 pending 时其他计数为 0', () => {
+    const requests = [makeRequest(), makeRequest({ requestId: 1 })]
+    const counts = countByStatus(requests)
+    expect(counts.pending).toBe(2)
+    expect(counts.approved).toBe(0)
+    expect(counts.rejected).toBe(0)
+    expect(counts.executed).toBe(0)
   })
 
-  it('大数量 100000 NBC 不溢出', () => {
-    const amount = 100000n * 10n ** 18n
-    const readable = (Number(amount) / 10 ** 18).toFixed(4)
-    expect(readable).toBe('100000.0000')
+  it('approved + executed 不会被重复计入 approved', () => {
+    const req = makeRequest({ approved: true, executed: true })
+    const counts = countByStatus([req])
+    expect(counts.approved).toBe(0)
+    expect(counts.executed).toBe(1)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('排序', () => {
+  it('按 requestId 降序排列（最新在前）', () => {
+    const requests = [
+      makeRequest({ requestId: 2 }),
+      makeRequest({ requestId: 0 }),
+      makeRequest({ requestId: 5 }),
+      makeRequest({ requestId: 1 }),
+    ]
+    const sorted = sortByIdDesc(requests)
+    expect(sorted.map((r) => r.requestId)).toEqual([5, 2, 1, 0])
+  })
+
+  it('不修改原数组', () => {
+    const requests = [makeRequest({ requestId: 3 }), makeRequest({ requestId: 1 })]
+    const sorted = sortByIdDesc(requests)
+    expect(requests[0].requestId).toBe(3)
+    expect(sorted[0].requestId).toBe(3)
+  })
+
+  it('单条记录排序不报错', () => {
+    const requests = [makeRequest({ requestId: 7 })]
+    expect(sortByIdDesc(requests)[0].requestId).toBe(7)
+  })
+
+  it('空列表排序返回空数组', () => {
+    expect(sortByIdDesc([])).toEqual([])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('金额格式化', () => {
+  it('1 NBC (18 decimals) → 1.0000', () => {
+    expect(formatAmount(1000000000000000000n)).toBe('1.0000')
+  })
+
+  it('0.5 NBC → 0.5000', () => {
+    expect(formatAmount(500000000000000000n)).toBe('0.5000')
+  })
+
+  it('0 → 0.0000', () => {
+    expect(formatAmount(0n)).toBe('0.0000')
+  })
+
+  it('100000 NBC 不溢出', () => {
+    expect(formatAmount(100000n * 10n ** 18n)).toBe('100000.0000')
+  })
+
+  it('小数精度截断为 4 位', () => {
+    const amount = 1234567890000000000n
+    const result = formatAmount(amount)
+    expect(result).toBe('1.2346')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('边界条件', () => {
+  it('同一 user 在同一 pool，rejected 后可以有新 pending', () => {
+    const user = '0xuser000000000000000000000000000000001'
+    const requests = [
+      makeRequest({ requestId: 0, user, poolIndex: 0 }),
+      makeRequest({ requestId: 1, user, poolIndex: 0, rejected: true }),
+    ]
+    const pending = filterRequests(requests, 'pending')
+    expect(pending.length).toBe(1)
+    expect(pending[0].requestId).toBe(0)
+  })
+
+  it('不同 pool 的 pending 申请互不影响', () => {
+    const user = '0xuser000000000000000000000000000000001'
+    const requests = [
+      makeRequest({ requestId: 0, user, poolIndex: 0 }),
+      makeRequest({ requestId: 1, user, poolIndex: 1 }),
+    ]
+    const pending = filterRequests(requests, 'pending')
+    expect(pending.length).toBe(2)
+  })
+
+  it('requestId 为 0 的申请能正常处理', () => {
+    const req = makeRequest({ requestId: 0 })
+    expect(isPending(req)).toBe(true)
+    expect(getStatusLabel(req)).toBe('Pending Approval')
+  })
+
+  it('大量申请时过滤性能不崩溃', () => {
+    const requests = Array.from({ length: 1000 }, (_, i) =>
+      makeRequest({ requestId: i, approved: i % 3 === 0, rejected: i % 5 === 0 }),
+    )
+    expect(() => filterRequests(requests, 'pending')).not.toThrow()
+    expect(() => countByStatus(requests)).not.toThrow()
+    expect(() => sortByIdDesc(requests)).not.toThrow()
   })
 })
