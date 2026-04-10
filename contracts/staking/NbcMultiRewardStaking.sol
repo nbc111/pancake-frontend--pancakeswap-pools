@@ -69,6 +69,7 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
     // ============ Events ============
     
     event PoolAdded(uint256 indexed poolIndex, address indexed rewardToken, uint256 rewardRate, uint256 rewardsDuration);
+    event PoolRemoved(uint256 indexed poolIndex);
     event Staked(uint256 indexed poolIndex, address indexed user, uint256 amount);
     event Withdrawn(uint256 indexed poolIndex, address indexed user, uint256 amount);
     event RewardPaid(uint256 indexed poolIndex, address indexed user, uint256 reward);
@@ -543,6 +544,34 @@ contract NbcMultiRewardStaking is Ownable, ReentrancyGuard, Pausable {
     }
 
     // ============ Owner Functions ============
+
+    /**
+     * @notice 删除一个错误创建的池（仅限无用户质押且无锁定提现时）
+     * @dev 采用 swap-and-pop：将末尾池移到被删位置，poolLength--，避免索引空洞
+     * @param poolIndex 要删除的池索引
+     */
+    function removePool(uint256 poolIndex) external onlyOwner {
+        require(poolIndex < poolLength, "Pool does not exist");
+        require(pools[poolIndex].totalStaked == 0, "Pool has staked funds");
+
+        uint256 last = poolLength - 1;
+        if (poolIndex != last) {
+            // 将末尾池数据移到被删位置
+            pools[poolIndex] = pools[last];
+            minStakeAmount[poolIndex] = minStakeAmount[last];
+            maxStakeAmount[poolIndex] = maxStakeAmount[last];
+            maxTotalStaked[poolIndex] = maxTotalStaked[last];
+        }
+
+        // 清理末尾槽
+        delete pools[last];
+        delete minStakeAmount[last];
+        delete maxStakeAmount[last];
+        delete maxTotalStaked[last];
+        poolLength--;
+
+        emit PoolRemoved(poolIndex);
+    }
 
     function addPool(
         address rewardToken,
