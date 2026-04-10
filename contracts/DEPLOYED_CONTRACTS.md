@@ -5,7 +5,7 @@
 ## 质押合约
 
 - **合约名称**: NbcMultiRewardStaking
-- **合约地址**: `0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1`
+- **合约地址**: `0x32580b2001ea941529c79bcb819b8f6f3c886c60`
 - **链 ID**: 1281 (NBC Chain)
 - **状态**: ✅ 已部署
 
