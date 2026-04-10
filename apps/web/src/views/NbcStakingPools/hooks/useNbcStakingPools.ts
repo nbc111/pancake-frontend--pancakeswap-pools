@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useAccount, useReadContract, useBalance } from 'wagmi'
+import { useAccount, useReadContract, useBalance, usePublicClient } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { Pool } from '@pancakeswap/widgets-internal'
 import { Token, ERC20Token } from '@pancakeswap/sdk'
@@ -18,6 +18,7 @@ export const useNbcStakingPools = () => {
   const { address: account } = useAccount()
   const zero = '0x0000000000000000000000000000000000000000' as `0x${string}`
   const acct = account ?? zero
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
 
   const chainTimestamp = useCurrentBlockTimestamp()
   const currentChainTimestamp = chainTimestamp !== undefined ? Number(chainTimestamp) : undefined
@@ -54,6 +55,50 @@ export const useNbcStakingPools = () => {
     chainId: CHAIN_ID,
   })
   const poolLength = poolLengthRaw != null ? Number(poolLengthRaw) : undefined
+
+  const { data: withdrawRequestCountRaw } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'withdrawRequestCount',
+    chainId: CHAIN_ID,
+    query: { enabled: !!account },
+  })
+  const withdrawRequestCount = withdrawRequestCountRaw != null ? Number(withdrawRequestCountRaw) : 0
+
+  const { data: userWithdrawRequestsByPool } = useQuery<Record<number, { requestId: number; approved: boolean; executed: boolean; rejected: boolean }>>({
+    queryKey: ['nbcStakingUserWithdrawRequests', account, withdrawRequestCount],
+    enabled: !!account && !!publicClient && withdrawRequestCount > 0,
+    staleTime: FAST_INTERVAL,
+    refetchInterval: FAST_INTERVAL,
+    queryFn: async () => {
+      const requests: Record<number, { requestId: number; approved: boolean; executed: boolean; rejected: boolean }> = {}
+
+      for (let i = 0; i < withdrawRequestCount; i++) {
+        try {
+          const [poolIndex, user, , , approved, executed, rejected] = (await publicClient!.readContract({
+            address: STAKING_CONTRACT_ADDRESS,
+            abi: STAKING_ABI as any,
+            functionName: 'getWithdrawRequest',
+            args: [BigInt(i)],
+          })) as [bigint, string, bigint, bigint, boolean, boolean, boolean]
+
+          if (user.toLowerCase() !== account!.toLowerCase()) continue
+          if (executed || rejected) continue
+
+          requests[Number(poolIndex)] = {
+            requestId: i,
+            approved,
+            executed,
+            rejected,
+          }
+        } catch (error) {
+          console.error(`Failed to fetch withdraw request ${i}`, error)
+        }
+      }
+
+      return requests
+    },
+  })
 
   // Pool 0 (BTC)
   const { data: staked0 } = useReadContract({
@@ -489,6 +534,7 @@ export const useNbcStakingPools = () => {
               stakedBalance: staked ? new BigNumber(staked.toString()) : new BigNumber(0),
               pendingReward: earned ? new BigNumber(earned.toString()) : new BigNumber(0),
               stakedAt: stakedAtSeconds,
+              withdrawRequest: userWithdrawRequestsByPool?.[config.sousId],
             }
           : undefined,
       }
@@ -509,6 +555,7 @@ export const useNbcStakingPools = () => {
     staked4, earned4, totalStaked4, poolInfo4, pool4Details, userStake4,
     currentChainTimestamp,
     poolLength,
+    userWithdrawRequestsByPool,
   ])
 
   return {
