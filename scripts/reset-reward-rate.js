@@ -33,7 +33,7 @@ const CONFIG = {
   // 区块链配置
   RPC_URL: process.env.RPC_URL || 'https://rpc.nbcex.com',
   PRIVATE_KEY: process.env.PRIVATE_KEY,
-  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1',
+  STAKING_CONTRACT_ADDRESS: process.env.STAKING_CONTRACT_ADDRESS || '0x32580B2001EA941529c79bcb819b8f6F3c886c60',
 
   // 目标配置（可通过命令行参数覆盖）
   TARGET_APR: parseFloat(getArg('target-apr', process.env.TARGET_APR || '100')), // 目标 APR (%)

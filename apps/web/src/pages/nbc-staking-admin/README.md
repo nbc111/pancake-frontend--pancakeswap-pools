@@ -119,5 +119,5 @@ A: 使用公式：`奖励数量 = 目标 rewardRate × rewardsDuration`
 - **框架**: Next.js + React
 - **Web3**: wagmi + viem
 - **UI**: PancakeSwap UI Kit
-- **合约地址**: `0x930BEcf16Ab2b20CcEe9f327f61cCB5B9352c789`
+- **合约地址**: 以 `apps/web/src/config/staking/constants.ts` 中 `STAKING_CONTRACT_ADDRESS` 为准（当前为 `0x32580B2001EA941529c79bcb819b8f6F3c886c60`）
 - **链 ID**: 1281 (NBC Chain)

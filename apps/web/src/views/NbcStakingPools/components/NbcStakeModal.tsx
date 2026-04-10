@@ -10,9 +10,8 @@ import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
 import { ToastDescriptionWithTx } from 'components/Toast'
 import { checkStakeThreshold } from 'config/staking/minStakeThreshold'
 import { STAKING_POOL_CONFIGS, calculateAPRFromRewardRate } from 'config/staking'
+import { STAKING_CONTRACT_ADDRESS, CHAIN_ID } from 'config/staking/constants'
 
-const STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
-const CHAIN_ID = 1281
 const TARGET_APR = 30 // 目标 APR 30%
 
 interface NbcStakeModalProps {

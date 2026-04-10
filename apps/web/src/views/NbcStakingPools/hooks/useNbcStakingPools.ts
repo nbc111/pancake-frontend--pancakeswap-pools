@@ -10,9 +10,7 @@ import { useCakePrice } from 'hooks/useCakePrice'
 import { FAST_INTERVAL } from 'config/constants'
 import { STAKING_POOL_CONFIGS, type PoolConfig, calculateAPRFromRewardRate } from 'config/staking'
 import { getTokenPricesFromNbcApi } from 'config/staking/tokenPrices'
-
-const STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
-const CHAIN_ID = 1281
+import { STAKING_CONTRACT_ADDRESS, CHAIN_ID } from 'config/staking/constants'
 
 const POOL_CONFIGS: PoolConfig[] = STAKING_POOL_CONFIGS
 
@@ -48,6 +46,14 @@ export const useNbcStakingPools = () => {
     address: account,
     chainId: CHAIN_ID,
   })
+
+  const { data: poolLengthRaw } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'poolLength',
+    chainId: CHAIN_ID,
+  })
+  const poolLength = poolLengthRaw != null ? Number(poolLengthRaw) : undefined
 
   // Pool 0 (BTC)
   const { data: staked0 } = useReadContract({
@@ -416,19 +422,36 @@ export const useNbcStakingPools = () => {
       }
 
       // 判断池是否已结束
+      // 新合约尚未 addPool 时 getPoolInfo 仍为全 0：rewardToken=0、active=false。
+      // 不能把「未创建」当成已结束，否则 PoolControls 会把所有池归到 finished，主列表为空。
       let isPoolFinished = false
       let endTimestamp = 0
       if (Array.isArray(poolInfo) && poolInfo.length >= 5) {
-        const periodFinish = poolInfo[3]
-        const active = poolInfo[4]
-        const currentTime = currentChainTimestamp ?? Math.floor(Date.now() / 1000)
-        const periodFinishNum = typeof periodFinish === 'bigint' ? Number(periodFinish) : Number(periodFinish)
-        endTimestamp = periodFinishNum
+        const rewardTokenOnChain = poolInfo[0] as `0x${string}` | undefined
+        const rewardTokenStr =
+          typeof rewardTokenOnChain === 'string'
+            ? rewardTokenOnChain.toLowerCase()
+            : String(rewardTokenOnChain ?? '').toLowerCase()
+        const poolConfiguredOnChain =
+          poolLength !== undefined &&
+          index < poolLength &&
+          rewardTokenStr.length > 0 &&
+          rewardTokenStr !== '0x0000000000000000000000000000000000000000'
 
-        if (active === false) {
-          isPoolFinished = true
-        } else if (periodFinishNum > 0 && periodFinishNum <= currentTime) {
-          isPoolFinished = true
+        if (!poolConfiguredOnChain) {
+          isPoolFinished = false
+        } else {
+          const periodFinish = poolInfo[3]
+          const active = poolInfo[4]
+          const currentTime = currentChainTimestamp ?? Math.floor(Date.now() / 1000)
+          const periodFinishNum = typeof periodFinish === 'bigint' ? Number(periodFinish) : Number(periodFinish)
+          endTimestamp = periodFinishNum
+
+          if (active === false) {
+            isPoolFinished = true
+          } else if (periodFinishNum > 0 && periodFinishNum <= currentTime) {
+            isPoolFinished = true
+          }
         }
       }
 
@@ -485,6 +508,7 @@ export const useNbcStakingPools = () => {
     staked3, earned3, totalStaked3, poolInfo3, pool3Details, userStake3,
     staked4, earned4, totalStaked4, poolInfo4, pool4Details, userStake4,
     currentChainTimestamp,
+    poolLength,
   ])
 
   return {

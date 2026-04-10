@@ -143,7 +143,7 @@ console.log('='.repeat(80))
 console.log('')
 
 // 质押合约地址（假设）
-const STAKING_CONTRACT = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1'
+const STAKING_CONTRACT = '0x32580B2001EA941529c79bcb819b8f6F3c886c60'
 
 // 计算所有代币的配置（按照正确的池索引顺序）
 const results = []

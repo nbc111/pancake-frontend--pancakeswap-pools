@@ -5,9 +5,7 @@ import { getBalanceNumber } from '@pancakeswap/utils/formatBalance'
 import { usePublicClient, useWriteContract } from 'wagmi'
 import STAKING_ABI from 'abis/nbcMultiRewardStaking.json'
 import { ToastDescriptionWithTx } from 'components/Toast'
-
-const STAKING_CONTRACT_ADDRESS = '0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1' as `0x${string}`
-const CHAIN_ID = 1281
+import { STAKING_CONTRACT_ADDRESS, CHAIN_ID } from 'config/staking/constants'
 
 interface NbcHarvestActionsProps {
   earnings: BigNumber

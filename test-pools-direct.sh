@@ -2,7 +2,7 @@
 # 直接测试合约 pools 函数调用
 # 使用已知的函数选择器（通过在线工具或 cast 计算）
 
-CONTRACT="0x107B4E8F1b849b69033FbF4AAcb10B72d29A16E1"
+CONTRACT="0x32580B2001EA941529c79bcb819b8f6F3c886c60"
 RPC="https://rpc.nbcex.com"
 
 # 对于 pools(uint256)，函数选择器需要正确计算
