@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { styled } from 'styled-components'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, usePublicClient } from 'wagmi'
@@ -58,59 +58,15 @@ const AdminShell = styled(Flex)`
 
 const NBC_CHAIN_ID = 1281 as ChainId
 
-// 提现记录类型
-type WithdrawRecord = {
+type WithdrawRequest = {
+  requestId: number
   poolIndex: number
   user: string
   amount: bigint
-  timestamp: number
-  txHash: string
-  blockNumber: bigint
-}
-
-const BLACKLIST_STORAGE_KEY = 'nbc_staking_blacklist'
-const WITHDRAW_HISTORY_KEY = 'nbc_staking_withdraw_history'
-const MAX_HISTORY = 200
-
-function loadBlacklist(): string[] {
-  try {
-    const raw = localStorage.getItem(BLACKLIST_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveBlacklist(list: string[]) {
-  try {
-    localStorage.setItem(BLACKLIST_STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // ignore
-  }
-}
-
-function loadWithdrawHistory(): WithdrawRecord[] {
-  try {
-    const raw = localStorage.getItem(WITHDRAW_HISTORY_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return parsed.map((r: any) => ({ ...r, amount: BigInt(r.amount), blockNumber: BigInt(r.blockNumber) }))
-  } catch {
-    return []
-  }
-}
-
-function saveWithdrawHistory(history: WithdrawRecord[]) {
-  try {
-    const serializable = history.slice(0, MAX_HISTORY).map((r) => ({
-      ...r,
-      amount: r.amount.toString(),
-      blockNumber: r.blockNumber.toString(),
-    }))
-    localStorage.setItem(WITHDRAW_HISTORY_KEY, JSON.stringify(serializable))
-  } catch {
-    // ignore
-  }
+  requestedAt: number
+  approved: boolean
+  executed: boolean
+  rejected: boolean
 }
 const DURATION_PRESETS = [
   { label: '1年', value: '31536000' },
@@ -203,13 +159,11 @@ const NbcStakingAdminView: React.FC<{ section: NbcAdminSection }> = ({ section }
   const [setRewardRateOnlyPoolIndex, setSetRewardRateOnlyPoolIndex] = useState<string>('0')
   const [setRewardRateOnlyValue, setSetRewardRateOnlyValue] = useState<string>('')
 
-  // 监控面板状态
-  const [withdrawHistory, setWithdrawHistory] = useState<WithdrawRecord[]>(() => loadWithdrawHistory())
-  const [blacklist, setBlacklist] = useState<string[]>(() => loadBlacklist())
-  const [blacklistInput, setBlacklistInput] = useState<string>('')
-  const [monitorFilter, setMonitorFilter] = useState<'all' | 'blacklisted'>('all')
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const historyLoadedRef = useRef(false)
+  // 监控面板状态 - 提现审批队列
+  const [withdrawRequests, setWithdrawRequests] = useState<WithdrawRequest[]>([])
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false)
+  const [monitorFilter, setMonitorFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending')
+  const [actionRequestId, setActionRequestId] = useState<number | null>(null)
 
   // APR 计算器相关状态
   const [expectedStakeAmount, setExpectedStakeAmount] = useState<string>('1000000') // 预期质押量 NBC
@@ -301,94 +255,108 @@ const NbcStakingAdminView: React.FC<{ section: NbcAdminSection }> = ({ section }
     })
   }
 
-  // 黑名单管理
-  const handleAddToBlacklist = (addr: string) => {
-    const normalized = addr.trim().toLowerCase()
-    if (!normalized || !normalized.startsWith('0x')) return
-    const updated = blacklist.includes(normalized) ? blacklist : [...blacklist, normalized]
-    setBlacklist(updated)
-    saveBlacklist(updated)
-    setBlacklistInput('')
-  }
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
 
-  const handleRemoveFromBlacklist = (addr: string) => {
-    const updated = blacklist.filter((a) => a !== addr.toLowerCase())
-    setBlacklist(updated)
-    saveBlacklist(updated)
-  }
+  const { data: withdrawRequestCount, refetch: refetchRequestCount } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: STAKING_ABI as any,
+    functionName: 'withdrawRequestCount',
+    chainId: CHAIN_ID,
+  })
 
-  const isBlacklisted = useCallback((addr: string) => blacklist.includes(addr.toLowerCase()), [blacklist])
+  const handleFetchRequests = useCallback(async () => {
+    if (!publicClient || isLoadingRequests) return
+    setIsLoadingRequests(true)
+    try {
+      const count = Number(withdrawRequestCount ?? 0)
+      if (count === 0) {
+        setWithdrawRequests([])
+        return
+      }
 
-  // 监听实时 Withdrawn 事件
+      const requestsRaw = await Promise.all(
+        Array.from({ length: count }, async (_, i) => {
+          try {
+            const [poolIndex, user, amount, requestedAt, approved, executed, rejected] = (await publicClient.readContract({
+              address: STAKING_CONTRACT_ADDRESS,
+              abi: STAKING_ABI as any,
+              functionName: 'getWithdrawRequest',
+              args: [BigInt(i)],
+            })) as any[]
+
+            return {
+              requestId: i,
+              poolIndex: Number(poolIndex),
+              user: user as string,
+              amount: amount as bigint,
+              requestedAt: Number(requestedAt),
+              approved: approved as boolean,
+              executed: executed as boolean,
+              rejected: rejected as boolean,
+            } satisfies WithdrawRequest
+          } catch (requestError) {
+            console.error(`getWithdrawRequest(${i}) failed`, requestError)
+            return null
+          }
+        }),
+      )
+
+      const requests = requestsRaw.filter(Boolean) as WithdrawRequest[]
+
+      setWithdrawRequests(requests)
+    } catch (err) {
+      console.error('fetchRequests error', err)
+    } finally {
+      setIsLoadingRequests(false)
+    }
+  }, [publicClient, isLoadingRequests, withdrawRequestCount])
+
+  useEffect(() => {
+    if (section !== 'monitor') return
+    handleFetchRequests()
+  }, [section, handleFetchRequests])
+
+  useEffect(() => {
+    if (!isConfirmed) return
+    setActionRequestId(null)
+    if (section === 'monitor') {
+      handleFetchRequests()
+      refetchRequestCount()
+    }
+  }, [isConfirmed, section, handleFetchRequests, refetchRequestCount])
+
   useWatchContractEvent({
     address: STAKING_CONTRACT_ADDRESS,
     abi: STAKING_ABI as any,
-    eventName: 'Withdrawn',
+    eventName: 'WithdrawRequested',
     chainId: CHAIN_ID,
-    onLogs: (logs) => {
-      const newRecords: WithdrawRecord[] = logs.map((log: any) => ({
-        poolIndex: Number(log.args?.poolIndex ?? 0),
-        user: log.args?.user ?? '',
-        amount: log.args?.amount ?? 0n,
-        timestamp: Date.now(),
-        txHash: log.transactionHash ?? '',
-        blockNumber: log.blockNumber ?? 0n,
-      }))
-      setWithdrawHistory((prev) => {
-        const merged = [...newRecords, ...prev].slice(0, MAX_HISTORY)
-        saveWithdrawHistory(merged)
-        return merged
-      })
+    onLogs: async () => {
+      await refetchRequestCount()
+      handleFetchRequests()
     },
   })
 
-  // 获取历史提现记录（最近 N 个区块）
-  const publicClient = usePublicClient({ chainId: CHAIN_ID })
+  const handleApprove = (requestId: number) => {
+    setActionRequestId(requestId)
+    writeContract({
+      address: STAKING_CONTRACT_ADDRESS,
+      abi: STAKING_ABI as any,
+      functionName: 'approveWithdraw',
+      args: [BigInt(requestId)],
+      chainId: CHAIN_ID,
+    })
+  }
 
-  const handleFetchHistory = useCallback(async () => {
-    if (!publicClient || isLoadingHistory) return
-    setIsLoadingHistory(true)
-    try {
-      const latestBlock = await publicClient.getBlockNumber()
-      // 拉最近 50000 个区块的 Withdrawn 事件
-      const fromBlock = latestBlock > 50000n ? latestBlock - 50000n : 0n
-      const logs = await publicClient.getLogs({
-        address: STAKING_CONTRACT_ADDRESS,
-        event: {
-          anonymous: false,
-          inputs: [
-            { indexed: true, name: 'poolIndex', type: 'uint256' },
-            { indexed: true, name: 'user', type: 'address' },
-            { indexed: false, name: 'amount', type: 'uint256' },
-          ],
-          name: 'Withdrawn',
-          type: 'event',
-        },
-        fromBlock,
-        toBlock: latestBlock,
-      })
-      const records: WithdrawRecord[] = logs.map((log: any) => ({
-        poolIndex: Number(log.args?.poolIndex ?? 0),
-        user: log.args?.user ?? '',
-        amount: log.args?.amount ?? 0n,
-        timestamp: 0,
-        txHash: log.transactionHash ?? '',
-        blockNumber: log.blockNumber ?? 0n,
-      }))
-      // 去重（by txHash+user）
-      setWithdrawHistory((prev) => {
-        const existing = new Set(prev.map((r) => r.txHash + r.user))
-        const fresh = records.filter((r) => !existing.has(r.txHash + r.user))
-        const merged = [...fresh, ...prev].slice(0, MAX_HISTORY)
-        saveWithdrawHistory(merged)
-        return merged
-      })
-    } catch (err) {
-      console.error('fetchHistory error', err)
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }, [publicClient, isLoadingHistory])
+  const handleReject = (requestId: number) => {
+    setActionRequestId(requestId)
+    writeContract({
+      address: STAKING_CONTRACT_ADDRESS,
+      abi: STAKING_ABI as any,
+      functionName: 'rejectWithdraw',
+      args: [BigInt(requestId)],
+      chainId: CHAIN_ID,
+    })
+  }
 
   // 处理函数定义（必须在 hooks 之后，条件返回之前）
   const handleNotifyReward = () => {
@@ -1564,10 +1532,10 @@ const NbcStakingAdminView: React.FC<{ section: NbcAdminSection }> = ({ section }
       {section === 'monitor' && (
         <Box p="24px" mb="24px">
           <Heading scale="lg" mb="8px">
-            🔍 {t('Withdraw Monitor')}
+            🔍 {t('Withdraw Approval Queue')}
           </Heading>
           <Text fontSize="14px" color="textSubtle" mb="24px">
-            {t('Monitor on-chain withdrawals in real-time. Flag suspicious addresses and pause the contract if needed.')}
+            {t('Review user withdraw requests, approve or reject them on-chain, and keep emergency contract controls available here.')}
           </Text>
 
           {/* 合约暂停控制 */}
@@ -1602,161 +1570,148 @@ const NbcStakingAdminView: React.FC<{ section: NbcAdminSection }> = ({ section }
             )}
           </Box>
 
-          {/* 黑名单管理 */}
-          <Box mb="24px" p="16px" style={{ border: '1px solid rgba(255, 77, 77, 0.3)', borderRadius: '8px' }}>
-            <Text bold fontSize="16px" mb="8px" color="failure">
-              🚫 {t('Suspicious Address List (Local)')}
-            </Text>
-            <Text fontSize="13px" color="textSubtle" mb="12px">
-              {t('Mark addresses as suspicious for visual tracking. This is client-side only — it does NOT block on-chain operations. Use Pause to freeze the contract.')}
-            </Text>
-            <Flex mb="12px" style={{ gap: '8px' }}>
-              <Input
-                value={blacklistInput}
-                onChange={(e) => setBlacklistInput(e.target.value)}
-                placeholder="0x..."
-                style={{ flex: 1 }}
-              />
-              <Button
-                scale="md"
-                variant="danger"
-                onClick={() => handleAddToBlacklist(blacklistInput)}
-                disabled={!blacklistInput.trim()}
-              >
-                {t('Add')}
-              </Button>
-            </Flex>
-            {blacklist.length === 0 ? (
-              <Text fontSize="13px" color="textSubtle">{t('No flagged addresses yet.')}</Text>
-            ) : (
-              <Box>
-                {blacklist.map((addr) => (
-                  <Flex key={addr} alignItems="center" mb="6px" style={{ gap: '8px' }}>
-                    <Text fontSize="12px" fontFamily="monospace" style={{ flex: 1, wordBreak: 'break-all' }}>
-                      {addr}
-                    </Text>
-                    <Button
-                      scale="xs"
-                      variant="text"
-                      onClick={() => handleRemoveFromBlacklist(addr)}
-                      style={{ color: 'var(--colors-failure)', padding: '0 4px' }}
-                    >
-                      ✕
-                    </Button>
-                  </Flex>
-                ))}
-              </Box>
-            )}
-          </Box>
-
-          {/* 提现历史 */}
           <Box p="16px" style={{ border: '1px solid rgba(118, 69, 217, 0.2)', borderRadius: '8px' }}>
             <Flex justifyContent="space-between" alignItems="center" mb="12px" flexWrap="wrap" style={{ gap: '8px' }}>
-              <Text bold fontSize="16px">
-                📋 {t('Withdraw History')} ({withdrawHistory.length})
-              </Text>
+              <Box>
+                <Text bold fontSize="16px">
+                  📋 {t('Withdraw Requests')} ({withdrawRequests.length} {t('total')})
+                </Text>
+                <Text fontSize="12px" color="textSubtle" mt="4px">
+                  {t('Users submit requests with withdraw(); admins approve or reject; approved users must still execute their own withdrawal.')}
+                </Text>
+              </Box>
               <Flex style={{ gap: '8px' }} flexWrap="wrap">
                 <Button
                   scale="sm"
-                  variant={monitorFilter === 'all' ? 'primary' : 'tertiary'}
+                  variant={monitorFilter === 'pending' ? 'primary' : 'tertiary'}
+                  onClick={() => setMonitorFilter('pending')}
+                >
+                  ⏳ {t('Pending')} ({withdrawRequests.filter((r) => !r.approved && !r.rejected && !r.executed).length})
+                </Button>
+                <Button
+                  scale="sm"
+                  variant={monitorFilter === 'approved' ? 'success' : 'tertiary'}
+                  onClick={() => setMonitorFilter('approved')}
+                >
+                  ✅ {t('Approved')} ({withdrawRequests.filter((r) => r.approved && !r.executed).length})
+                </Button>
+                <Button
+                  scale="sm"
+                  variant={monitorFilter === 'rejected' ? 'danger' : 'tertiary'}
+                  onClick={() => setMonitorFilter('rejected')}
+                >
+                  ❌ {t('Rejected')} ({withdrawRequests.filter((r) => r.rejected).length})
+                </Button>
+                <Button
+                  scale="sm"
+                  variant={monitorFilter === 'all' ? 'secondary' : 'tertiary'}
                   onClick={() => setMonitorFilter('all')}
                 >
                   {t('All')}
                 </Button>
                 <Button
                   scale="sm"
-                  variant={monitorFilter === 'blacklisted' ? 'danger' : 'tertiary'}
-                  onClick={() => setMonitorFilter('blacklisted')}
-                >
-                  🚫 {t('Flagged')} ({withdrawHistory.filter((r) => isBlacklisted(r.user)).length})
-                </Button>
-                <Button
-                  scale="sm"
                   variant="secondary"
-                  onClick={handleFetchHistory}
-                  isLoading={isLoadingHistory}
-                  disabled={isLoadingHistory}
+                  onClick={handleFetchRequests}
+                  isLoading={isLoadingRequests}
+                  disabled={isLoadingRequests}
                 >
-                  {t('Fetch History')}
-                </Button>
-                <Button
-                  scale="sm"
-                  variant="text"
-                  onClick={() => { setWithdrawHistory([]); saveWithdrawHistory([]) }}
-                  style={{ color: 'var(--colors-textSubtle)' }}
-                >
-                  {t('Clear')}
+                  {t('Refresh')}
                 </Button>
               </Flex>
             </Flex>
 
-            <Text fontSize="12px" color="textSubtle" mb="12px">
-              {t('Realtime: new withdrawals appear automatically. Click "Fetch History" to load past events (last 50,000 blocks).')}
-            </Text>
-
-            {withdrawHistory.length === 0 ? (
-              <Text fontSize="13px" color="textSubtle">{t('No withdraw events recorded yet. Click "Fetch History" to load from chain.')}</Text>
+            {withdrawRequests.length === 0 ? (
+              <Box textAlign="center" py="32px">
+                <Text fontSize="14px" color="textSubtle" mb="12px">
+                  {t('No requests loaded yet.')}
+                </Text>
+                <Button scale="sm" variant="secondary" onClick={handleFetchRequests} isLoading={isLoadingRequests}>
+                  {t('Load Requests')}
+                </Button>
+              </Box>
             ) : (
-              <Box style={{ maxHeight: '480px', overflowY: 'auto' }}>
-                {withdrawHistory
-                  .filter((r) => monitorFilter === 'all' || isBlacklisted(r.user))
-                  .map((record, i) => {
-                    const flagged = isBlacklisted(record.user)
-                    const poolCfg = STAKING_POOL_CONFIGS.find((c) => c.sousId === record.poolIndex)
-                    const decimals = poolCfg?.rewardTokenDecimals ?? 18
-                    const symbol = poolCfg?.rewardTokenSymbol ?? 'NBC'
-                    const amountReadable = (Number(record.amount) / 10 ** 18).toFixed(4)
+              <Box style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                {withdrawRequests
+                  .filter((r) => {
+                    if (monitorFilter === 'pending') return !r.approved && !r.rejected && !r.executed
+                    if (monitorFilter === 'approved') return r.approved && !r.executed
+                    if (monitorFilter === 'rejected') return r.rejected
+                    return true
+                  })
+                  .sort((a, b) => b.requestId - a.requestId)
+                  .map((req) => {
+                    const isPendingRequest = !req.approved && !req.rejected && !req.executed
+                    const isApprovedPending = req.approved && !req.executed
+                    const amountReadable = (Number(req.amount) / 1e18).toFixed(4)
+                    const requestTime = req.requestedAt > 0 ? new Date(req.requestedAt * 1000).toLocaleString() : '—'
+                    const statusColor = req.rejected ? 'failure' : req.executed ? 'textSubtle' : req.approved ? 'success' : 'warning'
+                    const statusLabel = req.executed
+                      ? `✅ ${t('Executed')}`
+                      : req.rejected
+                        ? `❌ ${t('Rejected')}`
+                        : req.approved
+                          ? `✅ ${t('Approved')} - ${t('Awaiting user execution')}`
+                          : `⏳ ${t('Pending Approval')}`
 
                     return (
                       <Box
-                        key={`${record.txHash}-${record.user}-${i}`}
-                        mb="8px"
-                        p="10px 14px"
+                        key={req.requestId}
+                        mb="10px"
+                        p="14px 16px"
                         style={{
-                          borderRadius: '8px',
-                          border: flagged ? '1px solid rgba(255,77,77,0.5)' : '1px solid rgba(255,255,255,0.06)',
-                          background: flagged ? 'rgba(255,77,77,0.07)' : 'rgba(255,255,255,0.02)',
+                          borderRadius: '10px',
+                          border: isPendingRequest
+                            ? '1px solid rgba(255,193,7,0.5)'
+                            : isApprovedPending
+                              ? '1px solid rgba(49,208,170,0.4)'
+                              : '1px solid rgba(255,255,255,0.08)',
+                          background: isPendingRequest
+                            ? 'rgba(255,193,7,0.05)'
+                            : isApprovedPending
+                              ? 'rgba(49,208,170,0.04)'
+                              : 'rgba(255,255,255,0.02)',
                         }}
                       >
-                        <Flex justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" style={{ gap: '4px' }}>
+                        <Flex justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" style={{ gap: '8px' }}>
                           <Box style={{ flex: 1, minWidth: 0 }}>
-                            <Flex alignItems="center" style={{ gap: '6px' }} mb="2px">
-                              {flagged && <Text fontSize="12px" color="failure">🚫</Text>}
-                              <Text fontSize="12px" fontFamily="monospace" style={{ wordBreak: 'break-all' }}>
-                                {record.user}
+                            <Flex alignItems="center" mb="4px" style={{ gap: '8px' }}>
+                              <Text fontSize="12px" color="textSubtle">
+                                #{req.requestId}
+                              </Text>
+                              <Text fontSize="12px" bold color={statusColor}>
+                                {statusLabel}
                               </Text>
                             </Flex>
-                            <Text fontSize="11px" color="textSubtle">
-                              Pool {record.poolIndex} · {amountReadable} NBC · Block #{record.blockNumber.toString()}
-                              {record.timestamp > 0 && ` · ${new Date(record.timestamp).toLocaleTimeString()}`}
+                            <Text fontSize="13px" fontFamily="monospace" mb="2px" style={{ wordBreak: 'break-all' }}>
+                              {t('User')}: {req.user}
                             </Text>
-                            {record.txHash && (
-                              <Text fontSize="11px" color="primary" style={{ wordBreak: 'break-all' }}>
-                                Tx: {record.txHash.slice(0, 20)}...
-                              </Text>
-                            )}
+                            <Text fontSize="13px" color="textSubtle">
+                              {t('Pool')} {req.poolIndex} · {amountReadable} NBC · {requestTime}
+                            </Text>
                           </Box>
-                          <Flex style={{ gap: '6px' }} alignItems="center">
-                            {flagged ? (
+                          {isPendingRequest && (
+                            <Flex style={{ gap: '8px' }} alignItems="center">
                               <Button
-                                scale="xs"
-                                variant="text"
-                                onClick={() => handleRemoveFromBlacklist(record.user)}
-                                style={{ color: 'var(--colors-textSubtle)', fontSize: '11px' }}
+                                scale="sm"
+                                variant="success"
+                                onClick={() => handleApprove(req.requestId)}
+                                disabled={isPending && actionRequestId === req.requestId}
+                                isLoading={isPending && actionRequestId === req.requestId}
                               >
-                                {t('Unflag')}
+                                ✅ {t('Approve')}
                               </Button>
-                            ) : (
                               <Button
-                                scale="xs"
-                                variant="text"
-                                onClick={() => handleAddToBlacklist(record.user)}
-                                style={{ color: 'var(--colors-failure)', fontSize: '11px' }}
+                                scale="sm"
+                                variant="danger"
+                                onClick={() => handleReject(req.requestId)}
+                                disabled={isPending && actionRequestId === req.requestId}
+                                isLoading={isPending && actionRequestId === req.requestId}
                               >
-                                🚫 {t('Flag')}
+                                ❌ {t('Reject')}
                               </Button>
-                            )}
-                          </Flex>
+                            </Flex>
+                          )}
                         </Flex>
                       </Box>
                     )
