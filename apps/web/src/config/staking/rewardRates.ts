@@ -1,24 +1,27 @@
 /**
  * 单币质押奖励率配置
- * 基于 NBC = 0.11 USD 的兑换比例
- * 用于计算一年期的奖励率
- */
-
-/**
- * 兑换比例配置（1 个奖励代币 = X NBC）
- * 基于图片中的兑换比例：NBC = 0.11 USD
+ *
+ * 兑换比例（CONVERSION_RATES）：**1 单位奖励代币 ≈ 多少 NBC**（仅用于前端 APR 展示与 rewardRate 粗算）。
+ * 市价法：`X = P_reward_usd / P_nbc_usd`（与 NBC 是否 18 位无关，是比值）。
+ *
+ * 最近一次人工对齐快照：**2026-04-11**
+ * - **P_nbc**：NBC Exchange `nbcusdt` 返回 `last` = **0.02077 USD**（与 `tokenPrices` 同源思路）。
+ * - **P_reward**：公开市场 USD 参考价同日快照 — BTC≈72944、ETH≈2256、BNB≈610、SOL≈85.5、
+ *   XRP≈1.36、LTC≈55.4、USDT=1、DOGE≈0.165、ETC≈18.5、SUI≈2.35（DOGE/ETC/SUI 为区间中值估算）。
+ *
+ * 市价波动大，上线前请用同一公式按最新价重算并改此表，或后续改为与 `getTokenPricesFromNbcApi` 同源自动刷新。
  */
 export const CONVERSION_RATES = {
-  BTC: 804545, // 1 BTC = 804,545 NBC
-  ETH: 27454, // 1 ETH = 27,454 NBC
-  USDT: 9.09, // 1 USDT = 9.09 NBC
-  BNB: 7809, // 1 BNB = 7,809 NBC
-  SOL: 1145, // 1 SOL = 1,145 NBC
-  DOGE: 1.21, // 1 DOGE = 1.21 NBC
-  XRP: 17.27, // 1 XRP = 17.27 NBC
-  LTC: 700, // 1 LTC = 700 NBC
-  ETC: 112, // 1 ETC = 112 NBC
-  SUI: 13.27, // 1 SUI = 13.27 NBC
+  BTC: 3512000, // ≈ 72944 / 0.02077
+  ETH: 108600, // ≈ 2256 / 0.02077
+  USDT: 48.15, // ≈ 1 / 0.02077
+  BNB: 29360, // ≈ 610 / 0.02077
+  SOL: 4115, // ≈ 85.5 / 0.02077
+  DOGE: 7.94, // ≈ 0.165 / 0.02077
+  XRP: 65.48, // ≈ 1.36 / 0.02077
+  LTC: 2668, // ≈ 55.4 / 0.02077
+  ETC: 891, // ≈ 18.5 / 0.02077
+  SUI: 113, // ≈ 2.35 / 0.02077
 } as const
 
 /**

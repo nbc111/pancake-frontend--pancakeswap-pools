@@ -1,6 +1,6 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import { EN } from './config/languages'
+import { EN, ZHCN } from './config/languages'
 import { extendEnList } from './config/extendList'
 
 const resources = {
@@ -11,7 +11,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: EN.locale,
+  lng: ZHCN.locale,
   fallbackLng: EN.locale,
   interpolation: {
     escapeValue: false,

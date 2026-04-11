@@ -1,4 +1,7 @@
-import { EN, languages } from './config/languages'
+import { languages, ZHCN } from './config/languages'
+
+/** 未在 localStorage 选择过语言时的默认（首次打开站点） */
+export const DEFAULT_LOCALE = ZHCN.locale
 
 // Use NEXT_PUBLIC_I18N_BASE_URL if set (e.g. CDN). Otherwise use relative /locales (app's public/locales).
 // This ensures projects with custom locale keys (e.g. nbc-staking-admin) use their own files in production.
@@ -21,13 +24,16 @@ export const fetchLocale = async (locale: string) => {
 
 export const getLanguageCodeFromLS = () => {
   try {
+    if (typeof window === 'undefined') {
+      return DEFAULT_LOCALE
+    }
     const codeFromStorage = localStorage.getItem(LS_KEY)
 
     if (codeFromStorage && languages[codeFromStorage]) {
       return codeFromStorage
     }
-    return EN.locale
+    return DEFAULT_LOCALE
   } catch {
-    return EN.locale
+    return DEFAULT_LOCALE
   }
 }

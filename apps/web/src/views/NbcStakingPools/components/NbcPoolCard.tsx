@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js'
 import { Pool } from '@pancakeswap/widgets-internal'
 import { Token } from '@pancakeswap/sdk'
 import { Text } from '@pancakeswap/uikit'
+import { useTranslation } from '@pancakeswap/localization'
 import { TokenPairImage } from 'components/TokenImage'
 import ConnectWalletButton from 'components/ConnectWalletButton'
 import NbcCardActions from './NbcCardActions'
@@ -14,6 +15,7 @@ interface NbcPoolCardProps {
 }
 
 const NbcPoolCard: React.FC<NbcPoolCardProps> = ({ pool, account }) => {
+  const { t } = useTranslation()
   const stakedBalance = pool?.userData?.stakedBalance || new BigNumber(0)
 
   return (
@@ -27,7 +29,7 @@ const NbcPoolCard: React.FC<NbcPoolCardProps> = ({ pool, account }) => {
         ) : (
           <>
             <Text mb="10px" textTransform="uppercase" fontSize="12px" color="textSubtle" bold>
-              Start earning
+              {t('Start earning')}
             </Text>
             <ConnectWalletButton />
           </>

@@ -14,6 +14,13 @@ import { STAKING_CONTRACT_ADDRESS, CHAIN_ID } from 'config/staking/constants'
 
 const POOL_CONFIGS: PoolConfig[] = STAKING_POOL_CONFIGS
 
+/** 只扫最近 N 条链上提现申请，避免 withdrawRequestCount 很大时逐条 eth_call 拖垮 RPC */
+const MAX_WITHDRAW_REQUESTS_TO_SCAN = 120
+
+/** 提现申请列表刷新不必与区块同级频繁，减轻 https://rpc.nbcex.com 超时 */
+const WITHDRAW_REQUESTS_REFETCH_MS = 45_000
+const WITHDRAW_REQUESTS_STALE_MS = 30_000
+
 export const useNbcStakingPools = () => {
   const { address: account } = useAccount()
   const zero = '0x0000000000000000000000000000000000000000' as `0x${string}`
@@ -68,32 +75,45 @@ export const useNbcStakingPools = () => {
   const { data: userWithdrawRequestsByPool } = useQuery<Record<number, { requestId: number; approved: boolean; executed: boolean; rejected: boolean }>>({
     queryKey: ['nbcStakingUserWithdrawRequests', account, withdrawRequestCount],
     enabled: !!account && !!publicClient && withdrawRequestCount > 0,
-    staleTime: FAST_INTERVAL,
-    refetchInterval: FAST_INTERVAL,
+    staleTime: WITHDRAW_REQUESTS_STALE_MS,
+    refetchInterval: WITHDRAW_REQUESTS_REFETCH_MS,
+    retry: 1,
+    retryDelay: 3000,
     queryFn: async () => {
       const requests: Record<number, { requestId: number; approved: boolean; executed: boolean; rejected: boolean }> = {}
 
-      for (let i = 0; i < withdrawRequestCount; i++) {
-        try {
-          const [poolIndex, user, , , approved, executed, rejected] = (await publicClient!.readContract({
-            address: STAKING_CONTRACT_ADDRESS,
-            abi: STAKING_ABI as any,
-            functionName: 'getWithdrawRequest',
-            args: [BigInt(i)],
-          })) as [bigint, string, bigint, bigint, boolean, boolean, boolean]
+      const count = withdrawRequestCount
+      const startIdx = Math.max(0, count - MAX_WITHDRAW_REQUESTS_TO_SCAN)
 
-          if (user.toLowerCase() !== account!.toLowerCase()) continue
-          if (executed || rejected) continue
+      try {
+        // 从新到旧扫，优先匹配最近的待处理申请；单条失败不拖垮整页
+        for (let i = count - 1; i >= startIdx; i--) {
+          try {
+            const [poolIndex, user, , , approved, executed, rejected] = (await publicClient!.readContract({
+              address: STAKING_CONTRACT_ADDRESS,
+              abi: STAKING_ABI as any,
+              functionName: 'getWithdrawRequest',
+              args: [BigInt(i)],
+            })) as [bigint, string, bigint, bigint, boolean, boolean, boolean]
 
-          requests[Number(poolIndex)] = {
-            requestId: i,
-            approved,
-            executed,
-            rejected,
+            if (user.toLowerCase() !== account!.toLowerCase()) continue
+            if (executed || rejected) continue
+
+            const pid = Number(poolIndex)
+            if (requests[pid] === undefined) {
+              requests[pid] = {
+                requestId: i,
+                approved,
+                executed,
+                rejected,
+              }
+            }
+          } catch (error) {
+            console.warn(`[NBC Staking] getWithdrawRequest(${i}) skipped:`, error)
           }
-        } catch (error) {
-          console.error(`Failed to fetch withdraw request ${i}`, error)
         }
+      } catch (error) {
+        console.warn('[NBC Staking] withdraw requests scan failed:', error)
       }
 
       return requests

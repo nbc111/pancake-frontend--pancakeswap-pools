@@ -4230,6 +4230,8 @@
   "• For 1-year period, BTC pool needs at least 0.31536 BTC (~31.5M satoshi) for rewardRate ≥ 1; use larger amount or shorter period for visible earned.": "• For 1-year period, BTC pool needs at least 0.31536 BTC (~31.5M satoshi) for rewardRate ≥ 1; use larger amount or shorter period for visible earned.",
   "• Or set rewards duration to 1 day (86400 sec), then 0.22 BTC gives rewardRate = 254 and earned will accumulate.": "• Or set rewards duration to 1 day (86400 sec), then 0.22 BTC gives rewardRate = 254 and earned will accumulate.",
   "Other": "Other",
+  "NBC Staking Pools": "NBC Staking Pools",
+  "Stake NBC and earn multiple reward tokens.": "Stake NBC and earn multiple reward tokens.",
   "NBC Staking Admin": "NBC Staking Admin",
   "Please switch to NBC Chain (Chain ID: %chainId%)": "Please switch to NBC Chain (Chain ID: %chainId%)",
   "Current Chain ID: %currentChainId%": "Current Chain ID: %currentChainId%",

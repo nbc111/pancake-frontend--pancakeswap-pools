@@ -10,17 +10,17 @@ const NbcStakingAdminIndexRedirect = () => {
 
   useEffect(() => {
     if (!router.isReady) return
-    router.replace(
-      {
+      router.replace(
+        {
         pathname: `/nbc-staking-admin/${NBC_ADMIN_DEFAULT_SECTION}`,
         query: router.query,
-      },
-      undefined,
+        },
+        undefined,
       { shallow: false },
     )
   }, [router, router.isReady])
 
-  return null
+      return null
 }
 
 const NbcStakingAdminIndexWithChains = NbcStakingAdminIndexRedirect as typeof NbcStakingAdminIndexRedirect & {

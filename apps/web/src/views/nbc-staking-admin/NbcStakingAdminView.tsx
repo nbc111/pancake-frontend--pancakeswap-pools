@@ -389,7 +389,6 @@ const NbcStakingAdminView: React.FC<{ section: NbcAdminSection }> = ({ section }
     const decimals = poolConfig?.rewardTokenDecimals ?? 18
     try {
       const rate = parseUnits(setRewardRateOnlyValue.trim(), decimals)
-      if (rate <= 0n) return
       writeContract({
         address: STAKING_CONTRACT_ADDRESS,
         abi: STAKING_ABI as any,
