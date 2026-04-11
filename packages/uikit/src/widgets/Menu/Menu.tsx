@@ -41,6 +41,7 @@ const Menu: React.FC<React.PropsWithChildren<NavProps>> = ({
   children,
   chainId,
   logoComponent,
+  logoText,
 }) => {
   const { isMobile } = useMatchBreakpoints();
   const isMounted = useIsMounted();
@@ -108,7 +109,7 @@ const Menu: React.FC<React.PropsWithChildren<NavProps>> = ({
             {banner && isMounted && <TopBannerContainer height={topBannerHeight}>{banner}</TopBannerContainer>}
             <StyledNav id="nav">
               <Flex>
-                {logoComponent ?? <Logo href={homeLink_ ?? homeLink?.href ?? "/home"} />}
+                {logoComponent ?? <Logo href={homeLink_ ?? homeLink?.href ?? "/home"} logoText={logoText} />}
                 <AtomBox display={{ xs: "none", lg: "block" }}>
                   <MenuItems
                     ml="24px"

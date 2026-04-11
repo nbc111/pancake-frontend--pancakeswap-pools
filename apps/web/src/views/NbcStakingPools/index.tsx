@@ -97,7 +97,7 @@ const NbcStakingPools: React.FC<React.PropsWithChildren> = () => {
         <StyledPageHeader>
           <Flex alignItems="baseline" width="100%" justifyContent="space-between" mt="16px" mb="16px">
             <Text lineHeight="110%" bold color="secondary" fontSize="32px">
-              {t('NBC Staking Pools')}
+              {t('NBC Staking brand')}
             </Text>
           </Flex>
           {isMobile ? poolContent : null}
@@ -107,7 +107,7 @@ const NbcStakingPools: React.FC<React.PropsWithChildren> = () => {
           <Flex justifyContent="space-between" flexDirection={['column', null, null, 'row']}>
             <Flex flex="1" flexDirection="column" mr={['8px', 0]}>
               <Heading as="h1" scale="xxl" color="secondary" mb="24px">
-                {t('NBC Staking Pools')}
+                {t('NBC Staking brand')}
               </Heading>
               <Heading scale="md" color="text">
                 {t('Stake NBC and earn multiple reward tokens.')}

@@ -3,7 +3,12 @@ import Svg from "../Svg";
 import { SvgProps } from "../types";
 import { vars } from "../../../css/vars.css";
 
-const Logo: React.FC<React.PropsWithChildren<SvgProps>> = (props) => {
+export interface LogoWithTextProps extends SvgProps {
+  /** 右侧品牌文案，默认 NBC Staking（可由应用传入 i18n 结果） */
+  text?: string;
+}
+
+const Logo: React.FC<React.PropsWithChildren<LogoWithTextProps>> = ({ text = "NBC Staking", ...props }) => {
   // viewBox 高度为 199，图标高度进一步增大到 145，计算垂直居中位置
   const viewBoxHeight = 199;
   const imageHeight = 145; // 从 130 增加到 145
@@ -36,7 +41,7 @@ const Logo: React.FC<React.PropsWithChildren<SvgProps>> = (props) => {
         letterSpacing="0.01em"
         style={{ userSelect: "none" }}
       >
-        NBC Staking
+        {text}
       </text>
     </Svg>
   );

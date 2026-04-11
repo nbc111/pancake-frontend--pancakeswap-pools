@@ -115,6 +115,7 @@ const Menu = (props) => {
       activeSubItem={activeSubMenuItem?.href}
       activeSubItemChildItem={activeSubChildMenuItem?.href}
       buyCakeLabel={t('Buy NBC')}
+      logoText={t('NBC Staking brand')}
       {...props}
     />
   )

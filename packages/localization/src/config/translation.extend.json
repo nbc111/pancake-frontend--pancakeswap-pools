@@ -865,5 +865,9 @@
   "NBC admin pool select option": {
     "value": "%symbol% (%name%) · index %id%",
     "hint": "Pool dropdown label: symbol, name, sousId."
+  },
+  "NBC Staking brand": {
+    "value": "NBC Staking",
+    "hint": "Nav logo and staking hero title; zh-CN overrides in locales."
   }
 }

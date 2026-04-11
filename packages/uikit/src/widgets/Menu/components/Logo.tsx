@@ -6,6 +6,7 @@ import { MenuContext } from "../context";
 
 interface Props {
   href: string;
+  logoText?: string;
 }
 
 const blink = keyframes`
@@ -41,7 +42,7 @@ const StyledLink = styled("a")`
   }
 `;
 
-const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
+const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href, logoText }) => {
   const { linkComponent } = useContext(MenuContext);
   const isAbsoluteUrl = href.startsWith("http");
   const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
@@ -49,8 +50,8 @@ const Logo: React.FC<React.PropsWithChildren<Props>> = ({ href }) => {
   };
   const innerLogo = (
     <>
-      <LogoWithTextIcon className="mobile-icon" />
-      <LogoWithTextIcon className="desktop-icon" />
+      <LogoWithTextIcon className="mobile-icon" text={logoText} />
+      <LogoWithTextIcon className="desktop-icon" text={logoText} />
     </>
   );
 

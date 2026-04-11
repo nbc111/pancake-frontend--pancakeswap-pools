@@ -33,4 +33,6 @@ export interface NavProps {
   chainId: number;
   setLang: (lang: Language) => void;
   logoComponent?: ReactNode;
+  /** 传给 LogoWithText 右侧文案（i18n），不传则保持默认英文 NBC Staking */
+  logoText?: string;
 }
