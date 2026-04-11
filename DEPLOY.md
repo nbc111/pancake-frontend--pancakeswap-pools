@@ -110,7 +110,7 @@ pm2 delete pancake-staking 2>/dev/null || true
 
 # 启动服务
 export NODE_ENV="production"
-pm2 start "pnpm start -- -p 5000" --name pancake-staking
+pm2 start pnpm --name pancake-staking -- start
 
 # 保存 PM2 配置
 pm2 save

@@ -329,7 +329,7 @@ cd /www/staking/apps/web
 export NODE_ENV=production
 
 # 启动服务（使用 PM2）
-pm2 start "pnpm start -- -p 5000" --name staking-web
+pm2 start pnpm --name staking-web -- start
 
 # 或者直接启动 Next.js
 # pm2 start node_modules/.bin/next --name staking-web -- start -p 5000
@@ -666,7 +666,7 @@ ls -la /www/staking/apps/web
 
 # 手动测试启动
 cd /www/staking/apps/web
-NODE_ENV=production pnpm start -- -p 5000
+NODE_ENV=production pnpm start
 ```
 
 ### 问题 4: 502 Bad Gateway

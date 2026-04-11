@@ -32,7 +32,7 @@ export NODE_ENV='production'
 pnpm next build --no-lint
 echo '[6/7] 启动服务...'
 pm2 delete pancake-staking 2>/dev/null || true
-pm2 start 'pnpm start -- -p 5000' --name pancake-staking
+pm2 start pnpm --name pancake-staking -- start
 pm2 save
 pm2 list
 "@

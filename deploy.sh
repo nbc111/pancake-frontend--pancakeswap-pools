@@ -138,7 +138,8 @@ ssh_exec << ENDSSH
     
     # 启动新服务
     export NODE_ENV="production"
-    pm2 start "pnpm start -- -p $APP_PORT" --name pancake-staking
+    # apps/web 的 package.json 里 start 已是 next start -p 5000，勿再传 -- -p，否则会变成 next start -p 5000 -- -p 5000 并误解析目录
+    pm2 start pnpm --name pancake-staking -- start
     pm2 save
     echo "   ✓ PM2 服务已启动"
 ENDSSH

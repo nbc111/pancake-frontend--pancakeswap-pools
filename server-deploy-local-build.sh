@@ -90,7 +90,7 @@ fi
 # 启动服务
 echo "  启动新服务..."
 export NODE_ENV=production
-pm2 start "pnpm start -- -p $APP_PORT" --name "$SERVICE_NAME"
+pm2 start pnpm --name "$SERVICE_NAME" -- start
 
 # 保存配置
 pm2 save

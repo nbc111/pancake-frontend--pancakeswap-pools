@@ -19,7 +19,7 @@ ssh root@156.251.17.96
 连接成功后，复制并执行以下**完整命令**（一行）：
 
 ```bash
-mkdir -p /www/pancake-staking && cd /www/pancake-staking && if [ -d .git ]; then git fetch origin && git reset --hard origin/main && git clean -fd; else git clone -b main https://github.com/nbc111/pancake-frontend--pancakeswap-pools.git .; fi && export NODE_OPTIONS='--max-old-space-size=8192' && pnpm install --frozen-lockfile && cd apps/web && export NODE_ENV='production' && pnpm next build --no-lint && pm2 delete pancake-staking 2>/dev/null || true && pm2 start 'pnpm start -- -p 5000' --name pancake-staking && pm2 save && pm2 list
+mkdir -p /www/pancake-staking && cd /www/pancake-staking && if [ -d .git ]; then git fetch origin && git reset --hard origin/main && git clean -fd; else git clone -b main https://github.com/nbc111/pancake-frontend--pancakeswap-pools.git .; fi && export NODE_OPTIONS='--max-old-space-size=8192' && pnpm install --frozen-lockfile && cd apps/web && export NODE_ENV='production' && pnpm next build --no-lint && pm2 delete pancake-staking 2>/dev/null || true && pm2 start pnpm --name pancake-staking -- start && pm2 save && pm2 list
 ```
 
 ### 或者使用部署脚本

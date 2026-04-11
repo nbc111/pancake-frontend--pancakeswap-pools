@@ -68,7 +68,7 @@ echo ""
 echo "[6/7] 配置 PM2..."
 pm2 delete pancake-staking 2>/dev/null || true
 export NODE_ENV="production"
-pm2 start "pnpm start -- -p $APP_PORT" --name pancake-staking
+pm2 start pnpm --name pancake-staking -- start
 pm2 save
 echo "   ✓ PM2 服务已启动"
 
