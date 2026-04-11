@@ -94,7 +94,7 @@ const NbcCardActions: React.FC<NbcCardActionsProps> = ({ pool }) => {
                       decimals={2}
                       prefix="~"
                       value={earningTokenDollarBalance}
-                      unit=" USD"
+                      unit={t(' USD')}
                     />
                   )}
                 </>
@@ -102,7 +102,7 @@ const NbcCardActions: React.FC<NbcCardActionsProps> = ({ pool }) => {
                 <>
                   <Heading color="textDisabled">0</Heading>
                   <Text fontSize="12px" color="textDisabled">
-                    0 USD
+                    {t('0 USD')}
                   </Text>
                 </>
               )}
