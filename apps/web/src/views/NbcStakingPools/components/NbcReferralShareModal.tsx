@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useTranslation } from '@pancakeswap/localization'
-import { Box, Button, Flex, Modal, Text, copyText, useToast } from '@pancakeswap/uikit'
+import { Box, Button, Flex, Modal, Text, copyText, useMatchBreakpoints, useToast } from '@pancakeswap/uikit'
 import truncateHash from '@pancakeswap/utils/truncateHash'
 import {
   commissionPayoutStatusOrDefault,
@@ -55,8 +55,21 @@ type EarningsApiResponse = {
   sumCommissionWei?: string
 }
 
+function isLikelyDbOrSyncInfraError(message: string): boolean {
+  const x = message.toLowerCase()
+  return (
+    x.includes('econnrefused') ||
+    x.includes('5433') ||
+    x.includes('5432') ||
+    x.includes('postgresql required') ||
+    x.includes('commission earnings unavailable') ||
+    x.includes('database_url')
+  )
+}
+
 export const NbcReferralShareModal: React.FC<NbcReferralShareModalProps> = ({ onDismiss, walletAddress }) => {
   const { t } = useTranslation()
+  const { isMobile } = useMatchBreakpoints()
   const router = useRouter()
   const { toastSuccess } = useToast()
   const [page, setPage] = useState(1)
@@ -151,7 +164,12 @@ export const NbcReferralShareModal: React.FC<NbcReferralShareModalProps> = ({ on
   const dismiss = () => onDismiss?.()
 
   return (
-    <Modal title={t('NBC referral share modal title')} onDismiss={dismiss} minWidth="600px" minHeight="240px">
+    <Modal
+      title={t('NBC referral share modal title')}
+      onDismiss={dismiss}
+      minWidth={isMobile ? 'min(100vw - 24px, 600px)' : '600px'}
+      minHeight="240px"
+    >
       <Text fontSize="13px" color="textSubtle" mb="14px" lineHeight="1.5">
         {t('NBC referral share modal invite hint')}
       </Text>
@@ -178,8 +196,11 @@ export const NbcReferralShareModal: React.FC<NbcReferralShareModalProps> = ({ on
       <Text fontSize="15px" bold mb="6px" color="secondary">
         {t('NBC referral share modal my commissions')}
       </Text>
-      <Text fontSize="12px" color="textSubtle" mb="10px" lineHeight="1.5">
+      <Text fontSize="12px" color="textSubtle" mb="8px" lineHeight="1.5">
         {t('NBC referral share modal commissions hint')}
+      </Text>
+      <Text fontSize="11px" color="textSubtle" mb="12px" lineHeight="1.55">
+        {t('NBC referral share modal commissions infra note')}
       </Text>
 
       {recordsLoading && records.length === 0 && !recordsError && (
@@ -188,9 +209,16 @@ export const NbcReferralShareModal: React.FC<NbcReferralShareModalProps> = ({ on
         </Text>
       )}
       {recordsError && (
-        <Text fontSize="13px" mb="12px" style={{ whiteSpace: 'pre-wrap', color: 'var(--colors-failure)' }}>
-          {t('NBC referral share modal load failed')}: {recordsError}
-        </Text>
+        <>
+          <Text fontSize="13px" mb="8px" style={{ whiteSpace: 'pre-wrap', color: 'var(--colors-failure)' }}>
+            {t('NBC referral share modal load failed')}: {recordsError}
+          </Text>
+          {isLikelyDbOrSyncInfraError(recordsError) ? (
+            <Text fontSize="12px" color="textSubtle" mb="12px" lineHeight="1.55">
+              {t('NBC referral share modal load failed db hint')}
+            </Text>
+          ) : null}
+        </>
       )}
       {!recordsLoading && !recordsError && total === 0 && page === 1 && (
         <Text fontSize="13px" color="textSubtle" mb="12px">
@@ -212,6 +240,8 @@ export const NbcReferralShareModal: React.FC<NbcReferralShareModalProps> = ({ on
               minHeight: showPager ? 200 : 120,
               maxHeight: 280,
               overflow: 'auto',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
               borderRadius: 12,
               border: '1px solid var(--colors-cardBorder)',
               opacity: recordsLoading ? 0.65 : 1,

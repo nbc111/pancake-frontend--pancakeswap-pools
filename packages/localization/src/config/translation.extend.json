@@ -869,5 +869,13 @@
   "NBC Staking brand": {
     "value": "NBC Staking",
     "hint": "Nav logo and staking hero title; zh-CN overrides in locales."
+  },
+  "NBC referral share modal commissions infra note": {
+    "value": "Credited after your friend claims; may take a short delay. List reflects platform updates.",
+    "hint": "User-facing note under referral commission section."
+  },
+  "NBC referral share modal load failed db hint": {
+    "value": "Service temporarily unavailable. Try again later or contact support.",
+    "hint": "User-facing hint when commission list API fails."
   }
 }
