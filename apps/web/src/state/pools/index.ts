@@ -99,7 +99,8 @@ const initialState: PoolsState = {
 }
 
 export const fetchCakePoolPublicDataAsync = () => async (dispatch) => {
-  const cakePrice = parseFloat(await getCakePriceFromOracle())
+  const raw = await getCakePriceFromOracle()
+  const cakePrice = Number.parseFloat(raw != null && raw !== '' ? raw : '0') || 0
 
   const stakingTokenPrice = cakePrice
   const earningTokenPrice = cakePrice

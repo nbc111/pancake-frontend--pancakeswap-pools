@@ -53,7 +53,16 @@ const fetchAllCampaigns = memoizeAsync(
 )
 
 const getCakePrice = memoizeAsync(async () => {
-  return BigNumber(await getCakePriceFromOracle())
+  const raw = await getCakePriceFromOracle()
+  // NBC 行情接口失败时返回 null；BigNumber(null) 会抛错并触发 Next 未处理运行时错误
+  if (raw == null || raw === '') {
+    return new BigNumber(0)
+  }
+  try {
+    return new BigNumber(raw)
+  } catch {
+    return new BigNumber(0)
+  }
 })
 
 async function batchGetInfinityCakeApr(pools: PoolInfo[]) {
